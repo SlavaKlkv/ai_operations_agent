@@ -181,8 +181,8 @@ def build_graph(
     test, an evaluation scenario or a deployment needs to substitute: mock or
     MCP-backed providers, a scripted or real model, a tighter policy.
 
-    ``use_llm=False`` forces the deterministic path even when credentials are
-    present — the evaluation harness uses it as the baseline to measure the
+    ``use_llm=False`` forces the deterministic path even when Ollama is
+    available — the evaluation harness uses it as the baseline to measure the
     model-driven agent against.
     """
     monitoring = monitoring or MockMonitoringProvider()
@@ -251,7 +251,7 @@ def build_graph(
     builder.add_edge("final_response", END)
     builder.add_edge("insufficient_context", END)
 
-    # An in-memory checkpointer by default so a bare ``build_graph()`` still
-    # supports the pause; a durable one is injected by the application, which
-    # is what makes approval survive a restart.
+    # По умолчанию используется чекпоинтер в памяти, чтобы простой ``build_graph()``
+    # поддерживал паузу. Приложение подставляет постоянное хранилище, благодаря
+    # которому ожидание подтверждения переживает перезапуск.
     return builder.compile(checkpointer=checkpointer or InMemorySaver(serde=agent_serializer()))

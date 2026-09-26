@@ -22,8 +22,8 @@ depends_on: str | None = None
 
 def upgrade() -> None:
     op.add_column("users", sa.Column("api_token_hash", sa.String(length=64), nullable=True))
-    # Unique so one digest cannot authenticate as two people, and indexed
-    # because every authenticated request looks a token up by it.
+    # Уникальность не позволяет одному хешу аутентифицировать двух пользователей,
+    # а индекс нужен, потому что каждый запрос ищет токен по этому полю.
     op.create_index("ix_users_api_token_hash", "users", ["api_token_hash"], unique=True)
 
 

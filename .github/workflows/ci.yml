@@ -57,8 +57,8 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: uv sync --locked --extra dev
       - name: Evaluate the deterministic agent
-        # A regression in the planner, the correlation or the analysis shows
-        # up here as a failing scenario rather than in a demo.
+        # Регрессия в планировщике, корреляции или анализе проявится здесь
+        # как упавший сценарий, а не во время демо.
         env:
           MCP_ENABLED: "false"
           CHECKPOINTER: memory

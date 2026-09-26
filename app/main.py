@@ -27,9 +27,9 @@ async def lifespan(app: FastAPI):
     log.info("checkpointer.attached", durable=checkpointing.is_durable(), kind=type(saver).__name__)
 
     if settings.mcp_enabled:
-        # Connecting here, not per request: each stdio server is a subprocess,
-        # and a degraded integration layer is reported by /mcp/servers rather
-        # than preventing the application from starting.
+        # Подключаемся здесь, а не при каждом запросе: каждый stdio-сервер — отдельный
+        # процесс, а деградация слоя интеграции отображается в /mcp/servers,
+        # не мешая запуску приложения.
         pool = await mcp_runtime.startup()
         log.info("mcp.ready", healthy=pool.healthy, tools=len(pool.tools()))
         recording.record_integration_health(

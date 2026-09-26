@@ -27,7 +27,7 @@ from app.domain.models import Confidence, EvidenceKind, Hypothesis, IncidentAnal
 
 log = structlog.get_logger(__name__)
 
-#: Below this the agent says so instead of pretending to a conclusion.
+#: Ниже этого порога агент честно сообщает о неопределённости.
 CONFIDENCE_FLOOR = 0.6
 
 SYSTEM_PROMPT = """\
@@ -136,7 +136,7 @@ def make_build_analysis_node(model: BaseChatModel | None = None):
     return build_analysis_node
 
 
-#: Kept so existing callers and tests can use the deterministic node directly.
+#: Сохранено для прямого использования детерминированного узла существующим кодом и тестами.
 build_analysis_node = make_build_analysis_node(None)
 
 
@@ -195,7 +195,7 @@ def _from_draft(state: AgentState, draft: AnalysisDraft) -> IncidentAnalysis:
     )
 
 
-# ── Deterministic path ───────────────────────────────────────────────────────
+# ── Детерминированный сценарий ───────────────────────────────────────────────
 
 
 def _deterministic(state: AgentState, hypotheses: list[Hypothesis]) -> IncidentAnalysis:

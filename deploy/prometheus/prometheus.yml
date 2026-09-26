@@ -1,7 +1,7 @@
-# Scrape configuration for the local stack.
+# Конфигурация сбора метрик для локального стека.
 #
-# One target, scraped often: an investigation takes seconds, so a minute-long
-# interval would miss most of what happened during an incident demo.
+# Единственная цель опрашивается часто: расследование занимает секунды, поэтому
+# минутный интервал пропустил бы большую часть событий во время демо инцидента.
 
 global:
   scrape_interval: 10s

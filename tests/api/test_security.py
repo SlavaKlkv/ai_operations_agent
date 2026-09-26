@@ -95,7 +95,7 @@ async def test_a_refused_approval_changes_nothing(reader_client, db_session):
     assert "create_issue" not in [c["tool"] for c in refetched["tool_calls"]]
 
 
-# ── Identity in the audit trail ──────────────────────────────────────────────
+# ── Идентификатор пользователя в журнале аудита ─────────────────────────────
 
 
 async def test_the_approver_recorded_is_the_authenticated_one(client, db_session):

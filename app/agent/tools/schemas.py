@@ -29,9 +29,9 @@ from app.domain.models import (
     PullRequest,
 )
 
-#: The metrics the monitoring layer is guaranteed to expose. Constraining this
-#: to a literal means an invented metric name fails validation instead of
-#: reaching the provider and coming back as an opaque lookup error.
+#: Метрики, которые гарантированно предоставляет слой мониторинга. Ограничение
+#: типом Literal заставляет выдуманное имя метрики упасть на валидации, а не
+#: не даёт неверному имени дойти до провайдера и вернуться неясной ошибкой поиска.
 MetricName = Literal["error_rate", "request_rate", "latency_p50", "latency_p95", "latency_p99"]
 
 
@@ -74,7 +74,7 @@ class AlertsResult(_Result):
     alerts: tuple[Alert, ...] = ()
 
 
-# ── Code and deployments ─────────────────────────────────────────────────────
+# ── Код и развёртывания ─────────────────────────────────────────────────────
 
 
 class GetRecentDeploymentsArgs(WindowArgs):

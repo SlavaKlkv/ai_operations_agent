@@ -15,7 +15,7 @@ from app.agent.state import AgentState, RunError
 from app.agent.tooling import call_tool
 from app.domain.models import Evidence, EvidenceKind, Hypothesis
 
-#: How far before the spike we look for the code that shipped with it.
+#: Насколько далеко до всплеска искать выпущенный вместе с ним код.
 COMMIT_LOOKBACK = timedelta(hours=6)
 
 

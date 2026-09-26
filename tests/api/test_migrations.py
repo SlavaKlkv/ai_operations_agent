@@ -11,8 +11,8 @@ from sqlalchemy import create_engine
 
 from app.db.base import Base
 
-#: SQLite and PostgreSQL legitimately disagree about index and type details;
-#: a missing or extra table or column never is a legitimate difference.
+#: SQLite и PostgreSQL могут обоснованно различаться деталями индексов и типов,
+#: но отсутствие или наличие лишней таблицы либо столбца допустимым не бывает.
 STRUCTURAL = {"add_table", "remove_table", "add_column", "remove_column"}
 
 
@@ -46,6 +46,6 @@ def test_downgrade_to_base_is_possible(tmp_path):
     engine = create_engine(f"sqlite:///{tmp_path / 'down.db'}")
     with engine.connect() as connection:
         diff = compare_metadata(MigrationContext.configure(connection), Base.metadata)
-    # Everything the models define is now "missing" from the empty database.
+    # Теперь в пустой базе «отсутствует» всё, что определено в моделях.
     dropped = {d[1].name for d in diff if isinstance(d, tuple) and d[0] == "add_table"}
     assert dropped == set(Base.metadata.tables)

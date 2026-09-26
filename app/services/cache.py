@@ -30,8 +30,8 @@ import structlog
 
 log = structlog.get_logger(__name__)
 
-#: Namespace so a shared Redis cannot collide with another application, and so
-#: the whole cache can be dropped with one pattern delete.
+#: Пространство имён защищает общий Redis от конфликтов с другими приложениями
+#: и позволяет удалить весь кэш одним шаблоном.
 KEY_PREFIX = "aoa:tool"
 
 
@@ -85,7 +85,7 @@ class RedisToolCache:
         try:
             return json.loads(raw)
         except (TypeError, ValueError):
-            # A corrupt entry is a miss, not a crash — and not worth keeping.
+            # Повреждённая запись считается промахом, а не сбоем; хранить её незачем.
             log.warning("cache.corrupt_entry", key=key)
             return None
 

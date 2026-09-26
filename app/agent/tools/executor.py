@@ -160,15 +160,15 @@ class ToolExecutor:
         except InvalidToolArgumentsError as exc:
             return self._refused(request, exc)
 
-        # Reads only. A write has an effect, and an effect cannot be served
-        # from a cache — the access class decides, not the tool's name.
+        # Только чтение. Запись имеет эффект, который нельзя получить из кэша;
+        # решение принимает класс доступа, а не имя инструмента.
         key = cache_key(tool.name, arguments) if not tool.is_write else None
         if key is not None and (cached := await self._cache.get(key)) is not None:
             try:
                 validated = tool.parse_result(cached)
             except ToolError:
-                # A cached value that no longer fits the schema means the tool
-                # changed shape; fall through and fetch it properly.
+                # Если значение из кэша больше не соответствует схеме, формат
+                # инструмента изменился; продолжаем и получаем данные заново.
                 log.info("cache.stale_shape", tool=tool.name)
             else:
                 digest = tool.digest(validated)

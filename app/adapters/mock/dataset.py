@@ -65,7 +65,7 @@ def _series(
     cursor = start
     while cursor <= end:
         value = spike if cursor >= spike_from else baseline
-        # A deterministic wobble keeps the series from looking like a step function.
+        # Детерминированное колебание не даёт ряду выглядеть ступенчатой функцией.
         wobble = 1.0 + ((cursor.minute % 5) - 2) * 0.01
         points.append(MetricPoint(timestamp=cursor, value=round(value * wobble, 4)))
         cursor += step
@@ -118,7 +118,7 @@ BILLING_5XX = Scenario(
             commit_sha="41bd9e0a2c5f8871ba3d0cc7e9f421d8ab6730ee",
             deployed_by="ci-bot",
         ),
-        # Decoy: a different service released closer to the spike.
+        # Ложный след: другой сервис был выпущен ближе по времени к всплеску.
         Deployment(
             service="search-service",
             version="v3.1.0",
@@ -260,7 +260,7 @@ def aggregate_logs(
     return sorted(groups, key=lambda g: g.count, reverse=True)
 
 
-# ── A second incident: a dependency, not a release ───────────────────────────
+# ── Второй инцидент: зависимость, а не релиз ─────────────────────────────────
 
 
 def _gateway_logs() -> list[LogEvent]:
@@ -282,17 +282,16 @@ def _gateway_logs() -> list[LogEvent]:
     return logs
 
 
-#: Errors rise with no deployment anywhere near the window, and latency rises
-#: with them while request rate stays flat. A correct agent reports that no
-#: release explains it; an agent that pattern-matches "errors → blame the last
-#: deploy" gets this one wrong, which is the point of including it.
+#: Ошибки растут без близкого по времени деплоя, задержка растёт вместе с ними,
+#: а частота запросов остаётся прежней. Корректный агент сообщает, что релизы
+#: этого не объясняют; шаблонное обвинение последнего деплоя здесь ошибочно.
 CHECKOUT_DEPENDENCY = Scenario(
     name="checkout-dependency-degradation",
     deployments=[
         Deployment(
             service="checkout-service",
             version="v4.2.0",
-            deployed_at=_at(6, 5),  # eight hours before the incident
+            deployed_at=_at(6, 5),  # за восемь часов до инцидента
             commit_sha="b1d0f7c93ea4526d8c0f1a7b45e9d2c86f3a01bb",
             deployed_by="ci-bot",
         ),
@@ -346,11 +345,11 @@ CHECKOUT_DEPENDENCY = Scenario(
 )
 
 
-# ── A third case: nothing is wrong ───────────────────────────────────────────
+# ── Третий случай: всё в порядке ─────────────────────────────────────────────
 
-#: A healthy service. The agent is asked to investigate anyway, because that
-#: is what an on-call engineer does with a false report — and the right answer
-#: is "I found nothing", not a plausible-sounding cause.
+#: Исправный сервис. Агент всё равно проводит расследование, как дежурный инженер
+#: при ложном сообщении. Правильный ответ — «ничего не найдено», а не выдуманная
+#: правдоподобная причина.
 SEARCH_HEALTHY = Scenario(
     name="search-service-no-incident",
     deployments=[

@@ -206,7 +206,7 @@ async def test_write_tools_cannot_be_reached_from_the_investigation_loop(registr
     assert "UnknownToolError" in result["tool_calls"][0].error
 
 
-# ── evaluate and routing ─────────────────────────────────────────────────────
+# ── Оценка и маршрутизация ──────────────────────────────────────────────────
 
 
 async def test_evaluation_notices_when_a_round_produced_nothing():

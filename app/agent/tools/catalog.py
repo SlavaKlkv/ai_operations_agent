@@ -41,7 +41,7 @@ from app.agent.tools.schemas import (
 )
 from app.domain.models import IssueDraft
 
-#: How many items a list-shaped result may put in front of the model.
+#: Сколько элементов результата-списка можно передать модели.
 RENDER_LIMIT = 8
 
 

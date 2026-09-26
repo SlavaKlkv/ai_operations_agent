@@ -48,7 +48,7 @@ async def _main(argv: list[str] | None = None) -> int:
     else:
         print(render_report(score))
 
-    # A non-zero exit is what makes this usable as a CI gate.
+    # Ненулевой код завершения позволяет использовать проверку как барьер в CI.
     return 0 if score.passed == score.total else 1
 
 

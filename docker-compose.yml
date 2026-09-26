@@ -39,6 +39,9 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       REDIS_URL: redis://redis:6379/0
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8000:8000"
     depends_on:
@@ -65,8 +68,8 @@ services:
   grafana:
     image: grafana/grafana:11.5.1
     environment:
-      # Local stack only — anonymous admin so the dashboard opens without a
-      # login step during a demo. Never do this anywhere reachable.
+      # Только для локального стека: анонимный администратор позволяет открыть
+      # дашборд без входа во время демо. Не использовать в доступных извне средах.
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
       GF_AUTH_DISABLE_LOGIN_FORM: "true"

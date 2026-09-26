@@ -48,9 +48,9 @@ class InvalidToolResultError(ToolError):
     """A provider returned something the tool's result schema rejects."""
 
 
-#: The largest rendering a single tool result may contribute to a prompt.
-#: Log stores and metric backends can return unbounded volume; the model only
-#: ever sees an aggregate, and even that is truncated.
+#: Максимальный объём результата одного инструмента в промпте. Хранилища логов
+#: и метрик могут вернуть неограниченный объём; модель видит только агрегат,
+#: который тоже обрезается.
 MAX_DIGEST_CHARS = 1_200
 
 
@@ -71,7 +71,7 @@ class AgentTool[A: BaseModel, R: BaseModel]:
     access: ToolAccess
     handler: Callable[[A], Awaitable[R]]
     render: Callable[[R], str]
-    #: Cost hint used by the planner to prefer cheap evidence over expensive.
+    #: Оценка стоимости, помогающая планировщику предпочитать дешёвые доказательства.
     cost: int = 1
 
     @property
@@ -135,7 +135,7 @@ class ToolRequest(BaseModel):
 
     tool: str
     arguments: dict[str, Any] = Field(default_factory=dict)
-    #: Why the planner wants this. Kept for the audit trail and evaluation.
+    #: Зачем это нужно планировщику. Сохраняется для аудита и оценки.
     reason: str = ""
 
     @property

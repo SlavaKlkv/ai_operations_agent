@@ -148,11 +148,11 @@ class MCPToolPool:
                     await self._connect_one(stack, spec)
                 self._ready.set()
                 await self._closing.wait()
-        except BaseException as exc:  # re-raised to the caller from connect()
+        except BaseException as exc:  # повторно выбрасывается вызывающей стороне из connect()
             self._startup_error = exc
         finally:
-            # Unblocking connect() in every path, including a failure before
-            # the servers were opened, is what keeps a bad config from hanging.
+            # connect() должен разблокироваться при любом исходе, включая сбой
+            # до открытия серверов, иначе неверная конфигурация вызовет зависание.
             self._ready.set()
 
     async def _connect_one(self, stack: AsyncExitStack, spec: ServerSpec) -> None:
@@ -162,9 +162,9 @@ class MCPToolPool:
             )
             listed = await asyncio.wait_for(client.list_tools(), timeout=spec.timeout_seconds)
         except Exception as exc:
-            # Every startup failure is the same outcome from the run's point of
-            # view — the server is not there — so they are caught together and
-            # distinguished by the recorded message rather than by control flow.
+            # Для запуска все ошибки старта означают одно: сервер недоступен.
+            # Поэтому они обрабатываются вместе и различаются записанным сообщением,
+            # а не ветвлением потока управления.
             message = f"{type(exc).__name__}: {exc}"
             log.warning("mcp.server_unavailable", server=spec.name, error=message)
             self._status[spec.name] = ServerStatus(
@@ -179,8 +179,8 @@ class MCPToolPool:
                 log.info("mcp.tool_filtered", server=spec.name, tool=tool.name)
                 continue
             if tool.name in self._tools:
-                # Two servers offering the same name is a configuration error,
-                # not something to resolve by guessing which one was meant.
+                # Одинаковое имя от двух серверов — ошибка конфигурации, которую
+                # нельзя разрешать догадкой о том, какой сервер имелся в виду.
                 raise MCPError(
                     f"tool {tool.name!r} is offered by both "
                     f"{self._tools[tool.name].server!r} and {spec.name!r}"

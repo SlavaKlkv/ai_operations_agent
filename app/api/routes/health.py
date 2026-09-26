@@ -19,8 +19,8 @@ async def health() -> HealthResponse:
         status="ok",
         version="0.1.0",
         environment=settings.app_env,
-        # Surfaced because it changes a guarantee the API makes: without a
-        # durable checkpointer, a run awaiting approval is lost on restart.
+        # Значение показывается, потому что влияет на гарантию API: без постоянного
+        # чекпоинтера запуск в ожидании подтверждения теряется при перезапуске.
         durable_approvals=checkpointing.is_durable(),
         authentication=settings.auth_enabled,
     )

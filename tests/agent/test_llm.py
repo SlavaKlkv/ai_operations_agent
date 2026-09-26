@@ -23,26 +23,22 @@ class Answer(BaseModel):
     confident: bool
 
 
-def test_no_credentials_means_no_model_not_an_error():
-    """The deterministic path is a supported mode, so this must not raise."""
-    assert build_chat_model(Settings(anthropic_api_key=None)) is None
-
-
-def test_llm_can_be_switched_off_even_with_credentials():
-    settings = Settings(anthropic_api_key="sk-test", llm_enabled=False)
+def test_llm_can_be_switched_off_without_contacting_ollama():
+    settings = Settings(llm_enabled=False)
     assert build_chat_model(settings) is None
 
 
 def test_configured_model_is_built_lazily():
-    model = build_chat_model(Settings(anthropic_api_key="sk-test", llm_model="claude-opus-5"))
+    model = build_chat_model(
+        Settings(
+            llm_enabled=True,
+            llm_model="qwen3.8:27b",
+            ollama_base_url="http://ollama.test:11434",
+        )
+    )
     assert model is not None
-    assert model.model == "claude-opus-5"
-
-
-def test_the_api_key_does_not_leak_through_settings_repr():
-    settings = Settings(anthropic_api_key="sk-ant-supersecret")
-    assert "supersecret" not in repr(settings)
-    assert "supersecret" not in str(settings.model_dump())
+    assert model.model == "qwen3.8:27b"
+    assert model.base_url == "http://ollama.test:11434"
 
 
 async def test_provider_errors_are_translated_to_one_exception_type():

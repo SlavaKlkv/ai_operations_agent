@@ -13,22 +13,22 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:  # pragma: no cover - import cycle only matters to type checkers
+if TYPE_CHECKING:  # pragma: no cover — цикл импорта важен только для проверки типов
     from mcp.server.mcpserver import MCPServer
 
 
 class Transport(StrEnum):
-    #: Launch the server as a subprocess and speak over its stdin/stdout.
+    #: Запустить сервер подпроцессом и общаться через stdin/stdout.
     STDIO = "stdio"
-    #: Connect to an already-running server over HTTP.
+    #: Подключиться по HTTP к уже запущенному серверу.
     HTTP = "http"
-    #: Run the server object inside this process, still over the protocol.
+    #: Запустить объект сервера в текущем процессе, сохранив протокол.
     #:
-    #: Not a shortcut past MCP: the same client, the same JSON-RPC, the same
-    #: tool discovery and annotations — only the transport differs. It exists
-    #: because spawning four subprocesses per test is slow enough to discourage
-    #: testing the integration layer at all, and an untested integration layer
-    #: is the one that breaks.
+    #: Это не обход MCP: тот же клиент, JSON-RPC, обнаружение и аннотации
+    #: инструментов; отличается только транспорт. Режим нужен,
+    #: потому что четыре подпроцесса на тест настолько замедляют выполнение, что
+    #: иначе тесты слоя интеграции стали бы слишком медленными, а непроверенный
+    #: слой интеграции обязательно сломается.
     IN_PROCESS = "in_process"
 
 
@@ -38,21 +38,21 @@ class ServerSpec:
 
     name: str
     transport: Transport
-    #: For stdio: the command and arguments to launch.
+    #: Для stdio: команда запуска и аргументы.
     command: tuple[str, ...] = ()
-    #: For HTTP: the endpoint URL.
+    #: Для HTTP: URL эндпоинта.
     url: str | None = None
-    #: For IN_PROCESS: a factory returning the server object to connect to.
+    #: Для IN_PROCESS: фабрика объекта сервера для подключения.
     factory: Callable[[], MCPServer] | None = None
     env: dict[str, str] = field(default_factory=dict)
-    #: Tools this deployment accepts from the server. Empty means "all the
-    #: server offers"; a non-empty set is an allowlist enforced on discovery,
-    #: so a server that grows a new tool cannot silently gain reach.
+    #: Инструменты сервера, разрешённые в этом развёртывании. Пустое значение
+    #: означает все предлагаемые инструменты; непустое множество — allowlist,
+    #: применяемый при обнаружении, чтобы новый инструмент не получил доступ незаметно.
     allowed_tools: frozenset[str] = frozenset()
-    #: Seconds to wait for one call before giving up on this server.
+    #: Время ожидания одного вызова до отказа от сервера, в секундах.
     timeout_seconds: float = 15.0
-    #: Whether the run can proceed without this server. A monitoring server is
-    #: load-bearing; a knowledge server is not.
+    #: Может ли запуск продолжиться без этого сервера. Сервер мониторинга критичен,
+    #: а сервер знаний — нет.
     required: bool = True
 
     def permits(self, tool_name: str) -> bool:
@@ -106,7 +106,7 @@ def default_servers() -> tuple[ServerSpec, ...]:
             "app.mcp_servers.knowledge",
             name="knowledge",
             allowed_tools=frozenset({"search_runbooks", "get_runbook"}),
-            # An investigation without a runbook is worse, not impossible.
+            # Расследование без ранбука хуже, но всё же возможно.
             required=False,
         ),
     )

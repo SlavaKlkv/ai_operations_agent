@@ -6,34 +6,34 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+# Объект конфигурации Alembic предоставляет доступ
+# к значениям используемого ini-файла.
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
+# Применить конфигурацию логирования Python.
+# Эта строка настраивает логгеры.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
+# Здесь указывается объект MetaData модели
+# для поддержки autogenerate.
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from app.core.config import get_settings
-from app.db import models  # noqa: F401  - imported for its side effect: table registration
+from app.db import models  # noqa: F401 — импорт регистрирует таблицы побочным эффектом
 from app.db.base import Base
 
 target_metadata = Base.metadata
 
-# The DSN lives in the environment, never in alembic.ini. Tests override it
-# through ``config.attributes`` to run the same migrations against SQLite.
+# DSN хранится в окружении, а не в alembic.ini. Тесты переопределяют его через
+# ``config.attributes``, чтобы выполнять те же миграции в SQLite.
 config.set_main_option(
     "sqlalchemy.url",
     config.attributes.get("sqlalchemy_url") or str(get_settings().postgres_dsn),
 )
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
+# Другие значения конфигурации, необходимые env.py,
+# можно получить так:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 

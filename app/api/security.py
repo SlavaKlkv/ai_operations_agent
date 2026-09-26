@@ -38,8 +38,8 @@ from app.db.models import User
 log = structlog.get_logger(__name__)
 
 TOKEN_BYTES = 32
-#: Prefix so a leaked token is recognisable in a log or a paste, and so
-#: secret scanners have something to match on.
+#: Префикс делает утёкший токен узнаваемым в логах и вставленном тексте,
+#: а сканерам секретов даёт шаблон для поиска.
 TOKEN_PREFIX = "aoa_"
 
 bearer = HTTPBearer(auto_error=False, description="API token issued with `make token`.")
@@ -51,7 +51,7 @@ class Principal:
 
     email: str
     can_approve: bool
-    #: True when authentication is switched off for local development.
+    #: True, если аутентификация отключена для локальной разработки.
     anonymous: bool = False
 
     @property

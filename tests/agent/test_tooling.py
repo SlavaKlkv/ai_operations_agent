@@ -45,7 +45,7 @@ async def test_permanent_failure_stops_after_the_budget():
 
     outcome = await call_tool("broken", broken, retries=2)
     assert not outcome.ok
-    assert attempts["n"] == 3  # first attempt + 2 retries
+    assert attempts["n"] == 3  # первая попытка и два повтора
     assert outcome.record.error.startswith("ValueError")
 
 

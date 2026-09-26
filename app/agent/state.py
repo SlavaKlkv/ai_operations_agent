@@ -55,8 +55,8 @@ class ToolCallRecord(BaseModel):
     error: str | None = None
     result_summary: str = ""
     attempt: int = 1
-    #: True when the result came from the cache rather than the provider.
-    #: Kept on the record so evaluation can tell a cheap run from a fast one.
+    #: True, если результат получен из кэша, а не от провайдера.
+    #: Сохраняется, чтобы оценка отличала дешёвый запуск от просто быстрого.
     cached: bool = False
 
 
@@ -99,14 +99,14 @@ class RunError(BaseModel):
 class AgentState(TypedDict, total=False):
     """LangGraph state. Reducers make concurrent/looping writes additive."""
 
-    # Input
+    # Входные данные
     run_id: str
     task: str
     target_service: str | None
     window_start: datetime | None
     window_end: datetime | None
 
-    # Accumulated observations
+    # Накопленные наблюдения
     observations: Annotated[list[dict[str, Any]], operator.add]
     tool_calls: Annotated[list[ToolCallRecord], operator.add]
     evidence: Annotated[list[Evidence], operator.add]
@@ -114,37 +114,37 @@ class AgentState(TypedDict, total=False):
     context: CollectedContext
     errors: Annotated[list[RunError], operator.add]
 
-    # Control
+    # Управление
     current_step: str
     step_count: int
     tool_call_count: int
     status: RunStatus
-    #: How many tool calls the guardrails still allow. Shown to the planner so
-    #: it can spend a scarce budget on the evidence that matters most.
+    #: Сколько вызовов ещё разрешают ограничения. Планировщик видит значение,
+    #: чтобы тратить ограниченный бюджет на наиболее важные доказательства.
     tool_budget_remaining: int
-    #: Iterations of the select → execute → evaluate cycle.
+    #: Итерации цикла «выбор → выполнение → оценка».
     loop_iterations: int
-    #: What the planner asked for, between the decision and its execution.
+    #: Запрос планировщика между принятием решения и его выполнением.
     pending_requests: list[ToolRequest]
-    #: Why the planner stopped, in its own words. Part of the audit answer to
-    #: "why did the agent conclude here".
+    #: Объяснение остановки словами планировщика. Часть ответа аудита на вопрос,
+    #: почему агент завершил работу именно здесь.
     planner_rationale: str
 
-    # Model accounting
+    # Учёт использования модели
     llm_calls: Annotated[int, operator.add]
     input_tokens: Annotated[int, operator.add]
     output_tokens: Annotated[int, operator.add]
 
-    # Output
+    # Выходные данные
     analysis: IncidentAnalysis | None
     proposed_actions: list[ProposedAction]
     approval_state: ApprovalState
-    #: Who decided, and what they said. Recorded on the run because "the
-    #: agent created an issue" is never a complete answer to "who did this".
+    #: Кто принял решение и что ответил. Сохраняется в запуске, потому что фраза
+    #: «агент создал задачу» не отвечает полностью на вопрос «кто это сделал».
     approved_by: str | None
     approval_note: str
-    #: What the executed write returned, so the effect is linked to its
-    #: approval rather than only to a log line.
+    #: Результат выполненной записи связывает эффект с подтверждением,
+    #: а не только со строкой журнала.
     action_result: dict[str, Any] | None
     final_result: str | None
 

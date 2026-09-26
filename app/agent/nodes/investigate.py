@@ -37,12 +37,12 @@ from app.services.cache import ToolCache
 
 log = structlog.get_logger(__name__)
 
-#: Hard ceiling on cycles, independent of the tool budget. A planner that asks
-#: for nothing executable would otherwise spin without spending the budget.
+#: Жёсткий предел циклов, не зависящий от бюджета инструментов. Иначе планировщик
+#: без выполнимых запросов мог бы крутиться, не расходуя бюджет.
 MAX_LOOP_ITERATIONS = 4
 
-#: Which kind of evidence each tool produces. Used to classify findings so the
-#: analysis can separate a symptom (metric, log) from a cause (commit, deploy).
+#: Тип доказательства от каждого инструмента. Нужен для классификации находок,
+#: чтобы анализ отличал симптом (метрика, лог) от причины (коммит, деплой).
 EVIDENCE_KINDS: dict[str, EvidenceKind] = {
     "get_service_metrics": EvidenceKind.METRIC,
     "get_recent_alerts": EvidenceKind.ALERT,
@@ -147,8 +147,8 @@ def make_execute_tool_node(
         )
         defaults = _window_defaults(state)
 
-        # Copy-on-write: LangGraph merges returned values, and mutating the
-        # context in place would make a partial failure invisible in the diff.
+        # Копирование при записи: LangGraph объединяет возвращённые значения,
+        # а изменение контекста на месте скрыло бы частичный сбой в разнице.
         context = (state.get("context") or CollectedContext()).model_copy(deep=True)
 
         records, evidence, observations, errors = [], [], [], []
@@ -238,8 +238,8 @@ def make_route_after_evaluation(guardrails: Guardrails):
             ),
             None,
         )
-        # A round that produced nothing usable will not produce anything next
-        # time either — the inputs to the planner are unchanged.
+        # Раунд без полезного результата не даст его и при повторе: входные данные
+        # планировщика не изменились.
         if last is not None and not last.get("produced_evidence"):
             return "generate_analysis"
         return "select_tool"
@@ -285,7 +285,7 @@ def _absorb(context: CollectedContext, invocation: ToolInvocation) -> None:
                 context.alerts, result.alerts, key=lambda a: (a.name, a.fired_at)
             )
         case PullRequestResult():
-            pass  # Pull requests inform the narrative; nothing correlates on them yet.
+            pass  # Pull request дополняют описание; корреляции по ним пока нет.
 
 
 def _merge[T](existing: list[T], incoming: tuple[T, ...], *, key) -> list[T]:

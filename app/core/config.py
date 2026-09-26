@@ -3,7 +3,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, PostgresDsn, RedisDsn, SecretStr, computed_field
+from pydantic import Field, PostgresDsn, RedisDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,35 +22,33 @@ class Settings(BaseSettings):
     redis_url: RedisDsn = Field(default="redis://localhost:6379/0")  # type: ignore[assignment]
 
     # ── LLM ──────────────────────────────────────────────────────────────────
-    #: The agent runs its deterministic path when this is off or unauthenticated,
-    #: so an absent key degrades the system rather than breaking it.
+    #: При отключении агент выполняет детерминированный сценарий.
     llm_enabled: bool = True
-    llm_model: str = "claude-opus-5"
+    llm_model: str = "qwen3.8:27b"
+    ollama_base_url: str = "http://localhost:11434"
     llm_max_tokens: int = 4096
     llm_timeout_seconds: float = 60.0
-    llm_max_retries: int = 2
-    anthropic_api_key: SecretStr | None = None
 
-    #: Require an API token. Off only for local development — /health reports
-    #: it, so a deployment that leaves it off by accident can be noticed.
+    #: Требовать API-токен. Отключается только для локальной разработки; /health
+    #: показывает настройку, чтобы случайное отключение было заметно.
     auth_enabled: bool = True
 
-    #: Cache read-tool results between runs. Off, every investigation pays the
-    #: full round trip to every external system it consults.
+    #: Кэшировать результаты инструментов чтения между запусками. При отключении
+    #: каждое расследование полностью обращается ко всем внешним системам.
     cache_enabled: bool = True
-    #: Short on purpose: a window that includes "now" is still moving.
+    #: Интервал намеренно короткий: окно, включающее текущий момент, ещё меняется.
     cache_ttl_seconds: int = 60
 
-    #: Where paused runs are kept. "postgres" is the only durable option;
-    #: "memory" is for tests and single-process demos.
+    #: Где хранятся приостановленные запуски. Только "postgres" обеспечивает сохранность;
+    #: "memory" предназначен для тестов и однопроцессных демо.
     checkpointer: Literal["postgres", "memory"] = "postgres"
 
-    # ── MCP integration layer ────────────────────────────────────────────────
-    #: Off in tests and for a minimal deployment: the agent then runs against
-    #: in-process mock providers instead of four MCP servers.
+    # ── Слой интеграции MCP ──────────────────────────────────────────────────
+    #: Отключается в тестах и минимальном развёртывании: тогда агент работает с
+    #: встроенными тестовыми провайдерами вместо четырёх MCP-серверов.
     mcp_enabled: bool = True
 
-    # ── Agent guardrails ─────────────────────────────────────────────────────
+    # ── Ограничения агента ───────────────────────────────────────────────────
     max_tool_calls: int = 12
     max_workflow_steps: int = 30
     tool_timeout_seconds: float = 15.0

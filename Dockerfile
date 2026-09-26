@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# ── Build stage: resolve dependencies into a virtualenv ──────────────────────
+# ── Этап сборки: установка зависимостей в виртуальное окружение ──────────────
 FROM python:3.13-slim AS builder
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
@@ -12,25 +12,25 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /build
 
-# Dependencies first, in their own layer: they change far less often than the
-# application, so a code edit does not re-resolve the whole tree.
+# Зависимости устанавливаются первыми, в отдельном слое: они меняются гораздо
+# реже приложения, поэтому правка кода не пересобирает всё дерево зависимостей.
 COPY pyproject.toml uv.lock README.md ./
 RUN uv sync --locked --no-dev --no-install-project
 
 COPY app ./app
-# --locked, so the image is built from the same versions CI tested. A drift
-# between pyproject and the lockfile fails the build instead of silently
-# shipping something nobody ran.
+# Флаг --locked гарантирует сборку из версий, проверенных CI. Расхождение между
+# pyproject и lock-файлом прерывает сборку вместо незаметной поставки
+# непроверенной конфигурации.
 RUN uv sync --locked --no-dev --no-editable
 
-# ── Runtime stage ────────────────────────────────────────────────────────────
+# ── Этап выполнения ──────────────────────────────────────────────────────────
 FROM python:3.13-slim AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH"
 
-# Running as a non-root user: the agent must never need host privileges.
+# Запуск от непривилегированного пользователя: агенту не нужны права хоста.
 RUN useradd --create-home --uid 1000 agent
 WORKDIR /srv/app
 

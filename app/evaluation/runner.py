@@ -54,8 +54,8 @@ async def run_scenario(
     state = await graph.ainvoke(initial_state(run_id, expected.task), config)
 
     if state.get("__interrupt__"):
-        # The harness plays the reviewer. Answering yes is what lets the suite
-        # check that the write happened *and* that it needed a decision first.
+        # Тестовый стенд играет роль проверяющего. Ответ «да» позволяет проверить,
+        # что запись выполнена и перед ней действительно требовалось решение.
         state = await graph.ainvoke(
             Command(resume={"approved": True, "decided_by": "evaluation-harness"}), config
         )

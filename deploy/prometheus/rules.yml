@@ -1,8 +1,7 @@
-# Alerting rules.
+# Правила оповещений.
 #
-# The first rule is the one that matters: a write that ran without an
-# approval is a breach of the system's central guarantee, so it pages
-# immediately rather than waiting for a rate to build up.
+# Первое правило — ключевое: запись без подтверждения нарушает основную гарантию
+# системы, поэтому оповещение отправляется сразу, без ожидания накопления частоты.
 
 groups:
   - name: ai-operations-agent

@@ -53,7 +53,7 @@ def _error_group() -> ErrorGroup:
     )
 
 
-# ── Heuristic planner ────────────────────────────────────────────────────────
+# ── Эвристический планировщик ───────────────────────────────────────────────
 
 
 async def test_heuristic_asks_for_the_first_missing_signal(monitoring, code, logs):
@@ -118,7 +118,7 @@ async def test_heuristic_gives_up_without_a_target_service(monitoring, code, log
     assert "no target service" in plan.rationale
 
 
-# ── LLM planner ──────────────────────────────────────────────────────────────
+# ── LLM-планировщик ─────────────────────────────────────────────────────────
 
 
 async def test_llm_planner_turns_tool_calls_into_requests(monitoring, code, logs):
@@ -160,7 +160,7 @@ async def test_llm_planner_caps_how_much_one_turn_may_request(monitoring, code, 
 
 
 async def test_llm_planner_failure_is_reported_not_raised(monitoring, code, logs):
-    model = ScriptedChatModel(responses=[])  # runs out immediately
+    model = ScriptedChatModel(responses=[])  # ответы заканчиваются сразу
     plan = await LLMPlanner(model).plan(_state(), _tools(monitoring, code, logs))
     assert plan.is_done
     assert plan.error is not None

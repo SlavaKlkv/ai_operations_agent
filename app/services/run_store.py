@@ -135,9 +135,9 @@ async def _persist(session: AsyncSession, run: AgentRun, state: AgentState) -> A
     run.finished_at = None if run.status is RunStatus.AWAITING_APPROVAL else utcnow()
     run.state_snapshot = serialise_state(state)
 
-    # Only tool calls this invocation has not already stored. Resuming after
-    # an approval replays the whole state, so appending blindly would double
-    # every row the investigation produced before it paused.
+    # Сохраняем только новые для этого вызова обращения к инструментам. После
+    # подтверждения состояние воспроизводится целиком, поэтому без проверки
+    # задвоились бы все строки, созданные до паузы расследования.
     already = (
         await session.scalar(
             select(func.count()).select_from(ToolCall).where(ToolCall.run_id == run.id)
@@ -227,10 +227,9 @@ async def get_run(session: AsyncSession, run_id: uuid.UUID) -> AgentRun | None:
             selectinload(AgentRun.analyses),
             selectinload(AgentRun.approvals),
         )
-        # Without this, a run already in the session's identity map comes back
-        # with the collections it had when it was first loaded. Reading a run
-        # straight after resuming it would then show the state from before the
-        # approved action ran — stale in exactly the moment that matters.
+        # Иначе запуск из identity map сессии вернётся с коллекциями на момент
+        # первой загрузки. Сразу после возобновления будет показано состояние
+        # до подтверждённого действия — устаревшее именно в критический момент.
         .execution_options(populate_existing=True)
     )
     return (await session.execute(stmt)).scalar_one_or_none()
