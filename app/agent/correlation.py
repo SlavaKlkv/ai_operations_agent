@@ -13,11 +13,11 @@ from datetime import datetime, timedelta
 
 from app.domain.models import Commit, Deployment, MetricSeries
 
-#: A change is only called a spike if it is both a large relative jump and an
-#: absolute move worth paging someone about.
+#: Изменение считается всплеском только при большом относительном и абсолютном
+#: изменении, ради которого стоит отправить оповещение.
 DEFAULT_RELATIVE_JUMP = 3.0
 DEFAULT_ABSOLUTE_FLOOR = 0.01
-#: How far back a deployment may be and still be considered a candidate cause.
+#: Насколько ранний деплой ещё может считаться возможной причиной.
 DEFAULT_CAUSAL_WINDOW = timedelta(minutes=30)
 
 
@@ -57,7 +57,7 @@ def detect_spike(
     for index, point in enumerate(points[baseline_points:], start=baseline_points):
         if point.value < absolute_floor or point.value / baseline < relative_jump:
             continue
-        # Require the next sample to stay elevated, so a single blip is ignored.
+        # Следующая точка тоже должна быть повышенной, чтобы игнорировать единичный всплеск.
         following = points[index + 1] if index + 1 < len(points) else point
         if following.value / baseline < relative_jump:
             continue

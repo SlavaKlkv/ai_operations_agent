@@ -27,9 +27,9 @@ from pydantic import BaseModel, Field
 
 from app.mcp_servers.common import ToolFailure, iso
 
-#: Ceiling on issues one server process will create. A runaway agent is a
-#: realistic failure mode; an issue tracker with a thousand duplicates is a
-#: real cost. The cap is deliberately low for a demonstration deployment.
+#: Максимум задач, создаваемых одним процессом сервера. Вышедший из-под контроля
+#: агент — реальный сценарий сбоя, а тысяча дублей в трекере имеет цену.
+#: Для демонстрационного развёртывания предел намеренно низкий.
 MAX_ISSUES_PER_PROCESS = 20
 MAX_TITLE_CHARS = 200
 MAX_BODY_CHARS = 20_000

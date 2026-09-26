@@ -8,7 +8,7 @@ dist/
 .venv/
 venv/
 
-# Tooling caches
+# Кэши инструментов
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
@@ -16,23 +16,23 @@ venv/
 htmlcov/
 coverage.xml
 
-# Environment
+# Окружение
 .env
 .env.*
 !.env.example
 
-# Editors / OS
+# Редакторы и ОС
 .idea/
 .vscode/
 .DS_Store
 
-# Runtime artifacts
+# Артефакты времени выполнения
 *.db
 *.sqlite3
 logs/
 data/local/
 
-# Agent instructions (local only)
+# Инструкции для агента (только локальные)
 CLAUDE.md
 AGENTS.md
 TASK.md

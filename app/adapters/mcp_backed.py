@@ -44,8 +44,8 @@ from app.mcp.client import MCPToolPool, ToolCallFailed
 
 log = structlog.get_logger(__name__)
 
-#: The unit each metric is reported in. The servers return values, not units;
-#: naming them here keeps the rendering honest without a protocol change.
+#: Единицы измерения каждой метрики. Серверы возвращают значения без единиц;
+#: явное описание здесь сохраняет корректность отображения без изменения протокола.
 METRIC_UNITS = {
     "error_rate": "ratio",
     "request_rate": "rps",

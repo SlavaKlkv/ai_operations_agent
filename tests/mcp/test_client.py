@@ -180,7 +180,7 @@ async def test_an_optional_server_that_will_not_start_leaves_the_pool_healthy(sc
         broken = next(s for s in connected.status if s.name == "knowledge")
         assert broken.connected is False
         assert "will not start" in broken.error
-        # The rest of the integration layer is unaffected.
+        # Остальная часть слоя интеграции не затронута.
         assert await connected.call("get_error_rate", {"service": "billing-service", **WINDOW})
 
 
@@ -227,7 +227,7 @@ async def test_closing_the_pool_releases_every_connection(specs):
     assert connected.tools() == ()
 
 
-# ── HTTP surface ─────────────────────────────────────────────────────────────
+# ── HTTP-интерфейс ──────────────────────────────────────────────────────────
 
 
 async def test_the_integrations_endpoint_reports_discovered_tools(specs):

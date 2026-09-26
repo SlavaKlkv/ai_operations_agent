@@ -38,8 +38,8 @@ from app.domain.models import Evidence, EvidenceKind, IncidentAnalysis
 
 log = structlog.get_logger(__name__)
 
-#: Below this the agent reports what it found and proposes nothing. An issue
-#: filed on a guess costs someone an investigation to disprove.
+#: Ниже этого порога агент только сообщает о находках и ничего не предлагает.
+#: задача, созданная по догадке, вынуждает кого-то проводить опровержение.
 PROPOSAL_CONFIDENCE_FLOOR = 0.6
 
 MAX_BODY_CHARS = 20_000
@@ -199,9 +199,9 @@ def make_execute_action_node(registry: ToolRegistry, guardrails: Guardrails):
         action = (state.get("proposed_actions") or [None])[0]
 
         if state.get("approval_state") is not ApprovalState.APPROVED or action is None:
-            # Defence in depth: the routing already prevents this, and the
-            # executor would refuse anyway. Three independent checks, because
-            # this is the one place the system changes something outside it.
+            # Эшелонированная защита: маршрутизация уже запрещает это, а исполнитель
+            # всё равно откажет. Нужны три независимые проверки, потому что только
+            # здесь система изменяет что-либо за своими пределами.
             return AgentState(
                 current_step="execute_action",
                 step_count=step,
@@ -215,8 +215,8 @@ def make_execute_action_node(registry: ToolRegistry, guardrails: Guardrails):
                 ],
             )
 
-        # The permission is granted here, for this step, and is not visible to
-        # any other node: the investigation loop shares the original policy.
+        # Разрешение выдаётся здесь только для этого шага и не видно другим узлам:
+        # цикл расследования продолжает использовать исходную политику.
         approved_policy = guardrails.with_write_approved().narrowed_to({action.tool})
         executor = ToolExecutor.resume(registry, approved_policy, state.get("tool_calls", []))
 

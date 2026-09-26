@@ -51,15 +51,15 @@ class Guardrails:
     max_tool_calls: int = 12
     max_workflow_steps: int = 30
     tool_timeout_seconds: float = 15.0
-    #: Additional attempts after the first for a failed tool call.
+    #: Дополнительные попытки после первого неудачного вызова инструмента.
     tool_retries: int = 1
-    #: ``None`` means "every tool in the registry"; a set narrows it further.
+    #: ``None`` означает все инструменты реестра; множество сужает список.
     allowlist: frozenset[str] | None = None
-    #: Write tools stay unreachable until an approval row says otherwise.
+    #: Инструменты записи недоступны до появления разрешающей записи подтверждения.
     allow_write: bool = False
-    #: How many times the identical call may be repeated before it is refused.
+    #: Сколько раз можно повторить одинаковый вызов до отказа.
     max_identical_calls: int = 2
-    #: Tools that may never run in this deployment, whatever else allows them.
+    #: Инструменты, запрещённые в этом развёртывании независимо от других разрешений.
     denylist: frozenset[str] = field(default_factory=frozenset)
 
     def permits(self, tool: AgentTool[Any, Any]) -> bool:

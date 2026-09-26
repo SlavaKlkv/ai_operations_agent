@@ -21,25 +21,25 @@ TASK = "После последнего релиза billing-service резко 
 def offline(monkeypatch):
     """No test may reach a real model provider.
 
-    Without this, a developer with ANTHROPIC_API_KEY exported would silently
-    run the suite against a paid API — slowly, nondeterministically, and with
-    results that differ from CI. Tests that want a model inject a scripted one.
+    Without this, a developer with Ollama running would silently run the suite
+    against a real model — slowly, nondeterministically, and with results that
+    differ from CI. Tests that want a model inject a scripted one.
     """
     from app.api.routes.runs import get_graph
     from app.core.config import get_settings
 
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("LLM_ENABLED", "false")
     monkeypatch.setenv("APP_ENV", "test")
-    # Spawning four MCP subprocesses per app fixture would make the suite slow
-    # for no gain: the integration layer has its own tests, which connect a
-    # real client to a real server in-process.
+    # Запуск четырёх подпроцессов MCP для каждой фикстуры приложения замедлил бы
+    # набор тестов без пользы: слой интеграции отдельно проверяется настоящими
+    # клиентом и сервером внутри одного процесса.
     monkeypatch.setenv("MCP_ENABLED", "false")
     monkeypatch.setenv("CHECKPOINTER", "memory")
     monkeypatch.setenv("CACHE_ENABLED", "false")
     get_settings.cache_clear()
-    # The API compiles one graph per process and caches it. That graph holds
-    # the mock issue tracker, whose contents would otherwise leak from one
-    # test into the next — a duplicate-title refusal in an unrelated test.
+    # API компилирует и кэширует один граф на процесс. Граф хранит тестовый трекер
+    # задач, содержимое которого иначе протекало бы между тестами и вызывало
+    # отказ из-за повторяющегося заголовка в несвязанном тесте.
     get_graph.cache_clear()
     yield
     get_settings.cache_clear()
@@ -81,10 +81,9 @@ async def db_session():
     """
     from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-    # Importing the models is what populates Base.metadata. Relying on some
-    # other module to have imported them first makes table creation depend on
-    # test collection order, which is how this fixture silently produced an
-    # empty database.
+    # Именно импорт моделей заполняет Base.metadata. Если полагаться на импорт
+    # из другого модуля, создание таблиц зависит от порядка сбора тестов — так
+    # эта фикстура раньше незаметно создавала пустую базу.
     import app.db.models  # noqa: F401
     from app.db.base import Base
 

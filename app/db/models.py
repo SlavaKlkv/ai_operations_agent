@@ -31,7 +31,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.agent.state import ApprovalState, RunStatus
 from app.db.base import Base, TimestampMixin, new_uuid
 
-#: JSONB on PostgreSQL, plain JSON on SQLite so tests run without a server.
+#: JSONB в PostgreSQL и обычный JSON в SQLite, чтобы тесты работали без сервера.
 JSONType = JSON().with_variant(JSONB(), "postgresql")
 UUIDType = UUID(as_uuid=True)
 
@@ -43,10 +43,10 @@ class User(Base, TimestampMixin):
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False)
     display_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    #: Who may approve write actions. Read-only users can still start runs.
+    #: Кто может подтверждать запись. Пользователи только для чтения могут запускать задачи.
     can_approve: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    #: SHA-256 of the API token. The token itself is shown once, at issue, and
-    #: never stored — a leaked database must not hand over working credentials.
+    #: SHA-256 API-токена. Сам токен показывается один раз при выпуске и не хранится,
+    #: чтобы утечка базы не раскрыла действующие учётные данные.
     api_token_hash: Mapped[str | None] = mapped_column(
         String(64), unique=True, nullable=True, index=True
     )
@@ -80,7 +80,7 @@ class AgentRun(Base, TimestampMixin):
     total_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     final_result: Mapped[str | None] = mapped_column(Text, nullable=True)
-    #: Full terminal state, so a run can be inspected without replaying it.
+    #: Полное конечное состояние для проверки запуска без повторного выполнения.
     state_snapshot: Mapped[dict] = mapped_column(JSONType, nullable=False, default=dict)
 
     user: Mapped[User | None] = relationship(back_populates="runs")
@@ -116,8 +116,8 @@ class ToolCall(Base):
     ok: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     result_summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    #: Served from cache rather than the provider. Kept so an audit can tell
-    #: what the agent actually asked an external system, and what it reused.
+    #: Получено из кэша, а не от провайдера. Позволяет аудиту различить реальные
+    #: обращения агента к внешней системе и повторно использованные данные.
     cached: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     run: Mapped[AgentRun] = relationship(back_populates="tool_calls")
@@ -134,7 +134,7 @@ class IncidentAnalysisRecord(Base, TimestampMixin):
     incident_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     confidence: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    #: The validated IncidentAnalysis, stored verbatim.
+    #: Проверенный IncidentAnalysis, сохранённый без изменений.
     payload: Mapped[dict] = mapped_column(JSONType, nullable=False, default=dict)
 
     run: Mapped[AgentRun] = relationship(back_populates="analyses")
@@ -164,7 +164,7 @@ class Approval(Base, TimestampMixin):
     decided_by: Mapped[str | None] = mapped_column(String(320), nullable=True)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     decision_note: Mapped[str | None] = mapped_column(Text, nullable=True)
-    #: Result of the action once executed, so approval and effect stay linked.
+    #: Результат выполненного действия, связывающий подтверждение с эффектом.
     execution_result: Mapped[dict | None] = mapped_column(JSONType, nullable=True)
 
     run: Mapped[AgentRun] = relationship(back_populates="approvals")

@@ -68,7 +68,7 @@ async def test_correlate_blames_the_release_that_preceded_the_spike(
 
     hypothesis = update["hypotheses"][0]
     assert "v1.8.4" in hypothesis.statement
-    assert "v3.1.0" not in hypothesis.statement  # the decoy release must not be blamed
+    assert "v3.1.0" not in hypothesis.statement  # ложный релиз не должен стать причиной
     assert hypothesis.confidence >= 0.8
     assert any(e.kind is EvidenceKind.COMMIT for e in update["evidence"])
 
@@ -78,7 +78,7 @@ async def test_correlate_reports_no_signal_on_a_flat_service(fresh_state, monito
     state = {**state, **await analyze_task_node(state)}
     state["target_service"] = "search-service"
     collect = make_collect_context_node(monitoring, code, logs)
-    # search-service only has an error_rate series; the others fail, which is fine.
+    # У search-service есть только ряд error_rate; сбой остальных рядов допустим.
     state = {**state, **await collect(state)}
     update = await make_correlate_node(code)(state)
     assert update["hypotheses"] == []

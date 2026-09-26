@@ -27,28 +27,28 @@ class EvalScenario:
     task: str
     description: str
 
-    # ── What it should conclude ──────────────────────────────────────────────
+    # ── Какой вывод ожидается ────────────────────────────────────────────────
     expected_service: str
-    #: Substrings that must all appear in the leading hypothesis. Kept as
-    #: substrings rather than an exact sentence so wording can change and the
-    #: claim cannot.
+    #: Подстроки, которые должны присутствовать в основной гипотезе. Используются
+    #: подстроки, а не точное предложение, чтобы формулировка могла меняться,
+    #: а неверное утверждение — нет.
     expected_in_conclusion: tuple[str, ...] = ()
-    #: Substrings that must *not* appear — this is where a plausible-sounding
-    #: wrong answer gets caught.
+    #: Подстроки, которых быть не должно: здесь правдоподобная, но неверная
+    #: правдоподобный неверный ответ был обнаружен.
     forbidden_in_conclusion: tuple[str, ...] = ()
     min_confidence: float = 0.0
     max_confidence: float = 1.0
 
-    # ── How it should get there ──────────────────────────────────────────────
+    # ── Как агент должен прийти к выводу ─────────────────────────────────────
     required_tools: frozenset[str] = frozenset()
     forbidden_tools: frozenset[str] = frozenset()
-    #: Above this, the run is spending calls it did not need.
+    #: При превышении запуск тратит лишние вызовы.
     max_tool_calls: int = 12
     max_steps: int = 30
 
-    # ── What it should do about it ───────────────────────────────────────────
+    # ── Что агент должен сделать ─────────────────────────────────────────────
     expects_proposal: bool = False
-    #: Every piece of evidence must name a tool that actually ran.
+    #: Каждое доказательство должно называть реально вызванный инструмент.
     requires_grounded_evidence: bool = True
     tags: tuple[str, ...] = field(default_factory=tuple)
 

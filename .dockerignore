@@ -1,6 +1,6 @@
-# Everything the build does not need. Without this the context includes the
-# local virtualenv — a couple of hundred megabytes shipped to the daemon on
-# every build, for files the image rebuilds from the lockfile anyway.
+# Всё, что не требуется для сборки. Без этих исключений в контекст попадает
+# локальное виртуальное окружение — несколько сотен мегабайт, отправляемых демону
+# при каждой сборке, хотя образ всё равно создаёт их из lock-файла.
 
 .venv/
 venv/
@@ -17,8 +17,8 @@ htmlcov/
 .coverage
 coverage.xml
 
-# Tests, docs and tooling are not part of the runtime image. README.md stays:
-# pyproject declares it as the project readme, so the build needs it.
+# Тесты, документация и инструменты не входят в runtime-образ. README.md остаётся:
+# он указан в pyproject как описание проекта и нужен для сборки.
 tests/
 docs/
 tools/
@@ -28,7 +28,7 @@ CLAUDE.md
 AGENTS.md
 .claude/
 
-# Secrets must never reach a build context.
+# Секреты никогда не должны попадать в контекст сборки.
 .env
 .env.*
 !.env.example

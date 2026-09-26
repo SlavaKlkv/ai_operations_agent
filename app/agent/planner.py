@@ -60,10 +60,10 @@ class Plan:
     """What the planner decided, plus what it cost to decide it."""
 
     requests: tuple[ToolRequest, ...] = ()
-    #: Why the planner stopped, when it asked for nothing.
+    #: Причина остановки планировщика, когда он ничего не запросил.
     rationale: str = ""
     usage: Usage = field(default_factory=Usage)
-    #: Set when the planner itself failed and the caller must fall back.
+    #: Устанавливается при сбое планировщика, когда вызывающей стороне нужен запасной путь.
     error: str | None = None
 
     @property
@@ -95,11 +95,10 @@ class HeuristicPlanner:
         if not service:
             return Plan(rationale="no target service was resolved, so nothing can be queried")
 
-        # A rule fires on a gap in the *context*, but a tool that returned
-        # nothing leaves that gap open — there simply were no alerts, or no
-        # commits in the window. Without this the planner would ask again on
-        # every iteration until the budget stopped it, which is the single
-        # most expensive way an agent can be wrong.
+        # Правило срабатывает на пробел в контексте, но пустой ответ инструмента
+        # оставляет этот пробел: в окне действительно могло не быть алертов или
+        # коммитов. Без этой проверки планировщик повторял бы запрос на каждой
+        # итерации до исчерпания бюджета — это самый дорогой тип ошибки агента.
         attempted = {call.tool for call in state.get("tool_calls", [])}
 
         for request, reason in self._candidates(service, context):
@@ -151,8 +150,8 @@ class LLMPlanner:
 
     def __init__(self, model: BaseChatModel, *, max_requests: int = 2) -> None:
         self._model = model
-        #: A plan is a step, not a shopping list. Capping parallel calls keeps
-        #: one confused turn from spending the whole budget.
+        #: План — это шаг, а не список покупок. Ограничение параллельных вызовов не даёт
+        #: один ошибочный шаг не потратил весь бюджет.
         self._max_requests = max_requests
 
     async def plan(self, state: AgentState, available: Sequence[AgentTool[Any, Any]]) -> Plan:

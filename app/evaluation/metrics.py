@@ -21,7 +21,7 @@ from app.evaluation.scenarios import EvalScenario
 class Outcome(StrEnum):
     PASS = "pass"
     FAIL = "fail"
-    #: The scenario says nothing about this dimension.
+    #: Сценарий ничего не определяет для этого измерения.
     SKIP = "skip"
 
 
