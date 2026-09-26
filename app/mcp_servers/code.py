@@ -93,7 +93,7 @@ def build_server(scenario: Scenario = DEFAULT_SCENARIO) -> MCPServer:
     )
     async def get_commits(service: str, start: str, end: str) -> list[CommitOut]:
         window = parse_window(start, end)
-        del service  # one repository per scenario in the synthetic world
+        del service  # один репозиторий на сценарий в синтетическом мире
         found = [c for c in scenario.commits if window[0] <= c.committed_at <= window[1]]
         return [
             CommitOut(

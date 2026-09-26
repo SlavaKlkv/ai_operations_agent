@@ -58,8 +58,8 @@ def _to_detail(run: AgentRun) -> RunDetail:
     detail.tool_calls = [
         ToolCallView.model_validate(tc) for tc in sorted(run.tool_calls, key=lambda t: t.started_at)
     ]
-    # The approval row, not the graph state, is what the API reports: it is
-    # the record that authorised the action, and it outlives the checkpoint.
+    # API возвращает запись подтверждения, а не состояние графа: именно она
+    # разрешает действие и живёт дольше чекпоинта.
     pending = next((a for a in run.approvals if a.state is ApprovalState.PENDING), None)
     if pending is not None:
         detail.pending_approval = PendingApproval(

@@ -19,7 +19,7 @@ dependencies = [
     "redis>=5.2",
     "langgraph>=0.2.50",
     "langchain-core>=0.3.20",
-    "langchain-anthropic>=0.3.0",
+    "langchain-ollama>=0.3.0",
     "mcp>=2.2",
     "langgraph-checkpoint-postgres>=3.0",
     "structlog>=24.4",
@@ -51,16 +51,16 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RUF"]
-# Cyrillic is a legitimate part of this codebase (Russian-language tasks in
-# tests and fixtures), so the ambiguous-character checks are noise here.
+# Кириллица допустима в кодовой базе (русскоязычные задачи в тестах и фикстурах),
+# поэтому проверки неоднозначных символов здесь создают только шум.
 ignore = [
     "RUF001", "RUF002", "RUF003",
-    # `Depends(...)` in a default is how FastAPI declares dependencies.
+    # FastAPI объявляет зависимости через `Depends(...)` в значении по умолчанию.
     "B008",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# Alembic generates these; reformatting them makes diffs unreadable.
+# Эти файлы создаёт Alembic; форматирование делает их изменения нечитаемыми.
 "migrations/versions/*" = ["E501"]
 "migrations/env.py" = ["E402"]
 

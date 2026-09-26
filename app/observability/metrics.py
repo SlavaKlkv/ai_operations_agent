@@ -16,13 +16,13 @@ from __future__ import annotations
 
 from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
 
-#: A dedicated registry rather than the global default: the application owns
-#: what it exposes, and a stray import should not be able to add a series.
+#: Отдельный реестр вместо глобального: приложение владеет
+#: публикуемыми метриками, и случайный импорт не должен добавлять новый ряд.
 REGISTRY = CollectorRegistry()
 
-#: Buckets tuned to what an investigation actually costs. Against mock or MCP
-#: providers a run is milliseconds; against real backends it is seconds, and
-#: anything past a minute means something is hanging.
+#: Корзины соответствуют реальной длительности расследования. С тестовыми или MCP-
+#: С тестовыми провайдерами запуск занимает миллисекунды, с реальными — секунды,
+#: а превышение минуты означает зависание.
 LATENCY_BUCKETS = (0.01, 0.05, 0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0)
 
 runs_started = Counter(
@@ -98,9 +98,9 @@ approvals = Counter(
     registry=REGISTRY,
 )
 
-#: The alert worth paging on. It should be flat at zero forever; any increase
-#: means the approval gate was bypassed, which is a security event and not a
-#: performance one.
+#: Критически важный алерт. Он всегда должен оставаться на нуле; любой рост
+#: означает обход подтверждения — событие безопасности, а не обычную
+#: проблему производительности.
 unapproved_writes = Counter(
     "agent_unapproved_writes_total",
     "Write tools that executed without an approved decision. Must stay at zero.",

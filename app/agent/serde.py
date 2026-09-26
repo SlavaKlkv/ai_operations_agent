@@ -49,9 +49,9 @@ from app.domain.models import (
     PullRequest,
 )
 
-#: Every type that can legitimately appear inside a persisted AgentState.
+#: Все типы, которые допустимы в сохранённом AgentState.
 CHECKPOINT_TYPES: tuple[type, ...] = (
-    # Workflow state
+    # Состояние воркфлоу
     AgentState,
     ApprovalState,
     CollectedContext,
@@ -60,7 +60,7 @@ CHECKPOINT_TYPES: tuple[type, ...] = (
     RunStatus,
     ToolCallRecord,
     ToolRequest,
-    # Domain
+    # Предметная область
     Alert,
     AlertSeverity,
     ChangedFile,

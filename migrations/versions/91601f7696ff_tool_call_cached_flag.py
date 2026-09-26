@@ -22,12 +22,11 @@ depends_on: str | None = None
 
 
 def upgrade() -> None:
-    # The server_default lets the column be NOT NULL on a table that already
-    # has rows — existing calls predate caching and were, by definition, not
-    # served from it. It is left in place rather than dropped afterwards:
-    # SQLite cannot ALTER a default, and the tests run these same migrations
-    # against SQLite. A false default on a boolean the application always
-    # supplies costs nothing.
+    # server_default позволяет добавить NOT NULL в таблицу с существующими строками:
+    # старые вызовы появились до кэширования и не могли быть обслужены из кэша.
+    # Значение по умолчанию сохраняется, потому что SQLite не умеет изменять его,
+    # а тесты выполняют те же миграции в SQLite. Значение false ничего не стоит,
+    # поскольку приложение всегда явно передаёт этот флаг.
     op.add_column(
         "tool_calls",
         sa.Column("cached", sa.Boolean(), nullable=False, server_default=sa.false()),

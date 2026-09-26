@@ -85,7 +85,7 @@ async def test_failure_path_records_why(monitoring, code, logs):
     assert final["errors"][0].kind == "insufficient_input"
 
 
-# ── Model-driven runs ────────────────────────────────────────────────────────
+# ── Запуски под управлением модели ──────────────────────────────────────────
 
 
 def _draft_call(**overrides):

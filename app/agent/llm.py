@@ -8,13 +8,13 @@ this codebase is plain Python on purpose.
 
 Two properties matter more than which provider is behind the interface:
 
-*The model is optional.* :func:`build_chat_model` returns ``None`` when no
-credentials are configured, and the graph then runs its deterministic path.
-Tests, CI and an offline demo all work without an API key, and — more usefully
-— a provider outage degrades the agent instead of stopping it.
+*The model is optional.* :func:`build_chat_model` returns ``None`` when model
+use is disabled, and the graph then runs its deterministic path. Tests, CI and
+an offline demo all work without an Ollama server, and — more usefully — a
+provider outage degrades the agent instead of stopping it.
 
-*Every call is bounded.* Timeouts, retries and token accounting live here, so
-no node has to remember them.
+*Every call is bounded.* Timeouts, output limits and token accounting live
+here, so no node has to remember them.
 """
 
 from __future__ import annotations
@@ -83,18 +83,13 @@ def build_chat_model(settings: Settings | None = None) -> BaseChatModel | None:
     if not settings.llm_enabled:
         log.info("llm.disabled", reason="llm_enabled=false")
         return None
-    if not settings.anthropic_api_key:
-        log.info("llm.disabled", reason="no ANTHROPIC_API_KEY configured")
-        return None
+    from langchain_ollama import ChatOllama
 
-    from langchain_anthropic import ChatAnthropic
-
-    return ChatAnthropic(
+    return ChatOllama(
         model=settings.llm_model,
-        api_key=settings.anthropic_api_key,
-        max_tokens=settings.llm_max_tokens,
-        timeout=settings.llm_timeout_seconds,
-        max_retries=settings.llm_max_retries,
+        base_url=settings.ollama_base_url,
+        num_predict=settings.llm_max_tokens,
+        client_kwargs={"timeout": settings.llm_timeout_seconds},
         stop=None,
     )
 
@@ -149,8 +144,8 @@ async def structured[T: BaseModel](
             raise StructuredOutputError(
                 f"{schema.__name__}: {exc.error_count()} field error(s)"
             ) from exc
-    # Structured-output calls do not expose usage metadata through this path;
-    # latency is still worth recording for the run's observability.
+    # Вызовы со структурированным выводом не передают здесь метаданные потребления,
+    # но задержку всё равно стоит записать для наблюдаемости запуска.
     return result, Usage(latency_ms=round(elapsed, 3))
 
 
@@ -167,7 +162,7 @@ class ScriptedChatModel(BaseChatModel):
     """
 
     responses: list[AIMessage] = Field(default_factory=list)
-    #: Every message list the model was invoked with, for prompt assertions.
+    #: Все списки сообщений, с которыми вызывалась модель, для проверки промптов.
     calls: list[list[BaseMessage]] = Field(default_factory=list)
     bound_tools: list[Any] = Field(default_factory=list)
 

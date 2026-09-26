@@ -39,7 +39,7 @@ class Palette:
     attention_soft: str
 
 
-#: GitHub's light and dark canvas palettes (Primer).
+#: Светлая и тёмная палитры холста GitHub (Primer).
 LIGHT = Palette(
     name="light",
     bg="#ffffff",
@@ -86,10 +86,10 @@ TONES = {
 }
 
 
-#: Rough per-character advance as a fraction of font size. SVG has no layout
-#: engine, so the only way to know whether a label fits is to estimate it.
-#: Cyrillic and Latin lowercase sit close enough at these sizes that one
-#: factor covers both; the value errs slightly wide, which is the safe side.
+#: Приблизительная ширина символа как доля размера шрифта. В SVG нет механизма
+#: движка, поэтому вместимость подписи можно определить только оценочно.
+#: Кириллица и латиница в нижнем регистре при этих размерах достаточно близки;
+#: один коэффициент подходит обоим и слегка завышает ширину для надёжности.
 CHAR_WIDTH = 0.55
 WIDE_CHARS = set("MWmwФШЩЫЮЖ")
 
@@ -191,8 +191,8 @@ def box(
     cx = x + w / 2
     if subtitle:
         wrapped = wrap(subtitle, w - 20, 11.5)
-        # Centre title and subtitle as one block, so a label that wraps to
-        # three lines stays inside the box instead of spilling out the bottom.
+        # Заголовок и подзаголовок центрируются единым блоком, чтобы подпись
+        # из трёх строк оставалась внутри блока и не выходила за нижнюю границу.
         top = y + h / 2 - (len(wrapped) * 14) / 2
         lines.append(
             f'<text x="{cx}" y="{top}" text-anchor="middle" font-size="14" '
@@ -292,7 +292,7 @@ def heading(p: Palette, x: float, y: float, text: str) -> str:
     )
 
 
-# ── Diagram 1: architecture ──────────────────────────────────────────────────
+# ── Диаграмма 1: архитектура ────────────────────────────────────────────────
 
 
 def architecture(p: Palette) -> Canvas:
@@ -308,14 +308,14 @@ def architecture(p: Palette) -> Canvas:
     c.add(box(p, 32, 78, 190, 54, "Инженер", "задача на естественном языке", tone="accent"))
     c.add(arrow(p, [(127, 132), (127, 168)]))
 
-    # API layer
+    # Слой API
     c.add(region(p, 32, 168, 390, 120, "FastAPI"))
     c.add(box(p, 48, 196, 172, 34, "POST /runs", mono=True, radius=6))
     c.add(box(p, 48, 238, 172, 34, "POST /approval", mono=True, radius=6, tone="attention"))
     c.add(box(p, 234, 196, 172, 34, "GET /runs/{id}/trace", mono=True, radius=6))
     c.add(box(p, 234, 238, 172, 34, "GET /metrics", mono=True, radius=6))
 
-    # Agent core
+    # Ядро агента
     c.add(region(p, 32, 308, 390, 168, "воркфлоу LangGraph"))
     c.add(box(p, 48, 336, 172, 46, "Состояние", "типизированное, в чекпоинте", tone="neutral"))
     c.add(box(p, 234, 336, 172, 46, "Ограничения", "бюджеты · allowlist · чтение/запись"))
@@ -362,7 +362,7 @@ def architecture(p: Palette) -> Canvas:
 
     c.add(arrow(p, [(227, 288), (227, 308)], tone="accent"))
 
-    # MCP boundary
+    # Граница MCP
     c.add(arrow(p, [(422, 392), (486, 392)], "MCP", tone="accent"))
     c.add(region(p, 486, 168, 482, 308, "слой интеграции MCP"))
     c.add(
@@ -401,7 +401,7 @@ def architecture(p: Palette) -> Canvas:
         )
     )
 
-    # Storage and observability
+    # Хранилище и наблюдаемость
     c.add(region(p, 486, 496, 482, 96, "состояние и телеметрия"))
     c.add(box(p, 504, 524, 140, 50, "PostgreSQL", "запуски · подтверждения\nаудит · чекпоинты"))
     c.add(box(p, 656, 524, 140, 50, "Prometheus", "стоимость запуска\nбезопасность записи"))
@@ -412,7 +412,7 @@ def architecture(p: Palette) -> Canvas:
     return c
 
 
-# ── Diagram 2: the workflow graph ────────────────────────────────────────────
+# ── Диаграмма 2: граф воркфлоу ──────────────────────────────────────────────
 
 
 def workflow(p: Palette) -> Canvas:
@@ -429,14 +429,14 @@ def workflow(p: Palette) -> Canvas:
     )
 
     w, h = 224, 50
-    main = 300  # left column: the investigation
-    right = 676  # right column: conclusion and action
+    main = 300  # левая колонка: расследование
+    right = 676  # правая колонка: вывод и действие
     mid_l, mid_r = main + w / 2, right + w / 2
 
     def node(x, y, title, subtitle="", tone="neutral"):
         c.add(box(p, x, y, w, h, title, subtitle, tone=tone, mono=True))
 
-    # ── Left column ─────────────────────────────────────────────────────────
+    # ── Левая колонка ───────────────────────────────────────────────────────
     c.add(box(p, mid_l - 38, 82, 76, 28, "START", tone="ghost", radius=14))
     c.add(arrow(p, [(mid_l, 110), (mid_l, 132)]))
 
@@ -464,7 +464,7 @@ def workflow(p: Palette) -> Canvas:
     node(main, 280, "correlate", "всплеск ↔ деплой ↔ коммит", tone="success")
     c.add(arrow(p, [(mid_l, 330), (mid_l, 362)]))
 
-    # ── The loop ────────────────────────────────────────────────────────────
+    # ── Цикл ────────────────────────────────────────────────────────────────
     c.add(region(p, main - 116, 352, w + 148, 264, "агентный цикл — ограниченный"))
     node(main, 382, "select_tool", "единственный реальный выбор модели", tone="accent")
     c.add(arrow(p, [(mid_l, 432), (mid_l, 458)]))
@@ -492,7 +492,7 @@ def workflow(p: Palette) -> Canvas:
         )
     )
 
-    # ── Right column, read bottom to top ────────────────────────────────────
+    # ── Правая колонка, читается снизу вверх ────────────────────────────────
     c.add(arrow(p, [(main + w, 559), (right + 14, 559)], "достаточно", label_dy=-9))
     node(right, 534, "generate_analysis", "структурирован · заземлён", tone="success")
     c.add(arrow(p, [(mid_r, 534), (mid_r, 504)]))
@@ -529,7 +529,7 @@ def workflow(p: Palette) -> Canvas:
     c.add(arrow(p, [(mid_r, 190), (mid_r, 164)]))
     c.add(box(p, mid_r - 32, 136, 64, 28, "END", tone="ghost", radius=14))
 
-    # ── The gate, spelled out ───────────────────────────────────────────────
+    # ── Подробное описание барьера ─────────────────────────────────────────
     c.add(box(p, 32, 634, 936, 48, "", "", tone="attention", radius=10))
     c.add(
         caption(
@@ -555,7 +555,7 @@ def workflow(p: Palette) -> Canvas:
     return c
 
 
-# ── Diagram 3: what stops the agent ──────────────────────────────────────────
+# ── Диаграмма 3: что останавливает агента ───────────────────────────────────
 
 
 def guardrails(p: Palette) -> Canvas:

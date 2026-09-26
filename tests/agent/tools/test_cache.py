@@ -187,7 +187,7 @@ async def test_caching_is_off_by_default_for_a_bare_executor():
     assert counter["calls"] == 2
 
 
-# ── With the real catalogue ──────────────────────────────────────────────────
+# ── С настоящим каталогом ───────────────────────────────────────────────────
 
 
 async def test_a_cached_metric_query_returns_the_same_typed_series(monitoring, code, logs):

@@ -12,7 +12,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.core.config import get_settings
 
-# Explicit naming so Alembic autogenerates stable constraint names.
+# Явные имена нужны, чтобы Alembic стабильно генерировал названия ограничений.
 NAMING_CONVENTION = {
     "ix": "ix_%(column_0_label)s",
     "uq": "uq_%(table_name)s_%(column_0_name)s",

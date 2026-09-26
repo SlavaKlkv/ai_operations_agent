@@ -68,7 +68,7 @@ class MockCodeProvider:
         return sorted(found, key=lambda d: d.deployed_at, reverse=True)
 
     async def get_commits(self, service: str, since: datetime, until: datetime) -> list[Commit]:
-        del service  # the synthetic world holds one repository per scenario
+        del service  # в синтетическом мире каждому сценарию соответствует один репозиторий
         found = [c for c in self._scenario.commits if since <= c.committed_at <= until]
         return sorted(found, key=lambda c: c.committed_at, reverse=True)
 

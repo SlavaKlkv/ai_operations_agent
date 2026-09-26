@@ -112,7 +112,7 @@ def test_routing_treats_a_rejection_as_a_normal_ending():
     assert route_after_approval({}) == "final_response"
 
 
-# ── The text a human approves ────────────────────────────────────────────────
+# ── Текст, который подтверждает человек ─────────────────────────────────────
 
 
 def test_the_issue_body_carries_the_evidence_and_its_provenance():
@@ -203,7 +203,7 @@ async def test_the_write_permission_covers_only_the_approved_tool(registry):
             ],
         )
     )
-    # Only the first proposal is executed, and the policy is narrowed to it.
+    # Выполняется только первое предложение, и политика сужается до него.
     assert result["tool_calls"][0].tool == "add_issue_comment"
     assert result["tool_calls"][0].ok
 
@@ -311,6 +311,6 @@ async def test_a_second_run_gets_its_own_thread(monitoring, code, logs):
     await graph.ainvoke(
         Command(resume={"approved": True, "decided_by": "a@example.com"}), run_config("run-a")
     )
-    # Approving run-a must leave run-b still waiting.
+    # Подтверждение run-a не должно снимать ожидание с run-b.
     still_waiting = await graph.aget_state(run_config("run-b"))
     assert still_waiting.interrupts

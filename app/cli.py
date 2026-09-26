@@ -35,7 +35,7 @@ async def _issue(email: str, *, can_approve: bool, display_name: str) -> int:
             session.add(user)
             action = "created"
         else:
-            # Re-keying replaces the digest, which revokes the previous token.
+            # Повторный выпуск заменяет хеш и тем самым отзывает предыдущий токен.
             user.api_token_hash = digest
             user.can_approve = can_approve
             user.is_active = True

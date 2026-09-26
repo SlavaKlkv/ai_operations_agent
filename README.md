@@ -92,12 +92,15 @@
 
 ## Быстрый старт
 
-Нужны Docker и [uv](https://docs.astral.sh/uv/).
+Нужны Docker, [uv](https://docs.astral.sh/uv/) и
+[Ollama](https://ollama.com/download).
 
 ```bash
 git clone https://github.com/SlavaKlkv/ai-operations-agent.git
 cd ai-operations-agent
-cp .env.example .env          # ANTHROPIC_API_KEY можно оставить пустым
+cp .env.example .env
+
+ollama pull qwen3.8:27b       # локальная модель, около 18 ГБ
 
 make install                  # venv и зависимости
 make up                       # PostgreSQL и Redis
@@ -249,9 +252,11 @@ read-инструментов кладутся в Redis на минуту.
 меняются; недоступный Redis — это промах, а не ошибка. Вызов, отданный из кэша, помечается
 в журнале (`cached: true`), чтобы оценка отличала дешёвый прогон от быстрого.
 
-## Работа без модели
+## Локальная модель и работа без неё
 
-`ANTHROPIC_API_KEY` можно не задавать. Тогда:
+По умолчанию агент использует локальную `qwen3.8:27b` через Ollama. Код и
+операционные данные не отправляются облачному провайдеру. Чтобы запустить агент
+без модели, задайте `LLM_ENABLED=false`. Тогда:
 
 - планировщик работает по набору правил, закрывающих пробелы в данных;
 - итоговый разбор рендерится из доказательств детерминированным кодом;
@@ -323,8 +328,8 @@ make observability      # поднимает стек вместе с Prometheus
 
 | Переменная | По умолчанию | Смысл |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | — | Пусто → детерминированный режим |
-| `LLM_MODEL` | `claude-opus-5` | Модель для планирования и разбора |
+| `LLM_MODEL` | `qwen3.8:27b` | Локальная модель для планирования и разбора |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Адрес Ollama; Docker Compose подставляет адрес хоста |
 | `LLM_ENABLED` | `true` | Принудительно выключить модель |
 | `MAX_TOOL_CALLS` | `12` | Бюджет вызовов на запуск |
 | `MAX_WORKFLOW_STEPS` | `30` | Бюджет шагов графа |
