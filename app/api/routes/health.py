@@ -23,4 +23,7 @@ async def health() -> HealthResponse:
         # чекпоинтера запуск в ожидании подтверждения теряется при перезапуске.
         durable_approvals=checkpointing.is_durable(),
         authentication=settings.auth_enabled,
+        storage_backend=settings.storage_backend,
+        cache_backend=settings.cache_backend,
+        checkpointer=settings.checkpointer,
     )
