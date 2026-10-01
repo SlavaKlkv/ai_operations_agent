@@ -52,6 +52,13 @@ def _state(**overrides):
         "task": "billing-service 5xx",
         "target_service": "billing-service",
         "analysis": _analysis(),
+        "hypotheses": [
+            Hypothesis(
+                statement="v1.8.4 broke charging",
+                confidence=0.85,
+                supporting_evidence=("billing-service/error_rate",),
+            )
+        ],
         "tool_calls": [],
         "errors": [],
         "observations": [],
@@ -84,7 +91,20 @@ async def test_a_low_confidence_analysis_proposes_nothing():
 
     assert result["proposed_actions"] == []
     assert result["approval_state"] is ApprovalState.NOT_REQUIRED
-    assert "below the" in result["observations"][0]["reason"]
+    assert "must both reach" in result["observations"][0]["reason"]
+
+
+async def test_a_model_confidence_cannot_override_a_weak_deterministic_hypothesis():
+    result = await propose_action_node(
+        _state(
+            analysis=_analysis(0.95),
+            hypotheses=[Hypothesis(statement="only a weak lead", confidence=0.3)],
+        )
+    )
+
+    assert result["proposed_actions"] == []
+    assert result["approval_state"] is ApprovalState.NOT_REQUIRED
+    assert "deterministic hypothesis 0.30" in result["observations"][0]["reason"]
 
 
 async def test_no_analysis_means_no_proposal():

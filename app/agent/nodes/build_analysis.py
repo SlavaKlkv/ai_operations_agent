@@ -2,16 +2,16 @@
 
 Two paths produce the same schema. Without a model, the report is rendered
 from evidence by plain code and every sentence is traceable by construction.
-With a model, the wording and the reasoning about which cause fits best are
-the model's — but the evidence list is not.
+With a model, it may improve the wording of observed symptoms, but the verdict,
+confidence, recommended actions, and evidence remain deterministic.
 
 That distinction is the whole grounding strategy. The model is asked for
 :class:`AnalysisDraft`, which contains no evidence field at all; the evidence
 attached to the finished analysis is the evidence the tools actually returned.
 A model cannot cite a metric it was never shown, because it is not the thing
-writing the citations. What it *can* do — claim something the evidence does
-not support — is caught separately, by checking that the references it names
-exist before the draft is accepted.
+writing the citations. References in its draft are still checked before that
+draft is used, even though the final verdict comes from deterministic
+correlation.
 """
 
 from __future__ import annotations
@@ -181,18 +181,16 @@ def _drop_ungrounded(draft: AnalysisDraft, references: set[str]) -> AnalysisDraf
 
 
 def _from_draft(state: AgentState, draft: AnalysisDraft) -> IncidentAnalysis:
-    evidence = list(state.get("evidence", []))
-    return IncidentAnalysis(
-        service=state.get("target_service") or "unknown",
-        incident_start=_incident_start(state),
-        symptoms=draft.symptoms,
-        suspected_causes=sorted(draft.suspected_causes, key=lambda h: h.confidence, reverse=True),
-        evidence=evidence,
-        confidence=draft.confidence,
-        recommended_actions=draft.recommended_actions,
-        requires_human_review=True,
-        summary=draft.summary,
-    )
+    """Combine model wording with the deterministic investigation verdict.
+
+    The model may make observed symptoms easier to read, but it must not turn
+    temporal proximity into causation, raise confidence, or make a weak lead
+    actionable. Those decisions already exist in ``state.hypotheses`` and are
+    deliberately computed by plain code in the correlation node.
+    """
+    hypotheses = list(state.get("hypotheses", []))
+    deterministic = _deterministic(state, hypotheses)
+    return deterministic.model_copy(update={"symptoms": draft.symptoms or deterministic.symptoms})
 
 
 # ── Детерминированный сценарий ───────────────────────────────────────────────

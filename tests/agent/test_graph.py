@@ -130,15 +130,15 @@ async def test_the_model_can_add_a_tool_call_and_then_conclude(monitoring, code,
     assert final["__interrupt__"]
     assert final["loop_iterations"] == 1
     assert "get_pull_request" in [c.tool for c in final["tool_calls"]]
-    assert final["analysis"].summary.startswith("billing-service v1.8.4")
+    assert "billing-service v1.8.4" in final["analysis"].summary
+    assert "9f2c41ab" in final["analysis"].summary
     assert final["llm_calls"] == 3
 
 
-async def test_a_model_that_cites_evidence_it_never_saw_loses_the_citation(
+async def test_a_model_cannot_replace_the_deterministic_verdict(
     monitoring, code, logs, fresh_state
 ):
-    """Grounding is enforced structurally: invented references are dropped and
-    the hypothesis is demoted rather than being taken at its word."""
+    """Invented causes, confidence and actions never become the run verdict."""
     model = ScriptedChatModel(
         responses=[
             AIMessage(content="Enough."),
@@ -149,7 +149,9 @@ async def test_a_model_that_cites_evidence_it_never_saw_loses_the_citation(
                         "confidence": 0.95,
                         "supporting_evidence": ["migration-log-42"],
                     }
-                ]
+                ],
+                recommended_actions=["Drop the database."],
+                confidence=0.99,
             ),
         ]
     )
@@ -158,9 +160,12 @@ async def test_a_model_that_cites_evidence_it_never_saw_loses_the_citation(
     )
 
     cause = final["analysis"].suspected_causes[0]
-    assert cause.supporting_evidence == ()
-    assert cause.confidence <= 0.4
-    assert final["analysis"].confidence <= 0.4
+    assert "v1.8.4" in cause.statement
+    assert "database migration" not in cause.statement
+    assert "migration-log-42" not in cause.supporting_evidence
+    assert cause.confidence == 0.9
+    assert final["analysis"].confidence == 0.9
+    assert final["analysis"].recommended_actions != ["Drop the database."]
 
 
 async def test_the_evidence_list_is_never_authored_by_the_model(
