@@ -22,6 +22,10 @@ async def test_sqlite_checkpointer_is_durable_and_creates_its_parent(tmp_path):
         assert type(saver).__name__ == "AsyncSqliteSaver"
         assert checkpointing.is_durable() is True
         assert database.exists()
+        journal_mode = await saver.conn.execute_fetchall("PRAGMA journal_mode")
+        busy_timeout = await saver.conn.execute_fetchall("PRAGMA busy_timeout")
+        assert journal_mode == [("wal",)]
+        assert busy_timeout == [(5000,)]
     finally:
         await checkpointing.shutdown()
 

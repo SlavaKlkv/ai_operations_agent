@@ -10,7 +10,8 @@ from sqlalchemy import DateTime, MetaData, func
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
+from app.db.sqlite import configure_engine
 
 # Явные имена нужны, чтобы Alembic стабильно генерировал названия ограничений.
 NAMING_CONVENTION = {
@@ -47,13 +48,19 @@ _engine = None
 _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 
 
+def build_engine(settings: Settings):
+    if settings.storage_backend == "sqlite":
+        settings.sqlite_path.parent.mkdir(parents=True, exist_ok=True)
+    engine = create_async_engine(settings.database_dsn, pool_pre_ping=True)
+    if settings.storage_backend == "sqlite":
+        configure_engine(engine)
+    return engine
+
+
 def get_engine():
     global _engine
     if _engine is None:
-        settings = get_settings()
-        if settings.storage_backend == "sqlite":
-            settings.sqlite_path.parent.mkdir(parents=True, exist_ok=True)
-        _engine = create_async_engine(settings.database_dsn, pool_pre_ping=True)
+        _engine = build_engine(get_settings())
     return _engine
 
 

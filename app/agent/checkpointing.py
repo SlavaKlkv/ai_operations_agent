@@ -22,6 +22,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 
 from app.agent.serde import agent_serializer
 from app.core.config import Settings, get_settings
+from app.db.sqlite import configure_checkpointer
 
 log = structlog.get_logger(__name__)
 
@@ -54,6 +55,7 @@ async def startup(settings: Settings | None = None) -> BaseCheckpointSaver:
         sqlite_saver = await _stack.enter_async_context(
             AsyncSqliteSaver.from_conn_string(str(settings.sqlite_path))
         )
+        await configure_checkpointer(sqlite_saver.conn)
         sqlite_saver.serde = agent_serializer()
         await sqlite_saver.setup()
         _saver, _durable = sqlite_saver, True
