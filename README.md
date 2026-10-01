@@ -328,6 +328,9 @@ make observability      # поднимает стек вместе с Prometheus
 
 | Переменная | По умолчанию | Смысл |
 |---|---|---|
+| `STORAGE_BACKEND` | `sqlite` | `sqlite` для локального или `postgres` для серверного режима |
+| `SQLITE_PATH` | `data/ai_operations_agent.db` | Файл локальных данных и checkpointing |
+| `CACHE_BACKEND` | `memory` | Встроенный TTL-кэш; серверный профиль может выбрать `redis` |
 | `LLM_MODEL` | `qwen3:8b` | Локальная модель для планирования и разбора |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Адрес Ollama; Docker Compose подставляет адрес хоста |
 | `LLM_ENABLED` | `true` | Принудительно выключить модель |
@@ -336,9 +339,9 @@ make observability      # поднимает стек вместе с Prometheus
 | `TOOL_TIMEOUT_SECONDS` | `15` | Таймаут одного вызова |
 | `AUTH_ENABLED` | `true` | Выключить только для локальной разработки; видно в `/health` |
 | `MCP_ENABLED` | `true` | Выключить → in-process мок-провайдеры вместо MCP-серверов |
-| `CACHE_ENABLED` | `true` | Кэш результатов read-инструментов в Redis |
+| `CACHE_ENABLED` | `true` | Кэш результатов read-инструментов в выбранном backend |
 | `CACHE_TTL_SECONDS` | `60` | Коротко намеренно: окно, включающее «сейчас», ещё движется |
-| `CHECKPOINTER` | `postgres` | `memory` не переживает рестарт: пауза подтверждения потеряется |
+| `CHECKPOINTER` | `sqlite` | `sqlite` и `postgres` сохраняют паузу; `memory` — только для тестов |
 | `POSTGRES_*`, `REDIS_URL` | см. пример | Хранилища |
 
 ## Разработка
