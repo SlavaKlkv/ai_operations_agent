@@ -7,9 +7,11 @@ from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.config import Config
 from alembic.migration import MigrationContext
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 
+from app.core.config import Settings
 from app.db.base import Base
+from app.db.migrations import migrate
 
 #: SQLite и PostgreSQL могут обоснованно различаться деталями индексов и типов,
 #: но отсутствие или наличие лишней таблицы либо столбца допустимым не бывает.
@@ -33,6 +35,22 @@ def test_migrations_reproduce_the_model_metadata(migrated_sqlite):
 
     structural = [d for d in diff if isinstance(d, tuple) and d[0] in STRUCTURAL]
     assert structural == [], f"models and migrations disagree: {structural}"
+
+
+async def test_local_startup_migration_creates_a_ready_database(tmp_path):
+    database = tmp_path / "nested" / "agent.db"
+    settings = Settings(
+        _env_file=None,
+        storage_backend="sqlite",
+        sqlite_path=database,
+    )  # type: ignore[call-arg]
+
+    await migrate(settings)
+
+    assert database.exists()
+    engine = create_engine(f"sqlite:///{database}")
+    assert set(inspect(engine).get_table_names()) >= {"agent_runs", "users", "approvals"}
+    engine.dispose()
 
 
 def test_downgrade_to_base_is_possible(tmp_path):

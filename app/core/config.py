@@ -1,6 +1,7 @@
 """Application configuration loaded from the environment."""
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, PostgresDsn, RedisDsn, computed_field
@@ -13,6 +14,9 @@ class Settings(BaseSettings):
     app_env: Literal["local", "test", "production"] = "local"
     log_level: str = "INFO"
 
+    storage_backend: Literal["sqlite", "postgres"] = "sqlite"
+    sqlite_path: Path = Path("data/ai_operations_agent.db")
+
     postgres_host: str = "localhost"
     postgres_port: int = 5432
     postgres_user: str = "agent"
@@ -20,6 +24,7 @@ class Settings(BaseSettings):
     postgres_db: str = "ai_operations_agent"
 
     redis_url: RedisDsn = Field(default="redis://localhost:6379/0")  # type: ignore[assignment]
+    cache_backend: Literal["memory", "redis"] = "memory"
 
     # ── LLM ──────────────────────────────────────────────────────────────────
     #: При отключении агент выполняет детерминированный сценарий.
@@ -39,9 +44,8 @@ class Settings(BaseSettings):
     #: Интервал намеренно короткий: окно, включающее текущий момент, ещё меняется.
     cache_ttl_seconds: int = 60
 
-    #: Где хранятся приостановленные запуски. Только "postgres" обеспечивает сохранность;
-    #: "memory" предназначен для тестов и однопроцессных демо.
-    checkpointer: Literal["postgres", "memory"] = "postgres"
+    #: SQLite — локальный долговечный режим, PostgreSQL — серверный, memory — только тесты.
+    checkpointer: Literal["sqlite", "postgres", "memory"] = "sqlite"
 
     # ── Слой интеграции MCP ──────────────────────────────────────────────────
     #: Отключается в тестах и минимальном развёртывании: тогда агент работает с
@@ -64,6 +68,13 @@ class Settings(BaseSettings):
             port=self.postgres_port,
             path=self.postgres_db,
         )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def database_dsn(self) -> str:
+        if self.storage_backend == "sqlite":
+            return f"sqlite+aiosqlite:///{self.sqlite_path}"
+        return str(self.postgres_dsn)
 
 
 @lru_cache

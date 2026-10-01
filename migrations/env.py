@@ -29,7 +29,7 @@ target_metadata = Base.metadata
 # ``config.attributes``, чтобы выполнять те же миграции в SQLite.
 config.set_main_option(
     "sqlalchemy.url",
-    config.attributes.get("sqlalchemy_url") or str(get_settings().postgres_dsn),
+    config.attributes.get("sqlalchemy_url") or get_settings().database_dsn,
 )
 
 # Другие значения конфигурации, необходимые env.py,

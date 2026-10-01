@@ -24,6 +24,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
+from asyncio import Lock
 from typing import Any, Protocol
 
 import structlog
@@ -61,6 +63,29 @@ class NullCache:
 
     async def set(self, key: str, value: dict[str, Any], *, ttl: int) -> None:
         return None
+
+
+class MemoryToolCache:
+    """Process-local TTL cache used by the zero-dependency local profile."""
+
+    def __init__(self) -> None:
+        self._entries: dict[str, tuple[float, dict[str, Any]]] = {}
+        self._lock = Lock()
+
+    async def get(self, key: str) -> dict[str, Any] | None:
+        async with self._lock:
+            entry = self._entries.get(key)
+            if entry is None:
+                return None
+            expires_at, value = entry
+            if expires_at <= time.monotonic():
+                self._entries.pop(key, None)
+                return None
+            return value
+
+    async def set(self, key: str, value: dict[str, Any], *, ttl: int) -> None:
+        async with self._lock:
+            self._entries[key] = (time.monotonic() + ttl, value)
 
 
 class RedisToolCache:
@@ -104,6 +129,8 @@ def build_cache(settings: Any) -> ToolCache:
     """
     if not settings.cache_enabled:
         return NullCache()
+    if settings.cache_backend == "memory":
+        return MemoryToolCache()
     try:
         from redis.asyncio import Redis
 
