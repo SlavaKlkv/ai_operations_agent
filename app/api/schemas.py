@@ -43,6 +43,7 @@ class RunSummary(BaseModel):
     id: uuid.UUID
     task: str
     target_service: str | None
+    model_name: str | None = None
     status: RunStatus
     approval_state: ApprovalState
     step_count: int

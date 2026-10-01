@@ -11,6 +11,8 @@ async def test_root_serves_the_local_application_shell(http_client):
     assert 'id="approval"' in response.text
     assert 'id="history-list"' in response.text
     assert 'id="source-grid"' in response.text
+    assert 'id="setup-overlay"' in response.text
+    assert 'id="profile-grid"' in response.text
     assert 'id="token"' not in response.text
 
 
@@ -23,6 +25,9 @@ async def test_static_assets_are_bundled_and_not_protected_by_api_auth(http_clie
     assert script.status_code == 200
     assert 'api("/runs"' in script.text
     assert "/approval" in script.text
+    assert 'api("/setup")' in script.text
+    assert 'api("/setup/model"' in script.text
+    assert 'const action = !isInstalled ? "Не установлена"' in script.text
 
 
 def test_script_uses_text_escaping_for_remote_content():

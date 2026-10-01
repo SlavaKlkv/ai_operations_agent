@@ -29,6 +29,7 @@ def offline(monkeypatch):
     from app.core.config import get_settings
 
     monkeypatch.setenv("LLM_ENABLED", "false")
+    monkeypatch.setenv("LLM_MODEL", "qwen3:8b")
     monkeypatch.setenv("APP_ENV", "test")
     # Запуск четырёх подпроцессов MCP для каждой фикстуры приложения замедлил бы
     # набор тестов без пользы: слой интеграции отдельно проверяется настоящими

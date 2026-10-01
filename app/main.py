@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.agent import checkpointing
-from app.api.routes import health, integrations, metrics, runs
+from app.api.routes import health, integrations, metrics, runs, setup
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.db.migrations import migrate
@@ -68,6 +68,7 @@ def create_app() -> FastAPI:
     app.include_router(runs.router)
     app.include_router(integrations.router)
     app.include_router(metrics.router)
+    app.include_router(setup.router)
     app.include_router(web_router)
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     return app

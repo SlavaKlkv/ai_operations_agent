@@ -29,11 +29,13 @@ async def create_run(
     *,
     task: str,
     target_service: str | None = None,
+    model_name: str | None = None,
     actor: str = "system",
 ) -> AgentRun:
     run = AgentRun(
         task=task,
         target_service=target_service,
+        model_name=model_name,
         status=RunStatus.RUNNING,
         started_at=utcnow(),
     )

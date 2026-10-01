@@ -54,6 +54,15 @@ class User(Base, TimestampMixin):
     runs: Mapped[list[AgentRun]] = relationship(back_populates="user")
 
 
+class AppSetting(Base, TimestampMixin):
+    """One validated local setting persisted independently from the container."""
+
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    value: Mapped[dict[str, object]] = mapped_column(JSONType, nullable=False, default=dict)
+
+
 class AgentRun(Base, TimestampMixin):
     __tablename__ = "agent_runs"
     __table_args__ = (Index("ix_agent_runs_service_created", "target_service", "created_at"),)
@@ -63,6 +72,8 @@ class AgentRun(Base, TimestampMixin):
 
     task: Mapped[str] = mapped_column(Text, nullable=False)
     target_service: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    #: Зафиксировано при старте: смена профиля не меняет уже начатое расследование.
+    model_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     status: Mapped[RunStatus] = mapped_column(
         SAEnum(RunStatus, native_enum=False, length=32), nullable=False, default=RunStatus.RUNNING
     )
