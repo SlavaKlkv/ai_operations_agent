@@ -24,13 +24,22 @@ class OllamaSnapshot:
 
 
 class OllamaClient:
-    def __init__(self, base_url: str, *, timeout: float = 5.0) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        *,
+        timeout: float = 5.0,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
+        self._transport = transport
 
     async def snapshot(self) -> OllamaSnapshot:
         try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
+            async with httpx.AsyncClient(
+                timeout=self._timeout, transport=self._transport
+            ) as client:
                 response = await client.get(f"{self._base_url}/api/tags")
                 response.raise_for_status()
                 payload = response.json()
@@ -78,7 +87,9 @@ class OllamaClient:
             "options": {"temperature": 0},
         }
         try:
-            async with httpx.AsyncClient(timeout=max(self._timeout, 60.0)) as client:
+            async with httpx.AsyncClient(
+                timeout=max(self._timeout, 60.0), transport=self._transport
+            ) as client:
                 tool_response = await client.post(f"{self._base_url}/api/chat", json=tool_payload)
                 tool_response.raise_for_status()
                 calls = tool_response.json().get("message", {}).get("tool_calls", [])
