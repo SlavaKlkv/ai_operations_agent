@@ -27,6 +27,7 @@ async def test_a_run_that_wants_to_write_stops_and_says_what_it_wants(client):
     body = response.json()
     assert body["status"] == "awaiting_approval"
     assert body["target_service"] == "billing-service"
+    assert body["model_name"] == "qwen3:8b"
     assert body["analysis"]["service"] == "billing-service"
     assert "v1.8.4" in body["analysis"]["suspected_causes"][0]["statement"]
     assert body["analysis"]["requires_human_review"] is True

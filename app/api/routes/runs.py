@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.checkpointing import get_saver
 from app.agent.graph import build_graph, run_config
+from app.agent.llm import build_chat_model
 from app.agent.state import ApprovalState, RunStatus, initial_state
 from app.api.schemas import (
     ApprovalDecision,
@@ -31,12 +32,13 @@ from app.domain.models import IncidentAnalysis
 from app.observability import recording
 from app.services import run_store
 from app.services.cache import build_cache
+from app.services.settings_store import get_model_selection
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 
 
-@lru_cache(maxsize=1)
-def get_graph():
+@lru_cache(maxsize=8)
+def get_graph(model_name: str | None = None):
     """Compile once per process.
 
     The graph holds no per-run state — nodes read and return state, and the
@@ -45,9 +47,12 @@ def get_graph():
     re-reading credentials and rebuilding the registry on every investigation.
     """
     settings = get_settings()
+    runtime_settings = settings.model_copy(update={"llm_model": model_name or settings.llm_model})
     return build_graph(
+        model=build_chat_model(runtime_settings),
         checkpointer=get_saver(),
         cache=build_cache(settings),
+        use_llm=runtime_settings.llm_enabled,
     )
 
 
@@ -104,16 +109,18 @@ async def start_run(
     ``awaiting_approval`` with the exact content awaiting review; the decision
     arrives as a separate request to ``POST /runs/{id}/approval``.
     """
+    model_selection = await get_model_selection(session, get_settings())
     run = await run_store.create_run(
         session,
         task=payload.task,
         target_service=payload.target_service,
+        model_name=model_selection.model_name,
         actor=principal.actor,
     )
     recording.record_run_started(payload.target_service)
 
     started = time.perf_counter()
-    final = await get_graph().ainvoke(
+    final = await get_graph(run.model_name).ainvoke(
         initial_state(str(run.id), payload.task, payload.target_service),
         run_config(str(run.id)),
     )
@@ -156,7 +163,7 @@ async def decide_approval(
     recording.record_decision(approved=decision.approved)
 
     started = time.perf_counter()
-    final = await get_graph().ainvoke(
+    final = await get_graph(run.model_name).ainvoke(
         Command(
             resume={
                 "approved": decision.approved,
