@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.config import Config
 from alembic.migration import MigrationContext
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine, inspect, text
 
 from app.core.config import Settings
-from app.db.base import Base
+from app.db.base import Base, build_engine
 from app.db.migrations import migrate
+from app.db.sqlite import DatabaseIntegrityError
 
 #: SQLite и PostgreSQL могут обоснованно различаться деталями индексов и типов,
 #: но отсутствие или наличие лишней таблицы либо столбца допустимым не бывает.
@@ -51,6 +54,51 @@ async def test_local_startup_migration_creates_a_ready_database(tmp_path):
     engine = create_engine(f"sqlite:///{database}")
     assert set(inspect(engine).get_table_names()) >= {"agent_runs", "users", "approvals"}
     engine.dispose()
+
+
+async def test_corrupt_local_database_is_rejected_without_overwrite(tmp_path):
+    database = tmp_path / "agent.db"
+    original = b"not a sqlite database\x00user data"
+    database.write_bytes(original)
+    settings = Settings(
+        _env_file=None,
+        storage_backend="sqlite",
+        sqlite_path=database,
+    )  # type: ignore[call-arg]
+
+    with pytest.raises(DatabaseIntegrityError, match="unreadable"):
+        await migrate(settings)
+
+    assert database.read_bytes() == original
+
+
+async def test_sqlite_accepts_concurrent_local_writes(tmp_path):
+    settings = Settings(
+        _env_file=None,
+        storage_backend="sqlite",
+        sqlite_path=tmp_path / "agent.db",
+    )  # type: ignore[call-arg]
+    engine = build_engine(settings)
+    async with engine.begin() as connection:
+        await connection.execute(text("CREATE TABLE concurrent_writes (value INTEGER)"))
+
+    async def write(value: int) -> None:
+        async with engine.begin() as connection:
+            await connection.execute(
+                text("INSERT INTO concurrent_writes (value) VALUES (:value)"),
+                {"value": value},
+            )
+
+    await asyncio.gather(*(write(value) for value in range(16)))
+    async with engine.connect() as connection:
+        count = await connection.scalar(text("SELECT count(*) FROM concurrent_writes"))
+        journal_mode = await connection.scalar(text("PRAGMA journal_mode"))
+        foreign_keys = await connection.scalar(text("PRAGMA foreign_keys"))
+    await engine.dispose()
+
+    assert count == 16
+    assert journal_mode == "wal"
+    assert foreign_keys == 1
 
 
 def test_downgrade_to_base_is_possible(tmp_path):
