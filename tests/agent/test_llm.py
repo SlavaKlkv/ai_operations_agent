@@ -28,16 +28,20 @@ def test_llm_can_be_switched_off_without_contacting_ollama():
     assert build_chat_model(settings) is None
 
 
+def test_standard_profile_model_is_the_default():
+    assert Settings(_env_file=None).llm_model == "qwen3:8b"  # type: ignore[call-arg]
+
+
 def test_configured_model_is_built_lazily():
     model = build_chat_model(
         Settings(
             llm_enabled=True,
-            llm_model="qwen3.8:27b",
+            llm_model="qwen3:4b",
             ollama_base_url="http://ollama.test:11434",
         )
     )
     assert model is not None
-    assert model.model == "qwen3.8:27b"
+    assert model.model == "qwen3:4b"
     assert model.base_url == "http://ollama.test:11434"
 
 

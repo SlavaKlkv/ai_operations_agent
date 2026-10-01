@@ -100,7 +100,7 @@ git clone https://github.com/SlavaKlkv/ai-operations-agent.git
 cd ai-operations-agent
 cp .env.example .env
 
-ollama pull qwen3.8:27b       # локальная модель, около 18 ГБ
+ollama pull qwen3:8b          # Standard-профиль, около 5,2 ГБ
 
 make install                  # venv и зависимости
 make up                       # PostgreSQL и Redis
@@ -254,7 +254,7 @@ read-инструментов кладутся в Redis на минуту.
 
 ## Локальная модель и работа без неё
 
-По умолчанию агент использует локальную `qwen3.8:27b` через Ollama. Код и
+По умолчанию агент использует локальную `qwen3:8b` через Ollama. Код и
 операционные данные не отправляются облачному провайдеру. Чтобы запустить агент
 без модели, задайте `LLM_ENABLED=false`. Тогда:
 
@@ -328,7 +328,7 @@ make observability      # поднимает стек вместе с Prometheus
 
 | Переменная | По умолчанию | Смысл |
 |---|---|---|
-| `LLM_MODEL` | `qwen3.8:27b` | Локальная модель для планирования и разбора |
+| `LLM_MODEL` | `qwen3:8b` | Локальная модель для планирования и разбора |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Адрес Ollama; Docker Compose подставляет адрес хоста |
 | `LLM_ENABLED` | `true` | Принудительно выключить модель |
 | `MAX_TOOL_CALLS` | `12` | Бюджет вызовов на запуск |

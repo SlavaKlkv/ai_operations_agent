@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # ── LLM ──────────────────────────────────────────────────────────────────
     #: При отключении агент выполняет детерминированный сценарий.
     llm_enabled: bool = True
-    llm_model: str = "qwen3.8:27b"
+    llm_model: str = "qwen3:8b"
     ollama_base_url: str = "http://localhost:11434"
     llm_max_tokens: int = 4096
     llm_timeout_seconds: float = 60.0

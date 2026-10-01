@@ -52,10 +52,10 @@ async def propose_action_node(state: AgentState) -> AgentState:
     """Turn the analysis into a concrete, reviewable write — or decline to.
 
     The issue body is rendered from the analysis by code, not written by the
-    model. The analysis itself may be model-authored, but by this point it is
-    a validated structure whose evidence came from tool calls, so rendering it
-    deterministically means the text a human approves cannot contain a claim
-    that is not in the state they can inspect.
+    model. The analysis verdict and confidence are computed from deterministic
+    hypotheses, and its evidence came from tool calls, so rendering it here
+    means the text a human approves cannot contain a claim that is not in the
+    state they can inspect.
     """
     analysis = state.get("analysis")
     step = state.get("step_count", 0) + 1
@@ -68,11 +68,20 @@ async def propose_action_node(state: AgentState) -> AgentState:
             approval_state=ApprovalState.NOT_REQUIRED,
         )
 
-    if analysis.confidence < PROPOSAL_CONFIDENCE_FLOOR:
+    hypotheses = list(state.get("hypotheses", []))
+    strongest_hypothesis = max(
+        (hypothesis.confidence for hypothesis in hypotheses),
+        default=0.0,
+    )
+    if (
+        analysis.confidence < PROPOSAL_CONFIDENCE_FLOOR
+        or strongest_hypothesis < PROPOSAL_CONFIDENCE_FLOOR
+    ):
         log.info(
             "agent.no_proposal",
             run_id=state.get("run_id"),
             confidence=analysis.confidence,
+            strongest_hypothesis=strongest_hypothesis,
         )
         return AgentState(
             current_step="propose_action",
@@ -84,8 +93,9 @@ async def propose_action_node(state: AgentState) -> AgentState:
                     "node": "propose_action",
                     "proposed": None,
                     "reason": (
-                        f"confidence {analysis.confidence:.2f} is below the "
-                        f"{PROPOSAL_CONFIDENCE_FLOOR} floor for proposing a write"
+                        f"analysis confidence {analysis.confidence:.2f} and strongest "
+                        f"deterministic hypothesis {strongest_hypothesis:.2f} must both "
+                        f"reach the {PROPOSAL_CONFIDENCE_FLOOR} floor for proposing a write"
                     ),
                 }
             ],
