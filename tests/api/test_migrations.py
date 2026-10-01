@@ -10,11 +10,13 @@ from alembic.autogenerate import compare_metadata
 from alembic.config import Config
 from alembic.migration import MigrationContext
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.core.config import Settings
 from app.db.base import Base, build_engine
 from app.db.migrations import migrate
 from app.db.sqlite import DatabaseIntegrityError
+from app.services.run_store import create_run
 
 #: SQLite и PostgreSQL могут обоснованно различаться деталями индексов и типов,
 #: но отсутствие или наличие лишней таблицы либо столбца допустимым не бывает.
@@ -54,6 +56,28 @@ async def test_local_startup_migration_creates_a_ready_database(tmp_path):
     engine = create_engine(f"sqlite:///{database}")
     assert set(inspect(engine).get_table_names()) >= {"agent_runs", "users", "approvals"}
     engine.dispose()
+
+
+async def test_migrated_sqlite_accepts_real_application_writes(tmp_path):
+    settings = Settings(
+        _env_file=None,
+        storage_backend="sqlite",
+        sqlite_path=tmp_path / "agent.db",
+    )  # type: ignore[call-arg]
+    await migrate(settings)
+    engine = build_engine(settings)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+
+    async with factory() as session:
+        run = await create_run(
+            session,
+            task="billing-service возвращает 5xx после релиза",
+            target_service="billing-service",
+            actor="local-user",
+        )
+        assert run.created_at is not None
+
+    await engine.dispose()
 
 
 async def test_corrupt_local_database_is_rejected_without_overwrite(tmp_path):

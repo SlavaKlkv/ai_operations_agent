@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.agent import checkpointing
 from app.api.routes import health, integrations, metrics, runs
@@ -14,6 +15,8 @@ from app.core.logging import configure_logging
 from app.db.migrations import migrate
 from app.mcp import runtime as mcp_runtime
 from app.observability import recording
+from app.web.routes import STATIC_DIR
+from app.web.routes import router as web_router
 
 log = structlog.get_logger(__name__)
 
@@ -65,6 +68,8 @@ def create_app() -> FastAPI:
     app.include_router(runs.router)
     app.include_router(integrations.router)
     app.include_router(metrics.router)
+    app.include_router(web_router)
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     return app
 
 

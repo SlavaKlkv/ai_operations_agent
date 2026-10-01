@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>AI Operations Agent</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="AI Operations Agent">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span><b>Operations</b><small>local agent</small></span>
+      </a>
+
+      <nav aria-label="Основная навигация">
+        <button class="nav-item active" data-view="investigate"><span>⌁</span>Расследование</button>
+        <button class="nav-item" data-view="history"><span>◷</span>История</button>
+        <button class="nav-item" data-view="sources"><span>◇</span>Источники</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="system-state"><span class="pulse"></span><span><b>Локальный режим</b><small id="storage-state">Проверяем состояние…</small></span></div>
+        <button class="settings-link" data-view="settings">Настройки <span>↗</span></button>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div><span class="eyebrow">Рабочее пространство</span><h1 id="view-title">Новое расследование</h1></div>
+        <div class="health-pill" id="health-pill"><span></span><b>Проверка</b></div>
+      </header>
+
+      <section class="view active" id="view-investigate">
+        <div class="intro">
+          <p class="kicker">INCIDENT WORKBENCH</p>
+          <h2>Опишите, что произошло.<br><em>Агент соберёт доказательства.</em></h2>
+          <p>Метрики, релизы, логи и изменения кода будут сопоставлены в одном проверяемом отчёте.</p>
+        </div>
+
+        <form class="investigation-form" id="investigation-form">
+          <label for="task">Что нужно расследовать?</label>
+          <textarea id="task" minlength="8" maxlength="2000" required placeholder="Например: после последнего релиза billing-service резко выросло количество 5xx…"></textarea>
+          <div class="form-row">
+            <label class="service-field">Сервис <input id="service" placeholder="Определить автоматически"></label>
+            <button class="primary" type="submit"><span>Начать расследование</span><b>→</b></button>
+          </div>
+          <p class="privacy-note">Данные обрабатываются локально и не отправляются внешнему LLM-провайдеру.</p>
+        </form>
+
+        <div class="run-panel hidden" id="run-panel" aria-live="polite">
+          <div class="run-heading"><div><span class="status-dot"></span><b id="run-status">Выполняется</b></div><code id="run-id"></code></div>
+          <div class="progress-line"><i></i></div>
+          <p id="run-message">Агент собирает контекст расследования…</p>
+        </div>
+
+        <article class="result hidden" id="result">
+          <div class="result-head"><div><span class="eyebrow">Итог расследования</span><h3 id="result-summary"></h3></div><span class="confidence" id="confidence"></span></div>
+          <div class="result-grid">
+            <section><h4>Наблюдаемые симптомы</h4><ul id="symptoms"></ul></section>
+            <section><h4>Рекомендуемые действия</h4><ol id="actions"></ol></section>
+          </div>
+          <section class="evidence"><h4>Доказательства <span id="evidence-count"></span></h4><div id="evidence-list"></div></section>
+          <section class="approval hidden" id="approval">
+            <div><span class="warning">!</span><div><h4>Требуется подтверждение</h4><p id="approval-rationale"></p></div></div>
+            <details><summary>Просмотреть создаваемый issue</summary><pre id="issue-preview"></pre></details>
+            <label>Комментарий к решению <input id="approval-note" placeholder="Необязательно"></label>
+            <div class="approval-actions"><button class="secondary" id="reject" type="button">Отклонить</button><button class="primary compact" id="approve" type="button">Подтвердить и создать</button></div>
+          </section>
+        </article>
+      </section>
+
+      <section class="view" id="view-history"><div class="section-head"><div><p class="kicker">RUN ARCHIVE</p><h2>История расследований</h2></div><button class="secondary" id="refresh-history">Обновить</button></div><div class="history-list" id="history-list"></div></section>
+      <section class="view" id="view-sources"><div class="section-head"><div><p class="kicker">CONNECTIONS</p><h2>Источники данных</h2></div></div><div class="source-grid" id="source-grid"><div class="empty-card">Состояние источников загружается…</div></div></section>
+      <section class="view" id="view-settings"><div class="section-head"><div><p class="kicker">LOCAL CONTROL</p><h2>Настройки</h2></div></div><div class="settings-card"><h3>Локальная сессия</h3><p>Интерфейс работает без API-токена. Данные расследований остаются в локальном хранилище приложения.</p><p class="settings-note">Выбор профиля Ollama и подключение внешних источников появятся в мастере первоначальной настройки.</p></div></section>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>
