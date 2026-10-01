@@ -1,4 +1,4 @@
-const state = { currentRun: null, health: null };
+const state = { currentRun: null, health: null, setup: null };
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
@@ -31,6 +31,7 @@ function navigate(name) {
   $("#view-title").textContent = titles[name];
   if (name === "history") loadHistory();
   if (name === "sources") loadSources();
+  if (name === "settings") loadSetup(false);
 }
 
 function statusLabel(status) {
@@ -132,6 +133,64 @@ async function loadSources() {
   } catch (error) { target.innerHTML = `<div class="empty-card">${escapeHtml(error.message)}</div>`; }
 }
 
+function setupCheck(title, check) {
+  return `<article class="setup-check${check.ready ? " ready" : ""}"><span>${check.ready ? "✓" : "○"}</span><div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(check.status)}</p>${check.action ? `<p class="action">${escapeHtml(check.action)}</p>` : ""}</div></article>`;
+}
+
+function renderSetup(data, showOverlay = true) {
+  state.setup = data;
+  const sourceChecks = data.sources.map((source) => setupCheck(source.name, {
+    ready: source.ready,
+    status: source.detail,
+    action: source.ready ? null : (source.required ? "Проверьте обязательный источник." : "Можно настроить позже."),
+  })).join("");
+  $("#setup-checks").innerHTML = [
+    setupCheck("Ollama", data.ollama),
+    setupCheck("Локальное хранилище", data.storage),
+    setupCheck("GitHub", data.github),
+    sourceChecks,
+  ].join("");
+
+  const installed = new Set(data.model.installed_models);
+  $("#profile-grid").innerHTML = data.model.profiles.map((profile) => {
+    const isInstalled = installed.has(profile.model_name);
+    const active = data.model.selection.profile === profile.slug;
+    const action = !isInstalled ? "Не установлена" : (active ? "Выбрана" : "Выбрать");
+    return `<button class="profile-card${active ? " active" : ""}" type="button" data-profile="${profile.slug}" ${isInstalled ? "" : "disabled"}><header><h4>${escapeHtml(profile.label)}</h4><code>${escapeHtml(profile.model_name)}</code></header><p>${escapeHtml(profile.description)}</p><footer><span>≈ ${profile.download_size_gb} ГБ</span><span>${action}</span></footer></button>`;
+  }).join("");
+  $("#installed-models").innerHTML = data.model.installed_models.map((name) => `<option value="${escapeHtml(name)}"></option>`).join("");
+  $("#model-caption").textContent = data.model.installed
+    ? `Активна ${data.model.selection.model_name}${data.model.selection.verified ? " · проверенный профиль" : " · не проверена"}`
+    : `Модель ${data.model.selection.model_name} не установлена`;
+  $("#active-model").textContent = `Модель для новых расследований: ${data.model.selection.model_name}${data.model.selection.verified ? "" : " · Не проверена"}`;
+
+  const checks = [data.ollama.ready, data.model.installed, data.storage.ready, data.github.ready, ...data.sources.filter((item) => item.required).map((item) => item.ready)];
+  const readyCount = checks.filter(Boolean).length;
+  $("#setup-progress").textContent = `${readyCount} из ${checks.length} готово`;
+  $("#finish-setup").disabled = !data.ready;
+  if (showOverlay) $("#setup-overlay").classList.remove("hidden");
+  $$("[data-profile]").forEach((button) => button.addEventListener("click", () => selectModel({ profile: button.dataset.profile })));
+}
+
+async function loadSetup(showOverlay = true) {
+  try {
+    const data = await api("/setup");
+    renderSetup(data, showOverlay && sessionStorage.getItem("aoa-demo-continued") !== "true");
+  } catch (error) {
+    $("#active-model").textContent = "Настройки недоступны";
+    if (showOverlay) toast(`Не удалось проверить настройку: ${error.message}`, true);
+  }
+}
+
+async function selectModel(payload) {
+  $$("[data-profile]").forEach((button) => { button.disabled = true; });
+  try {
+    await api("/setup/model", { method: "PUT", body: JSON.stringify(payload) });
+    toast(payload.profile === "custom" ? "Совместимая модель выбрана с пометкой «Не проверена»" : "Профиль модели изменён");
+    await loadSetup(true);
+  } catch (error) { toast(error.message, true); }
+}
+
 function escapeHtml(value) {
   const element = document.createElement("span");
   element.textContent = String(value ?? "");
@@ -143,4 +202,9 @@ $("#investigation-form").addEventListener("submit", startInvestigation);
 $("#approve").addEventListener("click", () => decide(true));
 $("#reject").addEventListener("click", () => decide(false));
 $("#refresh-history").addEventListener("click", loadHistory);
+$("#open-setup").addEventListener("click", () => { sessionStorage.removeItem("aoa-demo-continued"); loadSetup(true); });
+$("#continue-demo").addEventListener("click", () => { sessionStorage.setItem("aoa-demo-continued", "true"); $("#setup-overlay").classList.add("hidden"); });
+$("#finish-setup").addEventListener("click", () => { $("#setup-overlay").classList.add("hidden"); toast("Настройка завершена"); });
+$("#custom-model-form").addEventListener("submit", (event) => { event.preventDefault(); selectModel({ profile: "custom", model_name: $("#custom-model-name").value.trim() }); });
 checkHealth();
+loadSetup(true);
