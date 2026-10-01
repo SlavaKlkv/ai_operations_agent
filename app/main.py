@@ -11,6 +11,7 @@ from app.agent import checkpointing
 from app.api.routes import health, integrations, metrics, runs
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.db.migrations import migrate
 from app.mcp import runtime as mcp_runtime
 from app.observability import recording
 
@@ -22,6 +23,10 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     configure_logging(settings.log_level)
     log.info("application.start", environment=settings.app_env)
+
+    if settings.app_env != "test":
+        await migrate(settings)
+        log.info("database.migrated", backend=settings.storage_backend)
 
     saver = await checkpointing.startup(settings)
     log.info("checkpointer.attached", durable=checkpointing.is_durable(), kind=type(saver).__name__)

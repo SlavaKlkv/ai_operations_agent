@@ -32,6 +32,19 @@ def test_standard_profile_model_is_the_default():
     assert Settings(_env_file=None).llm_model == "qwen3:8b"  # type: ignore[call-arg]
 
 
+def test_local_storage_is_the_default(tmp_path):
+    settings = Settings(
+        _env_file=None,
+        storage_backend="sqlite",
+        sqlite_path=tmp_path / "agent.db",
+    )  # type: ignore[call-arg]
+
+    assert Settings.model_fields["storage_backend"].default == "sqlite"
+    assert settings.database_dsn == f"sqlite+aiosqlite:///{tmp_path / 'agent.db'}"
+    assert Settings.model_fields["cache_backend"].default == "memory"
+    assert Settings.model_fields["checkpointer"].default == "sqlite"
+
+
 def test_configured_model_is_built_lazily():
     model = build_chat_model(
         Settings(

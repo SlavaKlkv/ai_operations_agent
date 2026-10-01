@@ -3,8 +3,8 @@
 The approval gate is only as durable as the checkpointer behind it. With an
 in-memory saver, a restart between the proposal and the decision loses the
 investigation: the run row survives, the workflow does not, and the approval
-endpoint has nothing to resume. That is fine for a test and wrong for a
-deployment, so the application uses PostgreSQL and says so.
+endpoint has nothing to resume. Local installations use SQLite; server
+deployments can select PostgreSQL.
 
 Falling back to memory is deliberate and noisy. A missing database should not
 stop the service from starting — a read-only investigation still works — but
@@ -47,14 +47,27 @@ async def startup(settings: Settings | None = None) -> BaseCheckpointSaver:
         log.info("checkpointer.ready", kind="memory", durable=False)
         return _saver
 
+    if settings.checkpointer == "sqlite":
+        from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+
+        settings.sqlite_path.parent.mkdir(parents=True, exist_ok=True)
+        sqlite_saver = await _stack.enter_async_context(
+            AsyncSqliteSaver.from_conn_string(str(settings.sqlite_path))
+        )
+        sqlite_saver.serde = agent_serializer()
+        await sqlite_saver.setup()
+        _saver, _durable = sqlite_saver, True
+        log.info("checkpointer.ready", kind="sqlite", durable=True)
+        return sqlite_saver
+
     try:
         from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
-        saver = await _stack.enter_async_context(
+        postgres_saver = await _stack.enter_async_context(
             AsyncPostgresSaver.from_conn_string(_postgres_dsn(settings))
         )
-        saver.serde = agent_serializer()
-        await saver.setup()
+        postgres_saver.serde = agent_serializer()
+        await postgres_saver.setup()
     except Exception as exc:
         log.warning(
             "checkpointer.degraded",
@@ -64,9 +77,9 @@ async def startup(settings: Settings | None = None) -> BaseCheckpointSaver:
         _saver, _durable = InMemorySaver(serde=agent_serializer()), False
         return _saver
 
-    _saver, _durable = saver, True
+    _saver, _durable = postgres_saver, True
     log.info("checkpointer.ready", kind="postgres", durable=True)
-    return saver
+    return postgres_saver
 
 
 async def shutdown() -> None:

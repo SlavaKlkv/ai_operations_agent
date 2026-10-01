@@ -50,7 +50,10 @@ _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 def get_engine():
     global _engine
     if _engine is None:
-        _engine = create_async_engine(str(get_settings().postgres_dsn), pool_pre_ping=True)
+        settings = get_settings()
+        if settings.storage_backend == "sqlite":
+            settings.sqlite_path.parent.mkdir(parents=True, exist_ok=True)
+        _engine = create_async_engine(settings.database_dsn, pool_pre_ping=True)
     return _engine
 
 

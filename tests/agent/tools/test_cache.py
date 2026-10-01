@@ -12,7 +12,7 @@ from app.agent.guardrails import Guardrails
 from app.agent.tools.base import AgentTool, ToolAccess, ToolRegistry
 from app.agent.tools.catalog import build_registry
 from app.agent.tools.executor import ToolExecutor, ToolRequest
-from app.services.cache import NullCache, RedisToolCache, cache_key
+from app.services.cache import MemoryToolCache, NullCache, RedisToolCache, cache_key
 
 WINDOW = {
     "start": datetime(2026, 3, 17, 14, 0, tzinfo=UTC),
@@ -137,6 +137,18 @@ async def test_entries_expire_quickly_enough_to_stay_honest():
     assert redis.sets[0][1] == 30
 
 
+async def test_the_local_cache_expires_entries_without_redis(monkeypatch):
+    now = 100.0
+    monkeypatch.setattr("app.services.cache.time.monotonic", lambda: now)
+    cache = MemoryToolCache()
+
+    await cache.set("key", {"answer": 42}, ttl=30)
+    assert await cache.get("key") == {"answer": 42}
+
+    now = 131.0
+    assert await cache.get("key") is None
+
+
 async def test_an_unreachable_cache_degrades_to_a_miss():
     """Caching is an optimisation; it must not be able to break a run."""
     counter = {"calls": 0}
@@ -215,3 +227,11 @@ def test_the_cache_can_be_switched_off_by_configuration(enabled):
 
     cache = build_cache(Settings(cache_enabled=enabled))
     assert isinstance(cache, NullCache) is (not enabled)
+
+
+def test_the_local_profile_uses_memory_cache_by_default():
+    from app.core.config import Settings
+    from app.services.cache import build_cache
+
+    settings = Settings(cache_enabled=True, cache_backend="memory")
+    assert isinstance(build_cache(settings), MemoryToolCache)
