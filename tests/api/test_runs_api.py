@@ -11,7 +11,11 @@ VAGUE = "что-то сломалось, непонятно где"
 async def test_health(client):
     response = await client.get("/health")
     assert response.status_code == 200
-    assert response.json()["status"] == "ok"
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["storage_backend"] == "sqlite"
+    assert payload["cache_backend"] == "memory"
+    assert payload["checkpointer"] == "memory"
 
 
 async def test_a_run_that_wants_to_write_stops_and_says_what_it_wants(client):

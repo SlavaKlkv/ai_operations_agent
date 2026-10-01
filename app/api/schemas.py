@@ -113,3 +113,6 @@ class HealthResponse(BaseModel):
     environment: str
     durable_approvals: bool = False
     authentication: bool = True
+    storage_backend: str
+    cache_backend: str
+    checkpointer: str
