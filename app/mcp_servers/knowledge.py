@@ -14,8 +14,10 @@ worth more here than a marginal gain in recall.
 
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass
+from pathlib import Path
 
 from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
@@ -255,7 +257,13 @@ def build_server(corpus: tuple[Document, ...] = RUNBOOKS) -> MCPServer:
 
 
 def main() -> None:
-    build_server().run("stdio")
+    # Пустой каталог означает demo-режим. Когда пользователь добавил хотя бы
+    # один корректный Markdown-файл, встроенные примеры не подмешиваются.
+    from app.mcp_servers.runbooks import load_directory
+
+    configured = os.getenv("RUNBOOKS_DIR", "").strip()
+    corpus = load_directory(Path(configured)) if configured else ()
+    build_server(corpus or RUNBOOKS).run("stdio")
 
 
 if __name__ == "__main__":

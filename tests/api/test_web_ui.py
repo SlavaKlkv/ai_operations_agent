@@ -27,7 +27,7 @@ async def test_static_assets_are_bundled_and_not_protected_by_api_auth(http_clie
     assert "/approval" in script.text
     assert 'api("/setup")' in script.text
     assert 'api("/setup/model"' in script.text
-    assert 'const action = !isInstalled ? "Не установлена"' in script.text
+    assert "data-download=" in script.text
 
 
 def test_script_uses_text_escaping_for_remote_content():

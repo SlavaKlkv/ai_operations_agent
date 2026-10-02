@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from app.api.routes.setup import get_ollama_client
+from app.api.routes.setup import _storage_check, get_download_manager, get_ollama_client
+from app.core.config import Settings
+from app.services.model_download import ModelDownloadManager
 from app.services.ollama import OllamaSnapshot
 
 
@@ -34,6 +36,7 @@ async def test_setup_reports_actionable_local_state(app, client):
     }
     assert body["model"]["installed"] is True
     assert body["github"]["ready"] is False
+    assert any(item["required"] and not item["ready"] for item in body["sources"])
     assert body["ready"] is False
 
 
@@ -89,3 +92,32 @@ async def test_read_only_user_cannot_change_the_runtime_model(app, reader_client
     response = await reader_client.put("/setup/model", json={"profile": "light"})
 
     assert response.status_code == 403
+
+
+async def test_only_supported_models_can_be_downloaded(app, client):
+    manager = ModelDownloadManager()
+
+    class PullOllama(FakeOllama):
+        async def pull_model(self, model):
+            assert model == "qwen3:4b"
+            yield {"status": "success"}
+
+    app.dependency_overrides[get_download_manager] = lambda: manager
+    app.dependency_overrides[get_ollama_client] = lambda: PullOllama()
+    custom = await client.post(
+        "/setup/model/download", json={"profile": "custom", "model_name": "other:1"}
+    )
+    assert custom.status_code == 422
+    started = await client.post("/setup/model/download", json={"profile": "light"})
+    assert started.status_code == 202
+    assert started.json()["model"] == "qwen3:4b"
+    await manager.task
+    status = await client.get("/setup/model/download")
+    assert status.json()["state"] == "complete"
+
+
+async def test_local_storage_check_requires_a_migrated_writable_database(db_session, tmp_path):
+    settings = Settings(_env_file=None, app_env="local", sqlite_path=tmp_path / "missing.db")
+    check = await _storage_check(db_session, settings)
+    assert check.ready is False
+    assert "миграции" in check.action

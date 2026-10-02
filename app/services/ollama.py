@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
+from typing import Any
 
 import httpx
 
@@ -110,3 +112,24 @@ class OllamaClient:
             raise
         except (httpx.HTTPError, ValueError, TypeError, json.JSONDecodeError) as exc:
             raise ModelCompatibilityError(f"{type(exc).__name__}: {exc}") from exc
+
+    async def pull_model(self, model_name: str) -> AsyncIterator[dict[str, Any]]:
+        """Stream Ollama's newline-delimited pull progress without buffering a model."""
+        timeout = httpx.Timeout(connect=5.0, read=120.0, write=30.0, pool=5.0)
+        try:
+            async with (
+                httpx.AsyncClient(timeout=timeout, transport=self._transport) as client,
+                client.stream(
+                    "POST", f"{self._base_url}/api/pull", json={"model": model_name}
+                ) as response,
+            ):
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    payload = json.loads(line)
+                    if not isinstance(payload, dict):
+                        raise ValueError("invalid Ollama pull progress")
+                    yield payload
+        except (httpx.HTTPError, ValueError, TypeError) as exc:
+            raise OllamaUnavailable("Загрузка модели Ollama прервана. Повторите попытку.") from exc

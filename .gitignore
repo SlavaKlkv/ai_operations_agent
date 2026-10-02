@@ -29,6 +29,9 @@ coverage.xml
 # Артефакты времени выполнения
 *.db
 *.sqlite3
+github-token.key
+github-token.enc
+.github-token-*
 logs/
 data/local/
 

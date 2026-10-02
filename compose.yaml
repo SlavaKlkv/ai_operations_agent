@@ -1,0 +1,36 @@
+name: ai-operations-agent-local
+
+services:
+  app:
+    image: ${AOA_IMAGE:-ghcr.io/slavaklkv/ai-operations-agent:0.1.0}
+    environment:
+      APP_ENV: local
+      AUTH_ENABLED: "false"
+      STORAGE_BACKEND: sqlite
+      SQLITE_PATH: /srv/app/data/ai_operations_agent.db
+      CACHE_BACKEND: memory
+      CHECKPOINTER: sqlite
+      OLLAMA_BASE_URL: ${AOA_HOST_OLLAMA_URL:-http://host.docker.internal:11434}
+      GITHUB_APP_CLIENT_ID: ${GITHUB_APP_CLIENT_ID:-}
+      GITHUB_APP_SLUG: ${GITHUB_APP_SLUG:-}
+      RUNBOOKS_DIR: /srv/app/data/runbooks
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports:
+      - 127.0.0.1:8000:8000
+    volumes:
+      - app-data:/srv/app/data
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+volumes:
+  app-data:

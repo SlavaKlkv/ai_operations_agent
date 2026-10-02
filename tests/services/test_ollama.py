@@ -84,3 +84,22 @@ async def test_custom_model_without_tool_calling_is_rejected():
         await OllamaClient("http://ollama.test", transport=transport).verify_custom_model(
             "text-only:latest"
         )
+
+
+async def test_pull_streams_progress_and_success():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/api/pull"
+        assert json.loads(request.content) == {"model": "qwen3:4b"}
+        return httpx.Response(
+            200,
+            text=(
+                '{"status":"pulling manifest"}\n'
+                '{"status":"pulling layer","completed":50,"total":100}\n'
+                '{"status":"success"}\n'
+            ),
+        )
+
+    client = OllamaClient("http://ollama.test", transport=httpx.MockTransport(handler))
+    updates = [item async for item in client.pull_model("qwen3:4b")]
+    assert updates[-1]["status"] == "success"
+    assert updates[1]["completed"] == 50

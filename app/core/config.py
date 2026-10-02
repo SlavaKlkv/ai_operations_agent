@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     llm_enabled: bool = True
     llm_model: str = "qwen3:8b"
     ollama_base_url: str = "http://localhost:11434"
+    github_app_client_id: str = ""
+    github_app_slug: str = ""
+    prometheus_url: str = ""
+    prometheus_service_label: str = "service"
+    runbooks_dir: Path = Path("data/runbooks")
     llm_max_tokens: int = 4096
     llm_timeout_seconds: float = 60.0
 
