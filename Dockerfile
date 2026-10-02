@@ -1,14 +1,12 @@
-# syntax=docker/dockerfile:1
-
 # ── Этап сборки: установка зависимостей в виртуальное окружение ──────────────
-FROM python:3.13-slim AS builder
+FROM python:3.13-slim@sha256:7c61056e61ac89e852de05f3dc6fa51a6dd2181797bceed46aa725dd7cb2cd3b AS builder
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     UV_PROJECT_ENVIRONMENT=/opt/venv \
     UV_COMPILE_BYTECODE=1
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:latest@sha256:a7aed3216253ee804de3e2d8afa5073baa1a177335345d43845cd4165e43b711 /uv /usr/local/bin/uv
 
 WORKDIR /build
 
@@ -24,7 +22,7 @@ COPY app ./app
 RUN uv sync --locked --no-dev --no-editable
 
 # ── Этап выполнения ──────────────────────────────────────────────────────────
-FROM python:3.13-slim AS runtime
+FROM python:3.13-slim@sha256:7c61056e61ac89e852de05f3dc6fa51a6dd2181797bceed46aa725dd7cb2cd3b AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -38,6 +36,8 @@ COPY --from=builder /opt/venv /opt/venv
 COPY app ./app
 COPY migrations ./migrations
 COPY alembic.ini ./
+
+RUN mkdir -p /srv/app/data/runbooks && chown -R agent:agent /srv/app/data
 
 USER agent
 EXPOSE 8000

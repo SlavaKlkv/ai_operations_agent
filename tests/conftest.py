@@ -18,7 +18,7 @@ TASK = "После последнего релиза billing-service резко 
 
 
 @pytest.fixture(autouse=True)
-def offline(monkeypatch):
+def offline(monkeypatch, tmp_path):
     """No test may reach a real model provider.
 
     Without this, a developer with Ollama running would silently run the suite
@@ -31,6 +31,8 @@ def offline(monkeypatch):
     monkeypatch.setenv("LLM_ENABLED", "false")
     monkeypatch.setenv("LLM_MODEL", "qwen3:8b")
     monkeypatch.setenv("APP_ENV", "test")
+    # Тесты не должны читать реальные локальные GitHub credentials рядом с базой.
+    monkeypatch.setenv("SQLITE_PATH", str(tmp_path / "agent.db"))
     # Запуск четырёх подпроцессов MCP для каждой фикстуры приложения замедлил бы
     # набор тестов без пользы: слой интеграции отдельно проверяется настоящими
     # клиентом и сервером внутри одного процесса.

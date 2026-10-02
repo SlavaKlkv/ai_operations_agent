@@ -4,16 +4,20 @@ from __future__ import annotations
 
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 from functools import lru_cache
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from langgraph.types import Command
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.adapters.empty import NoLogProvider
+from app.adapters.github import GitHubCodeProvider
 from app.agent.checkpointing import get_saver
 from app.agent.graph import build_graph, run_config
 from app.agent.llm import build_chat_model
 from app.agent.state import ApprovalState, RunStatus, initial_state
+from app.api.routes.github import SELECTED_KEY, _connector_for
 from app.api.schemas import (
     ApprovalDecision,
     PendingApproval,
@@ -27,11 +31,12 @@ from app.api.schemas import (
 from app.api.security import Principal, current_principal, require_approver
 from app.core.config import get_settings
 from app.db.base import get_session
-from app.db.models import AgentRun
+from app.db.models import AgentRun, AppSetting
 from app.domain.models import IncidentAnalysis
 from app.observability import recording
 from app.services import run_store
 from app.services.cache import build_cache
+from app.services.prometheus import PrometheusClient, PrometheusMonitoringProvider
 from app.services.settings_store import get_model_selection
 
 router = APIRouter(prefix="/runs", tags=["runs"])
@@ -54,6 +59,57 @@ def get_graph(model_name: str | None = None):
         cache=build_cache(settings),
         use_llm=runtime_settings.llm_enabled,
     )
+
+
+async def _real_graph(
+    session: AsyncSession, model_name: str | None
+) -> tuple[object, Callable[[], Awaitable[None]]] | None:
+    """Build a graph over real read-only sources when their minimum set exists.
+
+    It intentionally omits issue tools: until real logs and runbook retrieval
+    take part in the graph, a real GitHub write must not be proposed from a
+    mixture of production observations and missing evidence.
+    """
+    settings = get_settings()
+    selected = await session.get(AppSetting, SELECTED_KEY)
+    if selected is None or not settings.prometheus_url:
+        return None
+    value = selected.value
+    installation_id = value.get("installation_id")
+    repository_id = value.get("id")
+    repository = value.get("full_name")
+    if (
+        not isinstance(installation_id, int)
+        or not isinstance(repository_id, int)
+        or not isinstance(repository, str)
+    ):
+        return None
+    connector = _connector_for(settings)
+    allowed = await connector.repositories(installation_id)
+    if not any(item["id"] == repository_id and item["full_name"] == repository for item in allowed):
+        return None
+    prometheus = PrometheusClient(
+        settings.prometheus_url, service_label=settings.prometheus_service_label
+    )
+    runtime_settings = settings.model_copy(update={"llm_model": model_name or settings.llm_model})
+    graph = build_graph(
+        monitoring=PrometheusMonitoringProvider(prometheus),
+        code=GitHubCodeProvider(connector, repository),
+        logs=NoLogProvider(),
+        model=build_chat_model(runtime_settings),
+        checkpointer=get_saver(),
+        cache=build_cache(settings),
+        use_llm=runtime_settings.llm_enabled,
+        enable_issue_tools=False,
+    )
+    return graph, prometheus.close
+
+
+async def _graph_for_run(
+    session: AsyncSession, model_name: str | None
+) -> tuple[object, Callable[[], Awaitable[None]] | None]:
+    real = await _real_graph(session, model_name)
+    return real if real is not None else (get_graph(model_name), None)
 
 
 def _to_detail(run: AgentRun) -> RunDetail:
@@ -120,10 +176,15 @@ async def start_run(
     recording.record_run_started(payload.target_service)
 
     started = time.perf_counter()
-    final = await get_graph(run.model_name).ainvoke(
-        initial_state(str(run.id), payload.task, payload.target_service),
-        run_config(str(run.id)),
-    )
+    graph, close_graph = await _graph_for_run(session, run.model_name)
+    try:
+        final = await graph.ainvoke(
+            initial_state(str(run.id), payload.task, payload.target_service),
+            run_config(str(run.id)),
+        )
+    finally:
+        if close_graph is not None:
+            await close_graph()
     await run_store.persist_progress(session, run, final, pending=_interrupt_payload(final))
     recording.record_run(final, duration_seconds=time.perf_counter() - started)
     stored = await run_store.get_run(session, run.id)
@@ -163,16 +224,21 @@ async def decide_approval(
     recording.record_decision(approved=decision.approved)
 
     started = time.perf_counter()
-    final = await get_graph(run.model_name).ainvoke(
-        Command(
-            resume={
-                "approved": decision.approved,
-                "decided_by": principal.actor,
-                "note": decision.note,
-            }
-        ),
-        run_config(str(run.id)),
-    )
+    graph, close_graph = await _graph_for_run(session, run.model_name)
+    try:
+        final = await graph.ainvoke(
+            Command(
+                resume={
+                    "approved": decision.approved,
+                    "decided_by": principal.actor,
+                    "note": decision.note,
+                }
+            ),
+            run_config(str(run.id)),
+        )
+    finally:
+        if close_graph is not None:
+            await close_graph()
     await run_store.persist_progress(session, run, final, pending=_interrupt_payload(final))
     recording.record_run(final, duration_seconds=time.perf_counter() - started)
     stored = await run_store.get_run(session, run.id)

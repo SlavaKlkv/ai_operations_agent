@@ -174,6 +174,7 @@ def build_graph(
     guardrails: Guardrails | None = None,
     cache: ToolCache | None = None,
     use_llm: bool = True,
+    enable_issue_tools: bool = True,
 ):
     """Compile the workflow.
 
@@ -188,7 +189,8 @@ def build_graph(
     monitoring = monitoring or MockMonitoringProvider()
     code = code or MockCodeProvider()
     logs = logs or MockLogProvider()
-    issues = issues or MockIssueProvider()
+    if issues is None and enable_issue_tools:
+        issues = MockIssueProvider()
     guardrails = guardrails or Guardrails()
 
     if use_llm and model is None:

@@ -1,0 +1,7 @@
+# Проверка пользовательского Compose без опубликованного образа.
+services:
+  app:
+    image: ai-operations-agent:local-validation
+    build:
+      context: .
+      dockerfile: Dockerfile
