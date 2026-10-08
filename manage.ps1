@@ -1,7 +1,7 @@
 # Обслуживание готовой поставки из GitHub Release.
 [CmdletBinding()]
 param(
-    [Parameter(Position = 0)] [ValidateSet("start", "stop", "update", "status", "diagnose", "backup", "restore", "destroy", "help")]
+    [Parameter(Position = 0)] [ValidateSet("start", "stop", "update", "status", "diagnose", "report", "backup", "restore", "destroy", "help")]
     [string] $Command = "help",
     [Parameter(Position = 1)] [string] $Path,
     [switch] $DeleteData
@@ -23,7 +23,7 @@ function Require-Docker {
 }
 
 function Invoke-Compose { param([Parameter(ValueFromRemainingArguments = $true)] $Arguments) & docker compose -f $composeFile @Arguments; if ($LASTEXITCODE -ne 0) { throw "Команда Docker Compose завершилась с ошибкой." } }
-function Show-Usage { Write-Host "Команды: start, stop, update, status, diagnose, backup <файл.db>, restore <файл.db>, destroy -DeleteData" }
+function Show-Usage { Write-Host "Команды: start, stop, update, status, diagnose, report <файл.json>, backup <файл.db>, restore <файл.db>, destroy -DeleteData" }
 
 Require-Docker
 switch ($Command) {
@@ -32,6 +32,14 @@ switch ($Command) {
     "update" { Invoke-Compose pull; Invoke-Compose up -d --wait }
     "status" { Invoke-Compose ps }
     "diagnose" { Invoke-Compose ps; try { Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8000/health | Select-Object -ExpandProperty Content } catch { Write-Warning $_ }; Invoke-Compose logs --tail 100 $service }
+    "report" {
+        if (-not $Path) { throw "Укажите путь к файлу отчёта." }
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Path) | Out-Null
+        # Отчёт формируется уже замаскированным: секреты не попадают на диск.
+        & docker compose -f $composeFile exec -T $service python -m app.observability.diagnostics | Set-Content -LiteralPath $Path -Encoding utf8
+        if ($LASTEXITCODE -ne 0) { throw "Не удалось записать диагностический отчёт." }
+        Write-Host "Диагностический отчёт записан: $Path"
+    }
     "backup" {
         if (-not $Path) { throw "Укажите путь к файлу резервной копии." }
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Path) | Out-Null

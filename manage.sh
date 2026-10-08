@@ -18,6 +18,7 @@ usage() {
   update                Загрузить новую версию образа и перезапустить приложение.
   status                Показать состояние контейнера.
   diagnose              Показать состояние, health и последние логи.
+  report <файл.json>    Записать диагностический отчёт без секретов.
   backup <файл.db>      Создать согласованную SQLite-копию.
   restore <файл.db>     Проверить и восстановить SQLite-копию.
   destroy --delete-data Остановить приложение и удалить volume с данными.
@@ -80,6 +81,12 @@ case "$command" in
     update) compose pull; compose up -d --wait ;;
     status) compose ps ;;
     diagnose) compose ps; curl -fsS http://127.0.0.1:8000/health || true; compose logs --tail 100 "$service" ;;
+    report)
+        [ $# -eq 2 ] || { usage; exit 2; }
+        # Отчёт формируется уже замаскированным: секреты не попадают на диск.
+        compose exec -T "$service" python -m app.observability.diagnostics > "$2"
+        echo "Диагностический отчёт записан: $2"
+        ;;
     backup) [ $# -eq 2 ] || { usage; exit 2; }; backup "$2" ;;
     restore) [ $# -eq 2 ] || { usage; exit 2; }; restore "$2" ;;
     destroy)
