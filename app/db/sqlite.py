@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import sqlite3
 from pathlib import Path
 
@@ -39,7 +40,9 @@ def verify_integrity(path: Path) -> None:
     if not path.exists() or path.stat().st_size == 0:
         return
     try:
-        with sqlite3.connect(f"file:{path}?mode=ro", uri=True) as connection:
+        # Закрываем соединение явно: контекстный менеджер sqlite3 не закрывает его,
+        # а на Windows открытый файл базы не удаётся заменить или удалить.
+        with contextlib.closing(sqlite3.connect(f"file:{path}?mode=ro", uri=True)) as connection:
             result = connection.execute("PRAGMA quick_check").fetchone()
     except sqlite3.DatabaseError as exc:
         raise DatabaseIntegrityError(f"SQLite database is unreadable: {path}") from exc

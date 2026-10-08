@@ -33,7 +33,7 @@ async def test_static_assets_are_bundled_and_not_protected_by_api_auth(http_clie
 def test_script_uses_text_escaping_for_remote_content():
     from app.web.routes import STATIC_DIR
 
-    script = (STATIC_DIR / "app.js").read_text()
+    script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
     assert "escapeHtml(item.summary)" in script
     assert "escapeHtml(run.task)" in script
     assert "escapeHtml(source.error" in script

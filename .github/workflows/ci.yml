@@ -65,7 +65,7 @@ jobs:
             $tokens = $null; $errors = $null
             [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path -LiteralPath $file).Path, [ref]$tokens, [ref]$errors) | Out-Null
             if ($errors.Count -gt 0) {
-              $errors | ForEach-Object { Write-Host "$file:$($_.Extent.StartLineNumber): $($_.Message)" }
+              $errors | ForEach-Object { Write-Host "${file}:$($_.Extent.StartLineNumber): $($_.Message)" }
               $failed = $true
             }
           }

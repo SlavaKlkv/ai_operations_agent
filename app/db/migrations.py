@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import sqlite3
 from pathlib import Path
 
@@ -35,7 +36,9 @@ def _build_config(settings: Settings) -> Config:
 def _current_revision(path: Path) -> str | None:
     """Прочитать применённую ревизию, не изменяя базу."""
     try:
-        with sqlite3.connect(f"file:{path}?mode=ro", uri=True) as connection:
+        # Явное закрытие: контекстный менеджер sqlite3 не закрывает соединение, а
+        # на Windows открытый файл базы остаётся заблокированным для замены.
+        with contextlib.closing(sqlite3.connect(f"file:{path}?mode=ro", uri=True)) as connection:
             row = connection.execute("SELECT version_num FROM alembic_version").fetchone()
     except sqlite3.DatabaseError:
         # Таблица версии ещё не создана; пустую схему обрабатывает `verify_integrity`.
