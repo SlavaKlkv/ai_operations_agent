@@ -204,3 +204,24 @@ async def test_the_audit_trail_names_the_person_not_the_agent(client, db_session
     decision = next(e for e in events if e.action == "approval.rejected")
     assert decision.actor == "oncall@example.com"
     assert decision.detail["note"] == "not now"
+
+
+# ── Трассировка ────────────────────────────────────────────────────────────
+
+
+async def test_trace_explains_the_run_without_rerunning_it(client):
+    """Проверяемость: трасса показывает, что агент сделал, и берётся из записанных
+    наблюдений, поэтому совпадает с уже сохранённым запуском."""
+    created = (await client.post("/runs", json={"task": TASK})).json()
+
+    trace = (await client.get(f"/runs/{created['id']}/trace")).json()
+
+    assert trace["run_id"] == created["id"]
+    assert trace["status"] == created["status"]
+    nodes = [step["node"] for step in trace["steps"]]
+    assert "analyze_task" in nodes
+    assert len(trace["tool_calls"]) == created["tool_call_count"]
+
+
+async def test_trace_of_an_unknown_run_is_404(client):
+    assert (await client.get(f"/runs/{uuid.uuid4()}/trace")).status_code == 404
