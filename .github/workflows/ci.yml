@@ -65,7 +65,7 @@ jobs:
         run: uv run python -m app.evaluation --quiet
 
   docker:
-    name: Docker image builds
+    name: Docker image builds and starts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -78,5 +78,31 @@ jobs:
         with:
           context: .
           push: false
+          load: true
+          tags: ai-operations-agent:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Smoke-test the production image
+        # Образ успешно собрался — ещё не значит, что приложение стартует и
+        # применяет миграции. Поднимаем его и проверяем живые ответы.
+        run: |
+          set -eu
+          docker run -d --name aoa-smoke -p 127.0.0.1:8000:8000 \
+            -e APP_ENV=local -e AUTH_ENABLED=false -e LLM_ENABLED=false \
+            -e STORAGE_BACKEND=sqlite -e SQLITE_PATH=/srv/app/data/agent.db \
+            -e CACHE_BACKEND=memory -e CHECKPOINTER=sqlite -e MCP_ENABLED=false \
+            ai-operations-agent:ci
+          ready=0
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8000/health >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            docker logs aoa-smoke
+            docker rm -f aoa-smoke
+            echo "приложение не поднялось за 30 секунд" >&2
+            exit 1
+          fi
+          curl -fsS http://127.0.0.1:8000/health
+          curl -fsS http://127.0.0.1:8000/ | grep -q 'AI Operations Agent'
+          docker rm -f aoa-smoke
