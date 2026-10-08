@@ -30,6 +30,7 @@
         <button class="nav-item active" data-view="investigate"><span>⌁</span>Расследование</button>
         <button class="nav-item" data-view="history"><span>◷</span>История</button>
         <button class="nav-item" data-view="sources"><span>◇</span>Источники</button>
+        <button class="nav-item" data-view="diagnostics"><span>⌾</span>Диагностика</button>
       </nav>
 
       <div class="sidebar-footer">
@@ -80,6 +81,7 @@
             <section><h4>Рекомендуемые действия</h4><ol id="actions"></ol></section>
           </div>
           <section class="evidence"><h4>Доказательства <span id="evidence-count"></span></h4><div id="evidence-list"></div></section>
+          <section class="trace"><h4>Ход расследования <span id="trace-count"></span></h4><ol class="trace-list" id="trace-list"></ol></section>
           <section class="approval hidden" id="approval">
             <div><span class="warning">!</span><div><h4>Требуется подтверждение</h4><p id="approval-rationale"></p></div></div>
             <details><summary>Просмотреть создаваемый issue</summary><pre id="issue-preview"></pre></details>
@@ -91,6 +93,7 @@
 
       <section class="view" id="view-history"><div class="section-head"><div><p class="kicker">RUN ARCHIVE</p><h2>История расследований</h2></div><button class="secondary" id="refresh-history">Обновить</button></div><div class="history-list" id="history-list"></div></section>
       <section class="view" id="view-sources"><div class="section-head"><div><p class="kicker">CONNECTIONS</p><h2>Источники данных</h2></div></div><div class="source-grid" id="source-grid"><div class="empty-card">Состояние источников загружается…</div></div></section>
+      <section class="view" id="view-diagnostics"><div class="section-head"><div><p class="kicker">LOCAL DIAGNOSTICS</p><h2>Диагностика</h2></div><button class="secondary" id="refresh-diagnostics" type="button">Обновить</button></div><div class="source-grid" id="diagnostics-grid"><div class="empty-card">Собираем состояние…</div></div><div class="settings-card"><h3>Отчёт для поддержки</h3><p>Отчёт без секретов формируется командой <code>./manage.sh report agent-report.json</code> (или <code>manage.ps1 -Command report</code>). Токены и пароли в нём маскируются.</p></div></section>
       <section class="view" id="view-settings"><div class="section-head"><div><p class="kicker">LOCAL CONTROL</p><h2>Настройки</h2></div></div><div class="settings-card"><h3>Локальная сессия</h3><p>Интерфейс работает без API-токена. Данные расследований остаются в локальном хранилище приложения.</p><p class="settings-note" id="active-model">Проверяем активную модель…</p><button class="secondary" id="open-setup" type="button">Открыть мастер настройки</button></div></section>
     </main>
   </div>
