@@ -12,7 +12,8 @@ from langgraph.types import Command
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.empty import NoLogProvider
-from app.adapters.github import GitHubCodeProvider
+from app.adapters.github import GitHubCodeProvider, GitHubIssueProvider
+from app.adapters.runbooks import LocalRunbookProvider
 from app.agent.checkpointing import get_saver
 from app.agent.graph import build_graph, run_config
 from app.agent.llm import build_chat_model
@@ -66,9 +67,9 @@ async def _real_graph(
 ) -> tuple[object, Callable[[], Awaitable[None]]] | None:
     """Build a graph over real read-only sources when their minimum set exists.
 
-    It intentionally omits issue tools: until real logs and runbook retrieval
-    take part in the graph, a real GitHub write must not be proposed from a
-    mixture of production observations and missing evidence.
+    Real sources stay isolated from demo providers. A missing optional source
+    is visible in the trace and does not silently switch the investigation to
+    synthetic data.
     """
     settings = get_settings()
     selected = await session.get(AppSetting, SELECTED_KEY)
@@ -96,11 +97,12 @@ async def _real_graph(
         monitoring=PrometheusMonitoringProvider(prometheus),
         code=GitHubCodeProvider(connector, repository),
         logs=NoLogProvider(),
+        issues=GitHubIssueProvider(connector, repository),
+        knowledge=LocalRunbookProvider(settings.runbooks_dir),
         model=build_chat_model(runtime_settings),
         checkpointer=get_saver(),
         cache=build_cache(settings),
         use_llm=runtime_settings.llm_enabled,
-        enable_issue_tools=False,
     )
     return graph, prometheus.close
 

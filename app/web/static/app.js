@@ -175,7 +175,7 @@ function renderSetup(data, showOverlay = true) {
   const sourceChecks = data.sources.map((source) => setupCheck(source.name, {
     ready: source.ready,
     status: source.detail,
-    action: source.ready ? null : (source.name === "Реальные операционные источники" ? "Для реальных расследований потребуется следующая версия." : (source.required ? "Проверьте обязательный источник." : "Можно настроить позже.")),
+    action: source.ready ? null : (source.required ? "Проверьте обязательный источник." : "Можно настроить позже."),
   })).join("");
   $("#setup-checks").innerHTML = [
     setupCheck("Ollama", data.ollama),

@@ -159,6 +159,17 @@ class Evidence(_Frozen):
     observed_at: datetime | None = None
 
 
+class RunbookHit(_Frozen):
+    """A bounded, traceable result from the local runbook catalogue."""
+
+    doc_id: str
+    title: str
+    excerpt: str
+    score: float
+    services: tuple[str, ...] = ()
+    tags: tuple[str, ...] = ()
+
+
 class Hypothesis(_Frozen):
     statement: str
     confidence: Confidence

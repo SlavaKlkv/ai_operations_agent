@@ -121,7 +121,7 @@ async def test_the_knowledge_server_is_reachable_as_a_tool(pool):
     hits = await MCPKnowledgeProvider(pool).search_runbooks(
         "rollback billing", service="billing-service"
     )
-    assert hits and hits[0]["doc_id"] == "rb-billing-rollback"
+    assert hits and hits[0].doc_id == "rb-billing-rollback"
 
 
 async def test_losing_the_optional_server_does_not_change_the_conclusion(

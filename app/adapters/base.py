@@ -19,6 +19,7 @@ from app.domain.models import (
     IssueDraft,
     MetricSeries,
     PullRequest,
+    RunbookHit,
 )
 
 
@@ -49,6 +50,15 @@ class LogProvider(Protocol):
     async def get_error_groups(
         self, service: str, start: datetime, end: datetime, min_count: int = 1
     ) -> list[ErrorGroup]: ...
+
+
+@runtime_checkable
+class KnowledgeProvider(Protocol):
+    """Read-only operational runbooks relevant to an investigation."""
+
+    async def search_runbooks(
+        self, query: str, service: str | None = None, limit: int = 3
+    ) -> list[RunbookHit]: ...
 
 
 @runtime_checkable

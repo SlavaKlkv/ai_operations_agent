@@ -61,6 +61,7 @@ from langgraph.graph import END, START, StateGraph
 from app.adapters.base import (
     CodeProvider,
     IssueProvider,
+    KnowledgeProvider,
     LogProvider,
     MonitoringProvider,
 )
@@ -168,6 +169,7 @@ def build_graph(
     code: CodeProvider | None = None,
     logs: LogProvider | None = None,
     issues: IssueProvider | None = None,
+    knowledge: KnowledgeProvider | None = None,
     model: BaseChatModel | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
     planner: Planner | None = None,
@@ -199,7 +201,7 @@ def build_graph(
         model = None
     planner = planner or (LLMPlanner(model) if model is not None else HeuristicPlanner())
 
-    registry = build_registry(monitoring, code, logs, issues)
+    registry = build_registry(monitoring, code, logs, issues, knowledge)
     timeout = guardrails.tool_timeout_seconds
 
     builder = StateGraph(AgentState)

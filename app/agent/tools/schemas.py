@@ -27,6 +27,7 @@ from app.domain.models import (
     Issue,
     MetricSeries,
     PullRequest,
+    RunbookHit,
 )
 
 #: Метрики, которые гарантированно предоставляет слой мониторинга. Ограничение
@@ -114,6 +115,21 @@ class GetErrorGroupsArgs(WindowArgs):
 
 class ErrorGroupsResult(_Result):
     groups: tuple[ErrorGroup, ...] = ()
+
+
+# ── Runbooks ─────────────────────────────────────────────────────────────────
+
+
+class SearchRunbooksArgs(_Args):
+    query: str = Field(
+        min_length=1, max_length=400, description="Keywords describing the incident."
+    )
+    service: str | None = Field(default=None, description="Prefer runbooks for one service.")
+    limit: int = Field(default=3, ge=1, le=10, description="Maximum number of relevant runbooks.")
+
+
+class RunbooksResult(_Result):
+    hits: tuple[RunbookHit, ...] = ()
 
 
 # ── Issues ───────────────────────────────────────────────────────────────────
