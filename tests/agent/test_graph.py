@@ -10,7 +10,23 @@ from app.agent.guardrails import Guardrails
 from app.agent.llm import ScriptedChatModel
 from app.agent.nodes.investigate import MAX_LOOP_ITERATIONS
 from app.agent.state import CollectedContext, RunStatus, initial_state
-from app.domain.models import MetricSeries
+from app.domain.models import MetricSeries, RunbookHit
+
+
+class StaticKnowledge:
+    async def search_runbooks(self, query, service=None, limit=3):
+        assert "billing-service" in query
+        assert service == "billing-service"
+        assert limit == 3
+        return [
+            RunbookHit(
+                doc_id="rb-rollback",
+                title="Rollback billing-service",
+                excerpt="Roll back the previous release and watch the error rate.",
+                score=1.0,
+                services=("billing-service",),
+            )
+        ]
 
 
 def test_routing_requires_metrics():
@@ -57,6 +73,21 @@ async def test_every_claim_is_backed_by_a_tool_call(monitoring, code, logs, fres
     executed = {r.tool for r in final["tool_calls"]} | {"detect_spike"}
     cited = {e.source_tool for e in final["analysis"].evidence}
     assert cited <= executed
+
+
+async def test_runbook_search_becomes_grounded_read_only_evidence(
+    monitoring, code, logs, fresh_state
+):
+    final = await build_graph(
+        monitoring=monitoring,
+        code=code,
+        logs=logs,
+        knowledge=StaticKnowledge(),
+        use_llm=False,
+    ).ainvoke(fresh_state, run_config(fresh_state["run_id"]))
+
+    assert "search_runbooks" in [call.tool for call in final["tool_calls"]]
+    assert any(item.source_tool == "search_runbooks" for item in final["analysis"].evidence)
 
 
 async def test_run_stays_within_its_budget(monitoring, code, logs, fresh_state):

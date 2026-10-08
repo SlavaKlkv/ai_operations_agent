@@ -16,6 +16,7 @@ from __future__ import annotations
 from app.adapters.base import (
     CodeProvider,
     IssueProvider,
+    KnowledgeProvider,
     LogProvider,
     MonitoringProvider,
 )
@@ -37,7 +38,9 @@ from app.agent.tools.schemas import (
     IssuesResult,
     MetricsResult,
     PullRequestResult,
+    RunbooksResult,
     SearchIssuesArgs,
+    SearchRunbooksArgs,
 )
 from app.domain.models import IssueDraft
 
@@ -133,6 +136,13 @@ def _render_error_groups(result: ErrorGroupsResult) -> str:
     )
 
 
+def _render_runbooks(result: RunbooksResult) -> str:
+    if not result.hits:
+        return "No relevant local runbooks were found."
+    lines = [f"- {hit.title} ({hit.doc_id}): {hit.excerpt}" for hit in result.hits[:RENDER_LIMIT]]
+    return _with_overflow(f"{len(result.hits)} relevant runbook(s):", lines, len(result.hits))
+
+
 def _render_issues(result: IssuesResult) -> str:
     if not result.issues:
         return "No matching issues."
@@ -167,6 +177,7 @@ def build_registry(
     code: CodeProvider,
     logs: LogProvider,
     issues: IssueProvider | None = None,
+    knowledge: KnowledgeProvider | None = None,
     *,
     actor: str = "ai-operations-agent",
 ) -> ToolRegistry:
@@ -208,6 +219,12 @@ def build_registry(
         start, end = _require_window(args)
         found = await logs.get_error_groups(args.service, start, end, args.min_count)
         return ErrorGroupsResult(groups=tuple(found))
+
+    async def search_runbooks(args: SearchRunbooksArgs) -> RunbooksResult:
+        assert knowledge is not None
+        return RunbooksResult(
+            hits=tuple(await knowledge.search_runbooks(args.query, args.service, args.limit))
+        )
 
     async def search_issues(args: SearchIssuesArgs) -> IssuesResult:
         assert issues is not None
@@ -349,5 +366,21 @@ def build_registry(
                 cost=3,
             ),
         ]
+
+    if knowledge is not None:
+        tools.append(
+            AgentTool(
+                name="search_runbooks",
+                description=(
+                    "Search the user-owned local Markdown runbook catalogue for documented "
+                    "mitigation relevant to the observed incident. Read-only."
+                ),
+                args_schema=SearchRunbooksArgs,
+                result_schema=RunbooksResult,
+                access=ToolAccess.READ,
+                handler=search_runbooks,
+                render=_render_runbooks,
+            )
+        )
 
     return ToolRegistry(tools)

@@ -55,6 +55,31 @@ class DocumentOut(BaseModel):
     tags: list[str] = Field(default_factory=list)
 
 
+def search_documents(
+    corpus: tuple[Document, ...], query: str, service: str | None = None, limit: int = 3
+) -> list[SearchHit]:
+    """Search a validated local catalogue without exposing file paths to callers."""
+    terms = _tokenise(query)
+    if not terms:
+        raise ToolFailure("query must contain at least one searchable word")
+    if not 1 <= limit <= 10:
+        raise ToolFailure("limit must be between 1 and 10")
+    average_length = sum(len(_tokenise(d.body)) for d in corpus) / max(len(corpus), 1)
+    scored = [(_score(document, terms, service, average_length), document) for document in corpus]
+    ranked = sorted(((s, d) for s, d in scored if s > 0), key=lambda pair: pair[0], reverse=True)
+    return [
+        SearchHit(
+            doc_id=d.doc_id,
+            title=d.title,
+            score=s,
+            services=list(d.services),
+            tags=list(d.tags),
+            excerpt=_excerpt(d, terms),
+        )
+        for s, d in ranked[:limit]
+    ]
+
+
 RUNBOOKS: tuple[Document, ...] = (
     Document(
         doc_id="rb-billing-rollback",
@@ -187,7 +212,6 @@ def build_server(corpus: tuple[Document, ...] = RUNBOOKS) -> MCPServer:
             "excerpt suggests the full text is needed."
         ),
     )
-    average_length = sum(len(_tokenise(d.body)) for d in corpus) / max(len(corpus), 1)
     by_id = {d.doc_id: d for d in corpus}
 
     @server.tool(
@@ -201,29 +225,7 @@ def build_server(corpus: tuple[Document, ...] = RUNBOOKS) -> MCPServer:
     async def search_runbooks(
         query: str, service: str | None = None, limit: int = 3
     ) -> list[SearchHit]:
-        terms = _tokenise(query)
-        if not terms:
-            raise ToolFailure("query must contain at least one searchable word")
-        if not 1 <= limit <= 10:
-            raise ToolFailure("limit must be between 1 and 10")
-
-        scored = [
-            (_score(document, terms, service, average_length), document) for document in corpus
-        ]
-        ranked = sorted(
-            ((s, d) for s, d in scored if s > 0), key=lambda pair: pair[0], reverse=True
-        )
-        return [
-            SearchHit(
-                doc_id=d.doc_id,
-                title=d.title,
-                score=s,
-                services=list(d.services),
-                tags=list(d.tags),
-                excerpt=_excerpt(d, terms),
-            )
-            for s, d in ranked[:limit]
-        ]
+        return search_documents(corpus, query, service, limit)
 
     @server.tool(
         description="Fetch one runbook in full by its document id.",

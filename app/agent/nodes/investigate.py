@@ -31,6 +31,7 @@ from app.agent.tools.schemas import (
     ErrorGroupsResult,
     MetricsResult,
     PullRequestResult,
+    RunbooksResult,
 )
 from app.domain.models import Evidence, EvidenceKind
 from app.services.cache import ToolCache
@@ -50,6 +51,7 @@ EVIDENCE_KINDS: dict[str, EvidenceKind] = {
     "get_commits": EvidenceKind.COMMIT,
     "get_pull_request": EvidenceKind.COMMIT,
     "get_error_groups": EvidenceKind.LOG,
+    "search_runbooks": EvidenceKind.DOCUMENT,
 }
 
 
@@ -286,6 +288,8 @@ def _absorb(context: CollectedContext, invocation: ToolInvocation) -> None:
             )
         case PullRequestResult():
             pass  # Pull request дополняют описание; корреляции по ним пока нет.
+        case RunbooksResult():
+            pass  # Runbook is evidence for an operator, not an inferred fact.
 
 
 def _merge[T](existing: list[T], incoming: tuple[T, ...], *, key) -> list[T]:

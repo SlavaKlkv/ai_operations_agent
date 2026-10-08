@@ -39,6 +39,7 @@ from app.domain.models import (
     MetricPoint,
     MetricSeries,
     PullRequest,
+    RunbookHit,
 )
 from app.mcp.client import MCPToolPool, ToolCallFailed
 
@@ -272,7 +273,7 @@ class MCPKnowledgeProvider:
 
     async def search_runbooks(
         self, query: str, service: str | None = None, limit: int = 3
-    ) -> list[dict[str, Any]]:
+    ) -> list[RunbookHit]:
         payload = _unwrap(
             await self._pool.call(
                 "search_runbooks", {"query": query, "service": service, "limit": limit}
@@ -280,7 +281,20 @@ class MCPKnowledgeProvider:
         )
         if not isinstance(payload, list):
             raise RemoteDataError("runbook search did not return a list of hits")
-        return payload
+        try:
+            return [
+                RunbookHit(
+                    doc_id=item["doc_id"],
+                    title=item["title"],
+                    excerpt=item["excerpt"],
+                    score=float(item["score"]),
+                    services=tuple(item.get("services", ())),
+                    tags=tuple(item.get("tags", ())),
+                )
+                for item in payload
+            ]
+        except (KeyError, TypeError, ValueError, ValidationError) as exc:
+            raise RemoteDataError(f"malformed runbook search: {exc}") from exc
 
 
 class MCPIssueProvider:

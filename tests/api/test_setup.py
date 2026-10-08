@@ -36,7 +36,8 @@ async def test_setup_reports_actionable_local_state(app, client):
     }
     assert body["model"]["installed"] is True
     assert body["github"]["ready"] is False
-    assert any(item["required"] and not item["ready"] for item in body["sources"])
+    real_runs = next(item for item in body["sources"] if item["name"] == "Реальные расследования")
+    assert real_runs["ready"] is False
     assert body["ready"] is False
 
 

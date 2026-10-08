@@ -140,6 +140,18 @@ class HeuristicPlanner:
                 ),
                 "errors were observed but no commits had been read",
             )
+        if context.error_groups:
+            query = " ".join([service, *[group.error_type for group in context.error_groups[:2]]])
+            yield (
+                ToolRequest(
+                    tool="search_runbooks",
+                    arguments={"query": query, "service": service},
+                    reason=(
+                        "documented mitigation may reduce impact while the cause is investigated"
+                    ),
+                ),
+                "observed errors have not been checked against local runbooks",
+            )
 
 
 # ── LLM ──────────────────────────────────────────────────────────────────────

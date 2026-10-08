@@ -83,18 +83,7 @@ async def _sources(settings: Settings, pool: MCPToolPool) -> list[SourceView]:
     prometheus = await _prometheus_source(settings)
     runbooks = _runbooks_source(settings)
     if not settings.mcp_enabled:
-        return [
-            prometheus,
-            runbooks,
-            SourceView(
-                name="Реальные операционные источники",
-                ready=False,
-                required=True,
-                detail=(
-                    "Сейчас доступен только demo-сценарий. Реальные источники ещё не подключены."
-                ),
-            ),
-        ]
+        return [prometheus, runbooks]
     await pool.connect()
     sources = [
         SourceView(
@@ -111,14 +100,6 @@ async def _sources(settings: Settings, pool: MCPToolPool) -> list[SourceView]:
     ]
     sources.append(prometheus)
     sources.append(runbooks)
-    sources.append(
-        SourceView(
-            name="Реальные операционные источники",
-            ready=False,
-            required=True,
-            detail="Текущие MCP-серверы используют синтетические данные.",
-        )
-    )
     return sources
 
 
@@ -237,6 +218,25 @@ async def setup_status(
         ready=github_ready,
         status="GitHub подключён" if github_ready else "GitHub не подключён",
         action=github_action,
+    )
+    prometheus_ready = next(
+        (source.ready for source in sources if source.name == "Prometheus"), False
+    )
+    runbooks_ready = next(
+        (source.ready for source in sources if source.name == "Локальные runbook"), False
+    )
+    sources.append(
+        SourceView(
+            name="Реальные расследования",
+            ready=github.ready and prometheus_ready and runbooks_ready,
+            required=False,
+            detail=(
+                "GitHub, Prometheus и локальные runbook подключены. Новые расследования "
+                "используют только эти источники."
+                if github.ready and prometheus_ready and runbooks_ready
+                else "Для real-run подключите GitHub, Prometheus и хотя бы один локальный runbook."
+            ),
+        )
     )
     required_sources_ready = all(item.ready for item in sources if item.required)
     return SetupView(

@@ -63,8 +63,13 @@ async def test_connection_selection_and_disconnect(app, client, tmp_path):
         assert preview.json()["commits"][0]["message"] == "Fix incident"
         assert all(path.startswith("/repos/octocat/repo/") for _, path in requested)
         setup = await client.get("/setup")
-        assert setup.json()["ready"] is False
-        assert any(not source["ready"] for source in setup.json()["sources"])
+        assert setup.json()["ready"] is True
+        real_runs = next(
+            source
+            for source in setup.json()["sources"]
+            if source["name"] == "Реальные расследования"
+        )
+        assert real_runs["ready"] is False
         disconnected = await client.delete("/github")
         assert disconnected.json() == {"connected": False}
         assert connector.store.read() is None
