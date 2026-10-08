@@ -29,8 +29,13 @@ jobs:
         run: uv run ruff format --check .
 
   test:
-    name: Tests
-    runs-on: ubuntu-latest
+    name: Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Веха 9: одни и те же тесты на всех заявленных платформах.
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -43,8 +48,29 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: coverage
+          name: coverage-${{ matrix.os }}
           path: coverage.xml
+
+  powershell:
+    name: PowerShell scripts parse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse start.ps1 and manage.ps1
+        # PowerShell Core есть на ubuntu-раннере: синтаксис проверяется без Windows.
+        shell: pwsh
+        run: |
+          $failed = $false
+          foreach ($file in @("start.ps1", "manage.ps1")) {
+            $tokens = $null; $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path -LiteralPath $file).Path, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Host "$file:$($_.Extent.StartLineNumber): $($_.Message)" }
+              $failed = $true
+            }
+          }
+          if ($failed) { exit 1 }
+          Write-Host "PowerShell-скрипты разбираются без ошибок."
 
   evaluate:
     name: Agent evaluation
