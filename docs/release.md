@@ -54,7 +54,7 @@ curl -fsS http://127.0.0.1:8000/health
 
 ```bash
 cosign verify ghcr.io/slavaklkv/ai-operations-agent:<версия> \
-  --certificate-identity-regexp 'https://github.com/Slavaklvk/ai-operations-agent/.*' \
+  --certificate-identity-regexp 'https://github.com/SlavaKlkv/ai_operations_agent/.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
