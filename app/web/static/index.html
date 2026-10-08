@@ -3,8 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="dark light">
   <title>AI Operations Agent</title>
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem("aoa-theme");
+        var theme = saved || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+        document.documentElement.dataset.theme = theme;
+      } catch (error) {
+        document.documentElement.dataset.theme = "dark";
+      }
+    })();
+  </script>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -30,7 +41,13 @@
     <main>
       <header class="topbar">
         <div><span class="eyebrow">Рабочее пространство</span><h1 id="view-title">Новое расследование</h1></div>
-        <div class="health-pill" id="health-pill"><span></span><b>Проверка</b></div>
+        <div class="topbar-actions">
+          <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Переключить тему" title="Переключить тему" aria-pressed="false">
+            <span class="theme-icon" aria-hidden="true"></span>
+            <span class="theme-label">Тема</span>
+          </button>
+          <div class="health-pill" id="health-pill"><span></span><b>Проверка</b></div>
+        </div>
       </header>
 
       <section class="view active" id="view-investigate">

@@ -368,6 +368,42 @@ function escapeHtml(value) {
   return element.innerHTML;
 }
 
+const themeQuery = window.matchMedia("(prefers-color-scheme: light)");
+
+function currentTheme() {
+  return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+}
+
+function savedTheme() {
+  try { return localStorage.getItem("aoa-theme"); } catch (error) { return null; }
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const meta = document.querySelector('meta[name="color-scheme"]');
+  if (meta) meta.setAttribute("content", theme);
+  const toggle = $("#theme-toggle");
+  if (toggle) {
+    const target = theme === "light" ? "тёмную" : "светлую";
+    toggle.setAttribute("aria-pressed", String(theme === "light"));
+    toggle.setAttribute("aria-label", `Включить ${target} тему`);
+    toggle.title = `Включить ${target} тему`;
+  }
+}
+
+function selectTheme(theme) {
+  applyTheme(theme);
+  try { localStorage.setItem("aoa-theme", theme); } catch (error) { /* хранилище недоступно */ }
+}
+
+function toggleTheme() {
+  selectTheme(currentTheme() === "light" ? "dark" : "light");
+}
+
+themeQuery.addEventListener("change", (event) => {
+  if (!savedTheme()) applyTheme(event.matches ? "light" : "dark");
+});
+
 $$("[data-view]").forEach((item) => item.addEventListener("click", () => navigate(item.dataset.view)));
 $("#investigation-form").addEventListener("submit", startInvestigation);
 $("#approve").addEventListener("click", () => decide(true));
@@ -377,5 +413,7 @@ $("#open-setup").addEventListener("click", () => { sessionStorage.removeItem("ao
 $("#continue-demo").addEventListener("click", () => { sessionStorage.setItem("aoa-demo-continued", "true"); setSetupOpen(false); });
 $("#finish-setup").addEventListener("click", () => { setSetupOpen(false); toast("Настройка завершена"); });
 $("#custom-model-form").addEventListener("submit", (event) => { event.preventDefault(); selectModel({ profile: "custom", model_name: $("#custom-model-name").value.trim() }); });
+$("#theme-toggle").addEventListener("click", toggleTheme);
+applyTheme(currentTheme());
 checkHealth();
 loadSetup(true);
