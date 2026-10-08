@@ -1,4 +1,4 @@
-"""Caching tool results: what it may serve, and what it must never serve."""
+"""Кэширование результатов инструментов: что можно отдавать, а что никогда."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ class _Result(BaseModel):
 
 
 class FakeRedis:
-    """Enough of the client surface to exercise the cache, plus a fault switch."""
+    """Достаточная часть клиентского API, чтобы прогнать кэш, плюс переключатель сбоя."""
 
     def __init__(self, *, broken: bool = False) -> None:
         self.store: dict[str, str] = {}
@@ -73,7 +73,7 @@ def _executor(tool: AgentTool, cache: Any, **policy: Any) -> ToolExecutor:
     )
 
 
-# ── Keys ─────────────────────────────────────────────────────────────────────
+# ── Ключи ────────────────────────────────────────────────────────────────────
 
 
 def test_the_key_depends_on_the_question_not_its_spelling():
@@ -86,7 +86,7 @@ def test_keys_are_namespaced_so_a_shared_redis_cannot_collide():
     assert cache_key("get_commits", {}).startswith("aoa:tool:get_commits:")
 
 
-# ── Behaviour ────────────────────────────────────────────────────────────────
+# ── Поведение ────────────────────────────────────────────────────────────────
 
 
 async def test_a_repeated_read_is_served_without_touching_the_provider():
@@ -114,7 +114,7 @@ async def test_a_different_question_is_not_a_cache_hit():
 
 
 async def test_writes_are_never_cached():
-    """A write has an effect, and an effect cannot be served from a cache."""
+    """У записи есть эффект, а эффект нельзя отдать из кэша."""
     counter = {"calls": 0}
     redis = FakeRedis()
     executor = _executor(
@@ -130,7 +130,7 @@ async def test_writes_are_never_cached():
 
 
 async def test_entries_expire_quickly_enough_to_stay_honest():
-    """Monitoring data for a window that includes 'now' is still moving."""
+    """Данные мониторинга для окна, включающего 'сейчас', ещё меняются."""
     redis = FakeRedis()
     executor = _executor(_counting_tool({"calls": 0}, ToolAccess.READ), RedisToolCache(redis))
     await executor.execute(ToolRequest(tool="counted", arguments={"n": 1}))
@@ -150,7 +150,7 @@ async def test_the_local_cache_expires_entries_without_redis(monkeypatch):
 
 
 async def test_an_unreachable_cache_degrades_to_a_miss():
-    """Caching is an optimisation; it must not be able to break a run."""
+    """Кэширование — оптимизация; оно не должно уметь ломать запуск."""
     counter = {"calls": 0}
     executor = _executor(
         _counting_tool(counter, ToolAccess.READ), RedisToolCache(FakeRedis(broken=True))
@@ -178,7 +178,7 @@ async def test_a_corrupt_entry_is_a_miss_not_a_crash():
 
 
 async def test_a_cached_value_that_no_longer_fits_the_schema_is_refetched():
-    """The tool changed shape since the entry was written."""
+    """Инструмент сменил форму с момента записи элемента."""
     counter = {"calls": 0}
     redis = FakeRedis()
     redis.store[cache_key("counted", {"n": 1})] = '{"unexpected": "shape"}'

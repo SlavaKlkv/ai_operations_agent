@@ -1,4 +1,4 @@
-"""API-level tests: the HTTP contract and what actually lands in the database."""
+"""Тесты уровня API: HTTP-контракт и то, что реально попадает в базу данных."""
 
 from __future__ import annotations
 
@@ -19,8 +19,8 @@ async def test_health(client):
 
 
 async def test_a_run_that_wants_to_write_stops_and_says_what_it_wants(client):
-    """The default outcome of a confident investigation is a pause, not a
-    finished run: the agent has something to propose and no authority to do it."""
+    """Обычный исход уверенного расследования — пауза, а не завершённый
+    запуск: агенту есть что предложить, но нет полномочий это сделать."""
     response = await client.post("/runs", json={"task": TASK})
     assert response.status_code == 201
 
@@ -82,7 +82,7 @@ async def test_failed_run_is_persisted_with_its_reason(client):
     assert "stopped before analysis" in body["final_result"]
 
 
-# ── Approval ─────────────────────────────────────────────────────────────────
+# ── Подтверждение ────────────────────────────────────────────────────────────
 
 
 async def test_approving_resumes_the_run_and_creates_the_issue(client):
@@ -119,7 +119,7 @@ async def test_rejecting_ends_the_run_without_touching_anything(client):
 
 
 async def test_the_write_is_executed_exactly_once(client):
-    """Approving twice must not file two issues."""
+    """Двойное подтверждение не должно создавать два issue."""
     created = (await client.post("/runs", json={"task": TASK})).json()
     decision = {"approved": True}
 
@@ -144,7 +144,7 @@ async def test_a_decision_on_a_run_that_never_paused_is_refused(client):
 
 
 async def test_a_decision_cannot_claim_to_be_someone_else(client):
-    """Identity comes from the credential; a name in the body is a label."""
+    """Личность берётся из учётных данных; имя в теле — это лишь метка."""
     created = (await client.post("/runs", json={"task": TASK})).json()
     response = await client.post(
         f"/runs/{created['id']}/approval",
@@ -154,8 +154,8 @@ async def test_a_decision_cannot_claim_to_be_someone_else(client):
 
 
 async def test_a_decision_cannot_carry_its_own_action(client):
-    """The content executed is what was checkpointed, so the request must not
-    be able to smuggle different arguments past the reviewer."""
+    """Исполняется то содержимое, что было в чекпоинте, поэтому запрос не должен
+    протаскивать мимо проверяющего другие аргументы."""
     created = (await client.post("/runs", json={"task": TASK})).json()
     response = await client.post(
         f"/runs/{created['id']}/approval",
@@ -165,7 +165,8 @@ async def test_a_decision_cannot_carry_its_own_action(client):
 
 
 async def test_the_decision_is_recorded_before_the_action_runs(client, db_session):
-    """ "Who approved this" has to be answerable even if the write then fails."""
+    """ "Кто это подтвердил" — на это должно быть можно ответить, даже если запись
+    затем не удалась."""
     from sqlalchemy import select
 
     from app.db.models import Approval, AuditEvent

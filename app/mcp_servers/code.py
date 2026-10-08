@@ -1,9 +1,9 @@
-"""Code MCP server: releases, commits and pull requests.
+"""MCP-сервер кода: релизы, коммиты и pull request.
 
-Stands in for a VCS and a deployment system. The two are one server because
-the question the agent actually asks — "what shipped, and when" — spans both,
-and splitting them would force it to correlate a release with its commits over
-two round trips for no gain.
+Замещает систему контроля версий и систему деплоя. Это один сервер, потому что
+вопрос, который агент задаёт на самом деле, — «что и когда выпустили», —
+затрагивает обе, а их разделение заставило бы агента соотносить релиз с его
+коммитами за два круга обмена без всякой выгоды.
 """
 
 from __future__ import annotations

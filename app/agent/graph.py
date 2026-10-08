@@ -1,52 +1,52 @@
-"""Graph assembly.
+"""Сборка графа.
 
-The shape of the workflow is the design document. Reading it should answer
-"what can this agent do, and what can it not do" without reading a prompt::
+Форма рабочего процесса — это проектный документ. Чтение его должно отвечать
+на вопрос «что этот агент умеет и чего не умеет», не читая промпт::
 
     START
       ↓
     analyze_task
       ↓
-    collect_initial_context ──(no usable signal)──→ insufficient_context ──→ END
+    collect_initial_context ──(нет сигнала)──→ insufficient_context ──→ END
       ↓
     correlate
       ↓
-    select_tool ──(nothing more to ask)────────────────────┐
+    select_tool ──(спрашивать больше нечего)───────────────┐
       ↓                                                    │
     execute_tool                                           │
       ↓                                                    ↓
-    evaluate_observation ──(more to learn)──→ select_tool  │
-      └──(enough / out of budget)─────────────────────────→ generate_analysis
+    evaluate_observation ──(узнать больше)──→ select_tool  │
+      └──(достаточно / бюджет исчерпан)───────────────────→ generate_analysis
                                                              ↓
                                                         propose_action
                                                              ↓
-                        ┌──(nothing worth writing)───────────┤
-                        ↓                                    ↓ (write proposed)
-                  final_response ←──(rejected)──────── request_approval
-                        ↑                              ** graph pauses here **
-                        │                                    ↓ (approved)
+                        ┌──(нечего записывать)───────────────┤
+                        ↓                                    ↓ (запись предложена)
+                  final_response ←──(отклонено)──────── request_approval
+                        ↑                               здесь граф встаёт на паузу
+                        │                                    ↓ (подтверждено)
                         └──────────────────────────── execute_action
                         ↓
                        END
 
-Three properties hold by construction, not by instruction:
+Три свойства выполняются по построению, а не по инструкции:
 
-*The deterministic work happens first.* Baseline collection and correlation
-run before the model is consulted at all, so the planner reasons about facts
-rather than deciding how to find them.
+Детерминированная работа идёт первой. Сбор базовых данных и корреляция
+выполняются до того, как к модели вообще обратятся, поэтому планировщик
+рассуждает о фактах, а не решает, как их найти.
 
-*Every cycle has an exit that the model does not control.* The loop back to
-``select_tool`` is guarded by a routing function that checks budgets and
-progress; the planner can only ever shorten the loop, never extend it.
+У каждого цикла есть выход, которым модель не управляет. Возврат к
+select_tool защищён функцией маршрутизации, проверяющей бюджеты и прогресс;
+планировщик может только сократить цикл, но никогда — продлить его.
 
-*The model is optional.* Pass no chat model and every node still runs, using
-its deterministic counterpart. That is what makes the graph testable and what
-makes a provider outage a degradation rather than an outage.
+Модель опциональна. Не передавайте чат-модель, и каждый узел всё равно
+отработает, используя свою детерминированную замену. Именно это делает граф
+тестируемым и превращает отказ провайдера в деградацию, а не в простой.
 
-*Nothing outside the system changes without a person.* The only write in the
-graph sits behind ``request_approval``, which interrupts execution. The pause
-is durable — the checkpointer persists the state — so the decision is a
-separate HTTP request from a separate human, not a callback held in memory.
+Ничто вне системы не меняется без человека. Единственная запись в графе
+находится за request_approval, который прерывает исполнение. Пауза
+надёжна — чекпоинтер сохраняет состояние — поэтому решение идёт отдельным
+HTTP-запросом от отдельного человека, а не колбэком, удерживаемым в памяти.
 """
 
 from __future__ import annotations
@@ -99,20 +99,21 @@ from app.services.cache import ToolCache
 
 
 def run_config(run_id: str) -> dict[str, dict[str, str]]:
-    """Checkpoint thread for one run.
+    """Чекпоинт-поток для одного запуска.
 
-    The run id is the thread id, so resuming after an approval resumes *that*
-    investigation and cannot be pointed at another one by a caller who guesses
-    a different identifier.
+    Идентификатор запуска — это идентификатор потока, поэтому возобновление
+    после подтверждения возобновляет то расследование и не может быть
+    направлено на другое вызывающим, угадавшим иной идентификатор.
     """
     return {"configurable": {"thread_id": run_id}}
 
 
 def has_enough_context(state: AgentState) -> Literal["correlate", "insufficient_context"]:
-    """Gate between collection and analysis.
+    """Шлюз между сбором и анализом.
 
-    Written as a pure function of state so routing can be unit-tested without
-    running the graph, which is most of the value of keeping state explicit.
+    Написан как чистая функция состояния, чтобы маршрутизацию можно было
+    юнит-тестировать без запуска графа — в этом основная ценность явного
+    состояния.
     """
     if state.get("status") is RunStatus.FAILED:
         return "insufficient_context"
@@ -135,10 +136,10 @@ async def insufficient_context_node(state: AgentState) -> AgentState:
 
 
 async def finalize_node(state: AgentState) -> AgentState:
-    """One sentence describing how the run ended, including what it did not do.
+    """Одно предложение о том, как завершился запуск, включая то, чего он не сделал.
 
-    A run that proposed an action and was refused must say so: silence would
-    read as "nothing was worth doing", which is a different outcome.
+    Запуск, предложивший действие и получивший отказ, должен сказать об этом:
+    молчание читалось бы как «ничего не стоило делать», а это другой исход.
     """
     analysis = state.get("analysis")
     summary = analysis.summary if analysis else "No analysis was produced."
@@ -178,15 +179,15 @@ def build_graph(
     use_llm: bool = True,
     enable_issue_tools: bool = True,
 ):
-    """Compile the workflow.
+    """Скомпилировать рабочий процесс.
 
-    Every collaborator is injectable because every one of them is something a
-    test, an evaluation scenario or a deployment needs to substitute: mock or
-    MCP-backed providers, a scripted or real model, a tighter policy.
+    Каждый участник инжектируем, потому что каждого из них тесту, сценарию
+    оценки или деплою нужно подменять: mock- или MCP-провайдеры,
+    заскриптованная или настоящая модель, более жёсткая политика.
 
-    ``use_llm=False`` forces the deterministic path even when Ollama is
-    available — the evaluation harness uses it as the baseline to measure the
-    model-driven agent against.
+    use_llm=False принудительно включает детерминированный путь, даже
+    когда Ollama доступна — стенд оценки использует его как базу для
+    сравнения с агентом, управляемым моделью.
     """
     monitoring = monitoring or MockMonitoringProvider()
     code = code or MockCodeProvider()
@@ -255,7 +256,7 @@ def build_graph(
     builder.add_edge("final_response", END)
     builder.add_edge("insufficient_context", END)
 
-    # По умолчанию используется чекпоинтер в памяти, чтобы простой ``build_graph()``
+    # По умолчанию используется чекпоинтер в памяти, чтобы простой build_graph()
     # поддерживал паузу. Приложение подставляет постоянное хранилище, благодаря
     # которому ожидание подтверждения переживает перезапуск.
     return builder.compile(checkpointer=checkpointer or InMemorySaver(serde=agent_serializer()))

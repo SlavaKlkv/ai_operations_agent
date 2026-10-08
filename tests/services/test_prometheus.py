@@ -1,4 +1,4 @@
-"""The Prometheus boundary accepts only its fixed read-only metric contract."""
+"""Граница Prometheus принимает только свой фиксированный контракт метрик только для чтения."""
 
 from __future__ import annotations
 

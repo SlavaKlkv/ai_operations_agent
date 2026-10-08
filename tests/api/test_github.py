@@ -1,4 +1,5 @@
-"""GitHub connection API never returns credentials and respects approver scope."""
+"""API подключения GitHub никогда не возвращает учётные данные
+и соблюдает область подтверждающего."""
 
 from __future__ import annotations
 

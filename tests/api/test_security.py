@@ -1,8 +1,8 @@
-"""Authentication and the permission that guards a write.
+"""Аутентификация и разрешение, которое защищает запись.
 
-The point of these tests is narrow and important: the name attached to an
-approval must come from the credential, and approving must require more than
-merely holding one.
+Смысл этих тестов узкий и важный: имя, привязанное к подтверждению, должно
+браться из учётных данных, а подтверждение должно требовать большего, чем
+просто наличие таких данных.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from app.db.models import AuditEvent, User
 TASK = "После последнего релиза billing-service резко выросло количество 5xx. Разберись."
 
 
-# ── Tokens ───────────────────────────────────────────────────────────────────
+# ── Токены ───────────────────────────────────────────────────────────────────
 
 
 def test_a_token_is_high_entropy_and_recognisable():
@@ -28,7 +28,7 @@ def test_a_token_is_high_entropy_and_recognisable():
 
 
 async def test_the_token_itself_is_never_stored(db_session, approver_token):
-    """A leaked database must not hand over working credentials."""
+    """Утёкшая база не должна отдавать рабочие учётные данные."""
     users = (await db_session.execute(select(User))).scalars().all()
     assert users
     for user in users:
@@ -36,7 +36,7 @@ async def test_the_token_itself_is_never_stored(db_session, approver_token):
         assert len(user.api_token_hash) == 64
 
 
-# ── Authentication ───────────────────────────────────────────────────────────
+# ── Аутентификация ───────────────────────────────────────────────────────────
 
 
 async def test_an_unauthenticated_request_is_refused(http_client, approver_token):
@@ -65,16 +65,16 @@ async def test_a_valid_token_gets_through(client):
 
 @pytest.mark.parametrize("path", ["/health", "/metrics"])
 async def test_operational_endpoints_stay_open(http_client, path):
-    """A health check that needs a credential is a health check that will be
-    misconfigured; neither endpoint exposes run content."""
+    """Проверка работоспособности, требующая учётных данных, — это проверка,
+    которую настроят неверно; ни одна из точек не раскрывает содержимое запусков."""
     assert (await http_client.get(path)).status_code == 200
 
 
-# ── Authorisation ────────────────────────────────────────────────────────────
+# ── Авторизация ──────────────────────────────────────────────────────────────
 
 
 async def test_a_reader_can_investigate(reader_client):
-    """Investigation only reads, so it does not need the write permission."""
+    """Расследование только читает, поэтому разрешение на запись ему не нужно."""
     assert (await reader_client.post("/runs", json={"task": TASK})).status_code == 201
 
 
@@ -95,7 +95,7 @@ async def test_a_refused_approval_changes_nothing(reader_client, db_session):
     assert "create_issue" not in [c["tool"] for c in refetched["tool_calls"]]
 
 
-# ── Идентификатор пользователя в журнале аудита ─────────────────────────────
+# ── Идентификатор пользователя в журнале аудита ──────────────────────────────
 
 
 async def test_the_approver_recorded_is_the_authenticated_one(client, db_session):
@@ -116,7 +116,7 @@ async def test_starting_a_run_is_attributed_to_the_caller(reader_client, db_sess
 
 
 async def test_authentication_can_be_switched_off_for_local_use(http_client, monkeypatch):
-    """Reported by /health, so a deployment that leaves it off can notice."""
+    """Сообщается через /health, чтобы деплой, оставивший её выключенной, это заметил."""
     from app.core.config import get_settings
 
     monkeypatch.setenv("AUTH_ENABLED", "false")

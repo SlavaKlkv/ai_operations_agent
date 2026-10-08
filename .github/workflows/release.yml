@@ -1,0 +1,143 @@
+name: Release
+
+# Публикация пользовательского релиза: versioned multi-architecture образ в GHCR
+# и GitHub Release с распространяемым комплектом конфигурации и контрольными суммами.
+# Запускается только по тегу версии или вручную — обычные коммиты ничего не публикуют.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Версия без префикса v, например 0.1.0"
+        required: true
+        type: string
+
+# Базовый набор минимален; права, нужные для публикации, выдаются на уровне задач.
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/slavaklkv/ai-operations-agent
+
+jobs:
+  image:
+    name: Build & publish image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      # Нужен для keyless-подписи образа через OIDC, без долгоживущих секретов.
+      id-token: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve and verify the release version
+        id: version
+        env:
+          # Значение ручного запуска идёт через env, а не подстановкой в скрипт:
+          # прямая вставка пользовательского ввода в run — это script injection.
+          DISPATCH_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          set -eu
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            version="${DISPATCH_VERSION}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          # Релиз обязан совпадать с версией проекта: расхождение означало бы
+          # поставку образа с чужой версией в метаданных и lock-файле.
+          project_version=$(grep -m1 '^version' pyproject.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          if [ "$version" != "$project_version" ]; then
+            echo "Версия релиза $version не совпадает с версией проекта $project_version." >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=v${{ steps.version.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build and push the multi-architecture image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # SBOM и provenance встроены в образ как OCI-attestations: по релизу
+          # можно проверить, из чего и из какого коммита он собран.
+          provenance: true
+          sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - uses: sigstore/cosign-installer@v3
+
+      - name: Sign the published image (keyless)
+        run: cosign sign --yes "${IMAGE}@${{ steps.build.outputs.digest }}"
+
+  release:
+    name: Publish release bundle
+    needs: image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble the user-facing bundle
+        env:
+          VERSION: ${{ needs.image.outputs.version }}
+        run: |
+          set -eu
+          bundle="ai-operations-agent-${VERSION}"
+          mkdir -p "$bundle"
+          cp compose.yaml start.sh start.ps1 manage.sh manage.ps1 README.md LICENSE "$bundle/"
+          chmod +x "$bundle/start.sh" "$bundle/manage.sh"
+          # Закрепляем в комплекте точную версию образа по умолчанию, чтобы
+          # скачанный релиз запускал именно этот образ, а не версию из дерева.
+          sed -i -E \
+            "s#(ghcr\.io/slavaklkv/ai-operations-agent:)[0-9A-Za-z._-]+#\1${VERSION}#" \
+            "$bundle/compose.yaml"
+          tar -czf "${bundle}.tar.gz" "$bundle"
+          python3 -m zipfile -c "${bundle}.zip" "$bundle"
+          sha256sum "${bundle}.tar.gz" "${bundle}.zip" > SHA256SUMS.txt
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.image.outputs.version }}
+        run: |
+          set -eu
+          bundle="ai-operations-agent-${VERSION}"
+          # При ручном запуске тег ещё не существует: привязываем его к собранному commit.
+          target=""
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            target="--target ${GITHUB_SHA}"
+          fi
+          gh release create "v${VERSION}" \
+            --title "AI Operations Agent ${VERSION}" \
+            --generate-notes \
+            $target \
+            "${bundle}.tar.gz" "${bundle}.zip" SHA256SUMS.txt

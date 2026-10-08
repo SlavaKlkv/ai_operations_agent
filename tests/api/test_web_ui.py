@@ -1,4 +1,4 @@
-"""The bundled browser interface and its stable integration points."""
+"""Встроенный браузерный интерфейс и его стабильные точки интеграции."""
 
 
 async def test_root_serves_the_local_application_shell(http_client):

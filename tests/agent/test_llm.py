@@ -1,4 +1,4 @@
-"""The model boundary: optionality, error translation, usage accounting."""
+"""Граница модели: необязательность, перевод ошибок, учёт использования."""
 
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ def test_configured_model_is_built_lazily():
 
 
 async def test_provider_errors_are_translated_to_one_exception_type():
-    """Callers route on LLMError; they must not have to know the SDK's classes."""
+    """Вызывающий код реагирует на LLMError; он не должен знать классы SDK."""
     model = ScriptedChatModel(responses=[])
     with pytest.raises(LLMError):
         await invoke(model, [HumanMessage("hello")])
@@ -109,7 +109,7 @@ async def test_usage_is_read_from_the_provider_and_accumulates():
 
 
 async def test_the_scripted_model_records_what_it_was_asked():
-    """Prompt content is asserted in other tests; this is the mechanism."""
+    """Содержимое промпта проверяется в других тестах; здесь — механизм."""
     model = ScriptedChatModel(responses=[AIMessage(content="ok")])
     await invoke(model, [HumanMessage("the briefing")])
     assert model.calls[0][0].content == "the briefing"

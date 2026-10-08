@@ -1,4 +1,4 @@
-"""Durability guarantees for local and server checkpointers."""
+"""Гарантии долговечности для локального и серверного чекпоинтеров."""
 
 from langgraph.types import Command
 

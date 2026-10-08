@@ -1,9 +1,9 @@
-"""Fetch the baseline context every incident investigation needs.
+"""Получить базовый контекст, нужный каждому расследованию инцидента.
 
-This node is deliberately not a decision point: metrics, deployments, error
-groups and alerts are always worth having, so fetching them through an LLM
-round-trip would only add latency and nondeterminism. Tool *selection* starts
-after this node, once there is something to reason about.
+Этот узел намеренно не является точкой принятия решений: метрики, деплои,
+группы ошибок и оповещения всегда стоит иметь, поэтому забор их через
+круговой рейс к LLM добавил бы только задержку и недетерминизм. Выбор
+инструментов начинается после этого узла, когда уже есть о чём рассуждать.
 """
 
 from __future__ import annotations
@@ -83,7 +83,7 @@ def make_collect_context_node(
     *,
     timeout: float = 15.0,
 ):
-    """Build the node bound to concrete providers (mock, MCP-backed, ...)."""
+    """Собрать узел, привязанный к конкретным провайдерам (mock, MCP-провайдеры, ...)."""
 
     async def collect_context_node(state: AgentState) -> AgentState:
         service = state.get("target_service")

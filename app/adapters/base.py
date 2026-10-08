@@ -1,8 +1,8 @@
-"""Provider protocols separating the agent from concrete data sources.
+"""Протоколы провайдеров, отделяющие агента от конкретных источников данных.
 
-The graph never talks to Prometheus, GitHub or a log store directly. It talks
-to these protocols, which are implemented by mock providers (development,
-tests, evaluation) and later by MCP-backed providers.
+Граф никогда не обращается напрямую к Prometheus, GitHub или хранилищу логов.
+Он обращается к этим протоколам, которые реализуются mock-провайдерами
+(разработка, тесты, оценка), а позднее — провайдерами на базе MCP.
 """
 
 from __future__ import annotations
@@ -54,7 +54,7 @@ class LogProvider(Protocol):
 
 @runtime_checkable
 class KnowledgeProvider(Protocol):
-    """Read-only operational runbooks relevant to an investigation."""
+    """Ранбуки по эксплуатации только для чтения, относящиеся к расследованию."""
 
     async def search_runbooks(
         self, query: str, service: str | None = None, limit: int = 3
@@ -63,13 +63,13 @@ class KnowledgeProvider(Protocol):
 
 @runtime_checkable
 class IssueProvider(Protocol):
-    """The issue tracker. The only provider with a write side.
+    """Трекер задач. Единственный провайдер со стороной записи.
 
-    ``create_issue`` and ``add_issue_comment`` are reachable from the graph
-    only through a tool marked :attr:`~app.agent.tools.base.ToolAccess.WRITE`,
-    which in turn is reachable only after an approval. The protocol itself
-    enforces nothing — that is the point of keeping the policy in one place
-    instead of scattering checks through every implementation.
+    create_issue и add_issue_comment достижимы из графа только через
+    инструмент с пометкой ToolAccess.WRITE,
+    который, в свою очередь, достижим только после подтверждения. Сам протокол
+    ничего не обеспечивает — в этом и смысл держать политику в одном месте,
+    а не разбрасывать проверки по всем реализациям.
     """
 
     async def search_issues(

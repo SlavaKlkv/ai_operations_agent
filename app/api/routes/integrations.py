@@ -1,10 +1,10 @@
-"""Visibility into the integration layer.
+"""Обзор слоя интеграций.
 
-An agent whose data comes from four external systems needs an answer to "which
-of them is actually up, and what is it offering me" that does not require
-running an investigation to find out. This endpoint is that answer, and it is
-also how a reader of the repository sees that MCP is really being spoken:
-the tool list here is discovered at runtime, not declared in code.
+Агенту, чьи данные приходят из четырёх внешних систем, нужен ответ на вопрос
+«какая из них на самом деле работает и что она мне предлагает», не требующий
+запуска расследования. Этот эндпоинт и есть такой ответ, и он же показывает
+читателю репозитория, что MCP действительно используется: список инструментов
+здесь обнаруживается в рантайме, а не объявляется в коде.
 """
 
 from __future__ import annotations
@@ -66,11 +66,11 @@ def _tool_view(tool: RemoteTool) -> ToolView:
 async def list_servers(
     response: Response, pool: MCPToolPool = Depends(get_pool)
 ) -> IntegrationsView:
-    """Report the integration layer, and say so in the status code.
+    """Сообщить состояние слоя интеграций и отразить это в статус-коде.
 
-    A degraded integration layer returns 503 rather than a cheerful 200 with
-    ``healthy: false`` buried in the body — this endpoint is meant to be
-    usable as a readiness probe, and a probe that always succeeds is not one.
+    Деградировавший слой интеграций возвращает 503, а не бодрый 200 с
+    healthy: false, запрятанным в теле — этот эндпоинт задуман как
+    проба готовности, а проба, которая всегда успешна, таковой не является.
     """
     await pool.connect()
     if not pool.healthy:

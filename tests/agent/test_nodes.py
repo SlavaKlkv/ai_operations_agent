@@ -1,5 +1,5 @@
-"""Node-level tests: each node is a plain async function of state, so it can be
-exercised without compiling the graph."""
+"""Тесты уровня узлов: каждый узел — обычная асинхронная функция от состояния,
+поэтому его можно прогнать без компиляции графа."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ async def test_collect_context_gathers_all_baseline_signals(fresh_state, monitor
     node = make_collect_context_node(monitoring, code, logs)
     update = await node(state)
 
-    assert update["tool_call_count"] == 6  # 3 metrics + deployments + logs + alerts
+    assert update["tool_call_count"] == 6  # 3 метрики + деплои + логи + оповещения
     assert set(update["context"].metrics) == {"error_rate", "latency_p99", "request_rate"}
     assert update["context"].deployments and update["context"].error_groups
     kinds = {e.kind for e in update["evidence"]}
@@ -86,7 +86,7 @@ async def test_correlate_reports_no_signal_on_a_flat_service(fresh_state, monito
 
 
 async def test_analysis_refuses_to_recommend_action_without_confidence(fresh_state):
-    """A weak hypothesis must produce "look further", not a rollback order."""
+    """Слабая гипотеза должна давать "посмотреть дальше", а не приказ об откате."""
     from app.domain.models import Hypothesis
 
     state: AgentState = {

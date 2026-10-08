@@ -1,4 +1,4 @@
-"""SQLite safety settings and startup integrity checks."""
+"""Настройки безопасности SQLite и проверки целостности при запуске."""
 
 from __future__ import annotations
 
@@ -12,11 +12,11 @@ BUSY_TIMEOUT_MS = 5_000
 
 
 class DatabaseIntegrityError(RuntimeError):
-    """The existing local database is unreadable or failed SQLite checks."""
+    """Существующая локальная база нечитаема или не прошла проверки SQLite."""
 
 
 def configure_engine(engine: AsyncEngine) -> None:
-    """Allow API and checkpointer connections to share the local database safely."""
+    """Позволить соединениям API и чекпоинтера безопасно делить локальную базу."""
 
     @event.listens_for(engine.sync_engine, "connect")
     def _set_pragmas(dbapi_connection, _connection_record) -> None:
@@ -35,7 +35,7 @@ async def configure_checkpointer(connection) -> None:
 
 
 def verify_integrity(path: Path) -> None:
-    """Reject a damaged existing database without modifying or replacing it."""
+    """Отклонить повреждённую существующую базу, не изменяя и не заменяя её."""
     if not path.exists() or path.stat().st_size == 0:
         return
     try:

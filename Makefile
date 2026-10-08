@@ -47,7 +47,7 @@ format:  ## Автоматически исправить форматирова
 	$(VENV)/ruff check --fix .
 	$(VENV)/ruff format .
 
-check: lint test eval  ## Everything CI runs
+check: lint test eval  ## Запустить всё, что выполняет CI
 
 clean:  ## Удалить кэши и артефакты сборки
 	rm -rf .pytest_cache .ruff_cache .mypy_cache htmlcov coverage.xml

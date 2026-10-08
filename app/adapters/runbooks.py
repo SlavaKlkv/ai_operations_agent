@@ -1,4 +1,4 @@
-"""Typed access to the user-owned local Markdown runbook catalogue."""
+"""Типизированный доступ к локальному каталогу Markdown-ранбуков пользователя."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from app.mcp_servers.runbooks import load_directory
 
 
 class LocalRunbookProvider:
-    """Reload the small catalogue for each run so edits take effect immediately."""
+    """Перезагружает небольшой каталог при каждом запуске, чтобы правки вступали в силу сразу."""
 
     def __init__(self, directory: Path) -> None:
         self.directory = directory

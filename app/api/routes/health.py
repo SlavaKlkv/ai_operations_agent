@@ -1,5 +1,5 @@
-"""Liveness endpoint. Intentionally dependency-free so it stays green while
-PostgreSQL or an MCP server is down — readiness is a separate concern."""
+"""Эндпоинт проверки живости. Намеренно без зависимостей, чтобы оставаться
+зелёным при недоступности PostgreSQL или MCP-сервера: готовность — отдельный вопрос."""
 
 from __future__ import annotations
 

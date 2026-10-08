@@ -1,14 +1,14 @@
-"""Bind the provider protocols to concrete, described, renderable tools.
+"""Связать протоколы провайдеров с конкретными, описанными, отрисовываемыми инструментами.
 
-This module is the whole surface the agent has on the outside world. Adding a
-capability means adding an entry here; there is no other path from the graph to
-a provider, which is what makes the allowlist meaningful.
+Этот модуль — вся поверхность, которой агент обладает во внешнем мире.
+Добавить возможность значит добавить запись здесь; другого пути от графа к
+провайдеру нет, и именно это делает allowlist значимым.
 
-The ``render`` functions matter as much as the handlers. A metric series is
-sixty numbers the graph needs and the model does not: the model gets baseline,
-peak and when the change happened, because that is what a conclusion can be
-drawn from. Keeping raw volume out of the prompt is a correctness measure, not
-only a cost measure.
+Функции render важны не меньше обработчиков. Ряд метрики — это шестьдесят
+чисел, нужных графу и не нужных модели: модель получает базовый уровень, пик и
+когда произошло изменение, потому что именно из этого можно сделать вывод.
+Держать сырой объём вне промпта — мера корректности, а не только мера
+стоимости.
 """
 
 from __future__ import annotations
@@ -49,13 +49,13 @@ RENDER_LIMIT = 8
 
 
 def _require_window(args) -> tuple:
-    """Windows are injected by the executor; reaching a handler without one is a bug."""
+    """Окна инжектируются исполнителем; попадание в обработчик без окна — это баг."""
     if args.start is None or args.end is None:
         raise ValueError("time window was not resolved before the tool ran")
     return args.start, args.end
 
 
-# ── Renderers ────────────────────────────────────────────────────────────────
+# ── Отрисовщики ──────────────────────────────────────────────────────────────
 
 
 def _render_metrics(result: MetricsResult) -> str:
@@ -169,7 +169,7 @@ def _with_overflow(header: str, lines: list[str], total: int) -> str:
     return f"{header}\n{body}"
 
 
-# ── Catalogue ────────────────────────────────────────────────────────────────
+# ── Каталог ──────────────────────────────────────────────────────────────────
 
 
 def build_registry(
@@ -181,13 +181,14 @@ def build_registry(
     *,
     actor: str = "ai-operations-agent",
 ) -> ToolRegistry:
-    """Every tool the agent has, read and write.
+    """Каждый инструмент агента, для чтения и записи.
 
-    Registering a write tool does not make it reachable: the guardrails hide
-    every :attr:`ToolAccess.WRITE` tool from the planner and refuse to execute
-    one unless the run carries an approval. Registration and permission are
-    separate on purpose — the catalogue says what exists, the policy says what
-    may run, and conflating them is how a tool ends up callable by accident.
+    Регистрация инструмента записи не делает его достижимым: защитные
+    ограничения скрывают от планировщика каждый инструмент
+    ToolAccess.WRITE и отказываются исполнять его, если запуск не
+    несёт подтверждения. Регистрация и разрешение намеренно разделены — каталог
+    говорит, что существует, политика говорит, что может выполняться, а их
+    смешение — это и есть путь к случайно вызываемому инструменту.
     """
 
     async def get_service_metrics(args: GetServiceMetricsArgs) -> MetricsResult:

@@ -1,8 +1,9 @@
-"""Safe loading of a small local Markdown runbook catalogue.
+"""Безопасная загрузка небольшого локального каталога Markdown-ранбуков.
 
-The directory is owned by the local product volume.  File names are never
-accepted from an agent request, and symlinks/non-Markdown files are ignored,
-so a runbook search cannot turn into arbitrary host file access.
+Каталог принадлежит локальному продуктовому тому. Имена файлов никогда не
+принимаются из запроса агента, а символические ссылки и не-Markdown файлы
+игнорируются, поэтому поиск ранбуков не может превратиться в произвольный
+доступ к файлам хоста.
 """
 
 from __future__ import annotations
@@ -20,7 +21,7 @@ _TITLE = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
 
 
 def load_directory(directory: Path) -> tuple[Document, ...]:
-    """Read direct child ``.md`` files into a deterministic, bounded corpus."""
+    """Читает дочерние .md-файлы в детерминированный, ограниченный корпус."""
     try:
         root = directory.resolve(strict=True)
     except FileNotFoundError:
@@ -29,8 +30,8 @@ def load_directory(directory: Path) -> tuple[Document, ...]:
         return ()
     documents: list[Document] = []
     for path in sorted(root.glob("*.md")):
-        # ``glob`` may return a symlink. A local knowledge directory must not
-        # be a back door to arbitrary paths on a Docker bind mount.
+        # glob может вернуть символическую ссылку. Локальный каталог знаний
+        # не должен быть чёрным ходом к произвольным путям на Docker bind mount.
         if path.is_symlink() or not path.is_file() or path.stat().st_size > MAX_RUNBOOK_BYTES:
             continue
         try:
@@ -42,8 +43,8 @@ def load_directory(directory: Path) -> tuple[Document, ...]:
         title = _match(_TITLE, body) or path.stem.replace("-", " ")
         services = _csv(_match(_SERVICE, body))
         tags = _csv(_match(_TAGS, body))
-        # Stable id avoids exposing the local path while still making a lookup
-        # valid only for the document the search result referred to.
+        # Стабильный id не раскрывает локальный путь и при этом делает поиск
+        # действительным только для документа, на который указал результат поиска.
         document_id = "local-" + hashlib.sha256(path.name.encode()).hexdigest()[:16]
         documents.append(
             Document(

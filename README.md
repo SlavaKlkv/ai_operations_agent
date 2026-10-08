@@ -5,7 +5,7 @@
 **Агент, который расследует инциденты в backend-сервисах: сам решает, куда посмотреть,
 собирает данные из четырёх систем, сопоставляет их — и не меняет ничего без человека.**
 
-[![CI](https://github.com/SlavaKlkv/ai-operations-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/SlavaKlkv/ai-operations-agent/actions/workflows/ci.yml)
+[![CI](https://github.com/SlavaKlkv/ai_operations_agent/actions/workflows/ci.yml/badge.svg)](https://github.com/SlavaKlkv/ai_operations_agent/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.13+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![LangGraph](https://img.shields.io/badge/orchestration-LangGraph-1C3C3C)](https://langchain-ai.github.io/langgraph/)
 [![MCP](https://img.shields.io/badge/integration-MCP-6E56CF)](https://modelcontextprotocol.io/)
@@ -96,8 +96,8 @@
 [Ollama](https://ollama.com/download).
 
 ```bash
-git clone https://github.com/SlavaKlkv/ai-operations-agent.git
-cd ai-operations-agent
+git clone https://github.com/SlavaKlkv/ai_operations_agent.git
+cd ai_operations_agent
 cp .env.example .env
 
 ollama pull qwen3:8b          # Standard-профиль, около 5,2 ГБ
@@ -148,7 +148,14 @@ demo-данные в такой запуск не попадают. Issue соз
 `ghcr.io/slavaklkv/ai-operations-agent:0.1.0` не опубликован, эти скрипты не являются
 рабочим способом установки. Для проверки сборки из исходников предусмотрен
 `compose.build.yaml`; такая проверка не заменяет запуск комплекта из GitHub Release на
-macOS, Windows и Linux. Текущий быстрый старт выше остаётся сценарием разработчика.
+macOS, Windows и Linux. Пайплайн публикации описан в [документации релиза](docs/release.md).
+Текущий быстрый старт выше остаётся сценарием разработчика.
+
+После публикации Release скрипты [manage.sh](manage.sh) и
+[manage.ps1](manage.ps1) управляют готовой поставкой: запуск, остановка,
+обновление, диагностика и проверяемый SQLite backup/restore. Остановка и обновление
+сохраняют volume. Удаление данных требует отдельного явного аргумента
+`--delete-data` или `-DeleteData`.
 
 ## Демонстрация: от жалобы до issue
 
@@ -398,6 +405,18 @@ make format       # автоисправление
 
 Схемы в этом README генерируются: `python tools/diagrams/render.py`. Геометрия описана
 один раз, меняется только палитра — иначе светлая и тёмная версии неизбежно разъехались бы.
+
+## Релиз
+
+Пользовательский выпуск запускается тегом `v<версия>` или ручным запуском workflow
+[Release](.github/workflows/release.yml). Пайплайн публикует versioned multi-architecture
+образ в GHCR со встроенными SBOM и provenance, keyless-подписью и собирает скачиваемый
+комплект пользователя с контрольными суммами.
+
+Полный порядок выпуска, проверку артефактов и откат см. в
+[документации релиза](docs/release.md). Инварианты пользовательского комплекта
+(loopback-порт, один сервис, отсутствие PostgreSQL и Redis) зафиксированы в
+`tests/delivery/test_user_bundle.py`.
 
 ## Структура проекта
 

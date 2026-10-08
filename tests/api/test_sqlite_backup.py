@@ -1,4 +1,4 @@
-"""Backup and restore keep local product data recoverable."""
+"""Резервное копирование и восстановление сохраняют локальные данные продукта восстанавливаемыми."""
 
 import sqlite3
 

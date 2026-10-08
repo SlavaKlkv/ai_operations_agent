@@ -1,4 +1,4 @@
-"""The tool contract: schemas, rendering bounds and registry narrowing."""
+"""Контракт инструмента: схемы, границы рендеринга и сужение реестра."""
 
 from __future__ import annotations
 
@@ -90,9 +90,9 @@ def test_json_schema_has_the_shape_tool_calling_apis_expect():
 
 
 def test_invented_metric_names_fail_validation():
-    """The metric literal is a guardrail: a hallucinated series never reaches
-    the provider, so the agent gets a schema error it can correct instead of
-    an opaque backend lookup failure."""
+    """Литерал метрики — защитное ограничение: выдуманный ряд не доходит до
+    провайдера, поэтому агент получает исправимую ошибку схемы вместо
+    непрозрачного сбоя поиска в бэкенде."""
     with pytest.raises(ValidationError):
         GetServiceMetricsArgs(service="billing-service", metric="cpu_temperature")
 
@@ -111,7 +111,7 @@ def test_catalogue_exposes_only_read_tools_in_v2(monitoring, code, logs):
 
 
 def test_every_tool_describes_itself_for_the_model(monitoring, code, logs):
-    """A tool the model cannot understand is a tool it will misuse."""
+    """Инструмент, которого модель не понимает, она будет применять неверно."""
     for tool in build_registry(monitoring, code, logs):
         assert len(tool.description) > 60, tool.name
         assert tool.json_schema()["input_schema"]["properties"], tool.name

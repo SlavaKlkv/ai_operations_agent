@@ -1,4 +1,4 @@
-"""Serve the local single-page interface."""
+"""Отдавать локальный одностраничный интерфейс."""
 
 from pathlib import Path
 

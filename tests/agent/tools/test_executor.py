@@ -1,4 +1,4 @@
-"""Guardrails and the execution path, tested at the point they are enforced."""
+"""Защитные ограничения и путь выполнения, проверяемые в точке их применения."""
 
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ def _slow_tool(delay: float, access: ToolAccess = ToolAccess.READ) -> AgentTool:
     )
 
 
-# ── Policy ───────────────────────────────────────────────────────────────────
+# ── Политика ─────────────────────────────────────────────────────────────────
 
 
 def test_write_tools_are_invisible_until_approved():
@@ -63,8 +63,8 @@ def test_write_tools_are_invisible_until_approved():
 
 
 async def test_write_tool_is_refused_not_raised(monitoring, code, logs):
-    """A refusal must come back as a recorded, routable outcome: the graph has
-    to be able to tell the user what it declined to do."""
+    """Отказ должен возвращаться записанным, маршрутизируемым исходом: граф
+    должен уметь сказать пользователю, от чего он отказался."""
     registry = ToolRegistry([_slow_tool(0, ToolAccess.WRITE)])
     executor = ToolExecutor(registry, Guardrails())
     invocation = await executor.execute(ToolRequest(tool="slow", arguments={}))
@@ -115,7 +115,7 @@ def test_signature_ignores_omitted_arguments_and_key_order():
     assert call_signature("t", {"b": 1, "a": 2, "c": None}) == call_signature("t", {"a": 2, "b": 1})
 
 
-# ── Execution ────────────────────────────────────────────────────────────────
+# ── Выполнение ───────────────────────────────────────────────────────────────
 
 
 async def test_successful_call_returns_typed_result_and_bounded_digest(executor):
@@ -133,8 +133,8 @@ async def test_successful_call_returns_typed_result_and_bounded_digest(executor)
 
 
 async def test_window_defaults_are_only_applied_to_tools_that_take_one(executor):
-    """``get_pull_request`` forbids extra fields; offering it a window must not
-    turn a valid call into a validation error."""
+    """get_pull_request запрещает лишние поля; предложение ему окна не
+    должно превращать корректный вызов в ошибку валидации."""
     invocation = await executor.execute(
         ToolRequest(
             tool="get_pull_request", arguments={"service": "billing-service", "number": 482}

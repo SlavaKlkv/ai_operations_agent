@@ -1,4 +1,4 @@
-"""Local Markdown runbooks stay inside their configured catalogue."""
+"""Локальные ранбуки Markdown остаются внутри своего настроенного каталога."""
 
 from __future__ import annotations
 

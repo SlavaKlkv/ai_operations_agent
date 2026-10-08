@@ -1,4 +1,4 @@
-"""GitHub App connection endpoints; never expose an access token to the browser."""
+"""Эндпоинты подключения GitHub App; токен доступа никогда не раскрывается браузеру."""
 
 from __future__ import annotations
 

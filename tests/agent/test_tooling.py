@@ -1,5 +1,5 @@
-"""The tool wrapper is the only place timeouts and retries are enforced, so it
-is tested directly rather than through a node."""
+"""Обёртка инструмента — единственное место, где обеспечиваются таймауты и
+повторы, поэтому её тестируют напрямую, а не через узел."""
 
 from __future__ import annotations
 

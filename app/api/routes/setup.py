@@ -1,4 +1,4 @@
-"""First-run diagnostics and local model selection."""
+"""Диагностика первого запуска и выбор локальной модели."""
 
 from __future__ import annotations
 

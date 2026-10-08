@@ -1,4 +1,4 @@
-"""initial schema
+"""начальная схема
 
 Revision ID: 46524fabd6fa
 Revises:
@@ -20,7 +20,7 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    """Upgrade schema."""
+    """Обновление схемы."""
     # ### Команды автоматически созданы Alembic — при необходимости исправьте! ###
     op.create_table(
         "users",
@@ -249,7 +249,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Downgrade schema."""
+    """Откат схемы."""
     # ### Команды автоматически созданы Alembic — при необходимости исправьте! ###
     op.drop_index("ix_tool_calls_run_started", table_name="tool_calls")
     op.drop_table("tool_calls")

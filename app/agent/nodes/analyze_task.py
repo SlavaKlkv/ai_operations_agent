@@ -1,9 +1,10 @@
-"""Turn a free-form request into a bounded, typed investigation plan.
+"""Превратить произвольный запрос в ограниченный, типизированный план расследования.
 
-V1 does this deterministically: a regex over known service names plus explicit
-defaults. Deterministic code is preferred wherever the answer does not actually
-require language understanding — the LLM-backed variant arrives in V2 and must
-produce the same :class:`TaskAnalysis` shape.
+V1 делает это детерминированно: регулярное выражение по известным именам
+сервисов плюс явные значения по умолчанию. Детерминированный код
+предпочитается всюду, где ответ фактически не требует понимания языка, —
+вариант на основе LLM появится в V2 и должен давать ту же форму
+TaskAnalysis.
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ DEFAULT_LOOKBACK = timedelta(hours=1)
 
 
 class TaskAnalysis(BaseModel):
-    """Structured reading of the user's request."""
+    """Структурированное прочтение запроса пользователя."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -48,7 +49,7 @@ def analyse_task(task: str, now: datetime | None = None) -> TaskAnalysis:
 
 
 def _scenario_now() -> datetime:
-    """Anchor the window to the synthetic world while real clocks are absent."""
+    """Привязать окно к синтетическому миру, пока настоящих часов нет."""
     latest = max(
         (p.timestamp for series in DEFAULT_SCENARIO.metrics.values() for p in series.points),
         default=datetime.now(UTC),

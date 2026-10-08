@@ -1,4 +1,4 @@
-"""SQLAlchemy 2 declarative base and the async session factory."""
+"""Декларативная база SQLAlchemy 2 и фабрика асинхронных сессий."""
 
 from __future__ import annotations
 
@@ -72,6 +72,6 @@ def get_sessionmaker() -> async_sessionmaker[AsyncSession]:
 
 
 async def get_session() -> AsyncIterator[AsyncSession]:
-    """FastAPI dependency: one transaction-scoped session per request."""
+    """Зависимость FastAPI: одна сессия на запрос в границах транзакции."""
     async with get_sessionmaker()() as session:
         yield session

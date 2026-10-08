@@ -1,9 +1,10 @@
-"""The claim V3 has to earn: the agent is unchanged by where its data lives.
+"""Утверждение, которое должен заслужить V3: агент не зависит от того, где живут его данные.
 
-If MCP is really an integration layer and not a second tool system, then the
-same graph, the same registry, the same guardrails and the same analysis must
-come out the same whether the providers are in-process mocks or four servers
-reached over the protocol. These tests compare the two directly.
+Если MCP — это действительно слой интеграции, а не вторая система инструментов,
+то один и тот же граф, один и тот же реестр, одни и те же защитные ограничения
+и один и тот же анализ должны получаться одинаковыми независимо от того,
+являются ли провайдеры внутрипроцессными моками или четырьмя серверами,
+доступными по протоколу. Эти тесты сравнивают оба варианта напрямую.
 """
 
 from __future__ import annotations
@@ -68,8 +69,8 @@ async def test_the_investigation_reaches_the_same_conclusion_over_mcp(
 
 
 async def test_the_agents_tool_names_are_its_own_not_the_servers(over_mcp, fresh_state):
-    """The registry is not generated from what the servers advertise, so a
-    server cannot widen the agent's reach by editing its own manifest."""
+    """Реестр не порождается из того, что рекламируют серверы, поэтому сервер
+    не может расширить доступ агента, отредактировав свой манифест."""
     final = await over_mcp.ainvoke(fresh_state, run_config(fresh_state["run_id"]))
     assert {c.tool for c in final["tool_calls"]} <= {
         "get_service_metrics",
@@ -83,7 +84,7 @@ async def test_the_agents_tool_names_are_its_own_not_the_servers(over_mcp, fresh
 
 
 async def test_remote_data_is_revalidated_into_domain_models(pool):
-    """A server's response is untrusted input, so it is parsed at the boundary."""
+    """Ответ сервера — это недоверенный ввод, поэтому он разбирается на границе."""
     provider = MCPMonitoringProvider(pool)
     series = await provider.get_service_metrics(
         "billing-service",
@@ -97,7 +98,7 @@ async def test_remote_data_is_revalidated_into_domain_models(pool):
 
 
 async def test_a_malformed_response_fails_at_the_boundary(pool, monkeypatch):
-    """Not three layers later, where the cause would be unrecoverable."""
+    """А не на три слоя позже, где причину было бы уже не восстановить."""
     provider = MCPMonitoringProvider(pool)
 
     async def nonsense(name, arguments, *, approved=False):
@@ -109,8 +110,8 @@ async def test_a_malformed_response_fails_at_the_boundary(pool, monkeypatch):
 
 
 async def test_a_missing_pull_request_is_none_not_an_exception(pool):
-    """At the protocol level it is an error; at the domain level it is an
-    answer, and the agent should not have to tell it from an outage."""
+    """На уровне протокола это ошибка; на уровне предметной области — ответ,
+    и агент не должен отличать его от сбоя."""
     provider = MCPCodeProvider(pool)
     assert await provider.get_pull_request("billing-service", 99999) is None
     found = await provider.get_pull_request("billing-service", 482)
@@ -127,7 +128,7 @@ async def test_the_knowledge_server_is_reachable_as_a_tool(pool):
 async def test_losing_the_optional_server_does_not_change_the_conclusion(
     scenario, fresh_state, over_mcp
 ):
-    """Knowledge is declared optional; the investigation must survive without it."""
+    """База знаний объявлена необязательной; расследование должно выжить без неё."""
     baseline = await over_mcp.ainvoke(fresh_state, run_config(fresh_state["run_id"]))
 
     def broken() -> object:

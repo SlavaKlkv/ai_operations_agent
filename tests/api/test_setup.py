@@ -1,4 +1,4 @@
-"""First-run diagnostics and persisted model selection."""
+"""Диагностика первого запуска и сохраняемый выбор модели."""
 
 from __future__ import annotations
 

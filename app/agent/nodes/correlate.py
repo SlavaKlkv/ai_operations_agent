@@ -1,4 +1,4 @@
-"""Correlate the collected signals and fetch the code behind the suspect release."""
+"""Скоррелировать собранные сигналы и забрать код за подозрительным релизом."""
 
 from __future__ import annotations
 
@@ -143,11 +143,12 @@ def make_correlate_node(code: CodeProvider, *, timeout: float = 15.0):
 
 
 def _release_hypothesis(suspect, ranked, spike, stack_top) -> Hypothesis:
-    """Confidence grows with the strength of the coincidence, never above 0.9.
+    """Уверенность растёт с силой совпадения и никогда не превышает 0.9.
 
-    Temporal proximity alone is correlation; a failing stack frame inside a file
-    the release touched is what turns it into a defensible claim. Even then the
-    ceiling stays below certainty — the agent proposes, a human decides.
+    Временная близость сама по себе — корреляция; падающий стек-фрейм внутри
+    файла, которого коснулся релиз, превращает её в защитимое утверждение. Даже
+    тогда потолок остаётся ниже определённости — агент предлагает, человек
+    решает.
     """
     confidence = 0.5
     supporting = ["error_rate", f"{suspect.service}@{suspect.version}"]

@@ -1,8 +1,8 @@
-"""Structured logging.
+"""Структурированное логирование.
 
-Runs are observable objects, so log lines are events with fields (run_id, node,
-tool) rather than sentences — that is what makes "why did the agent do this"
-answerable from logs alone.
+Запуски — это наблюдаемые объекты, поэтому строки логов — это события с полями
+(run_id, node, tool), а не предложения — именно это делает вопрос «почему агент
+сделал это» отвечаемым по одним логам.
 """
 
 from __future__ import annotations
