@@ -1,4 +1,4 @@
-"""Shared fixtures. Visible to every test package below ``tests/``."""
+"""Общие фикстуры. Видны каждому тестовому пакету внутри tests/."""
 
 from __future__ import annotations
 
@@ -19,11 +19,11 @@ TASK = "После последнего релиза billing-service резко 
 
 @pytest.fixture(autouse=True)
 def offline(monkeypatch, tmp_path):
-    """No test may reach a real model provider.
+    """Ни один тест не должен обращаться к настоящему провайдеру модели.
 
-    Without this, a developer with Ollama running would silently run the suite
-    against a real model — slowly, nondeterministically, and with results that
-    differ from CI. Tests that want a model inject a scripted one.
+    Без этого разработчик с запущенной Ollama молча прогонял бы набор против
+    настоящей модели — медленно, недетерминированно и с результатами, которые
+    отличаются от CI. Тесты, которым нужна модель, подставляют скриптованную.
     """
     from app.api.routes.runs import get_graph
     from app.core.config import get_settings
@@ -76,11 +76,11 @@ def fresh_state():
 
 @pytest.fixture
 async def db_session():
-    """A throwaway SQLite database per test.
+    """Одноразовая база SQLite для каждого теста.
 
-    The schema is created from the models rather than by running migrations:
-    tests should fail when the *code* is wrong, not when a migration is merely
-    unapplied. A separate migration test guards the two staying in sync.
+    Схема создаётся из моделей, а не прогоном миграций: тесты должны падать,
+    когда неверен код, а не когда миграция просто не применена. Отдельный
+    тест миграций следит за тем, чтобы они не разошлись.
     """
     from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -100,7 +100,7 @@ async def db_session():
 
 
 async def _issue_token(session, email: str, *, can_approve: bool) -> str:
-    """Create a user and return their bearer token."""
+    """Создаёт пользователя и возвращает его bearer-токен."""
     from app.api.security import issue_token
     from app.db.models import User
 
@@ -124,13 +124,13 @@ async def approver_token(db_session):
 
 @pytest.fixture
 async def reader_token(db_session):
-    """Someone who can investigate but not authorise a change."""
+    """Тот, кто может расследовать, но не подтверждать изменение."""
     return await _issue_token(db_session, "viewer@example.com", can_approve=False)
 
 
 @pytest.fixture
 async def app(db_session):
-    """The application, with the database pointed at the throwaway SQLite."""
+    """Приложение с базой, направленной на одноразовый SQLite."""
     from app.db.base import get_session
     from app.main import create_app
 
@@ -144,7 +144,7 @@ async def app(db_session):
 
 @pytest.fixture
 async def http_client(app):
-    """An unauthenticated client. Most tests want ``client`` instead."""
+    """Неаутентифицированный клиент. Большинству тестов нужен client."""
     from asgi_lifespan import LifespanManager
     from httpx import ASGITransport, AsyncClient
 
@@ -156,7 +156,7 @@ async def http_client(app):
 
 @pytest.fixture
 async def client(http_client, approver_token):
-    """The default client: authenticated, and allowed to approve writes."""
+    """Клиент по умолчанию: аутентифицирован и может подтверждать записи."""
     http_client.headers["authorization"] = f"Bearer {approver_token}"
     return http_client
 

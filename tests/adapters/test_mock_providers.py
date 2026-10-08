@@ -1,5 +1,5 @@
-"""The mock world is the substrate for every other test, so its own behaviour
-(window filtering, aggregation, service isolation) has to be pinned down."""
+"""Моковый мир — основа для всех остальных тестов, поэтому его собственное
+поведение (фильтрация по окну, агрегация, изоляция сервисов) надо закрепить."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ async def test_metrics_are_clipped_to_the_requested_window(monitoring):
 
 
 async def test_unknown_metric_raises_instead_of_returning_empty(monitoring):
-    """A missing series is a tooling problem, not an observation of "no errors"."""
+    """Отсутствующий ряд — проблема инструментов, а не наблюдение "нет ошибок"."""
     with pytest.raises(UnknownMetricError):
         await monitoring.get_service_metrics("billing-service", "cpu", *WINDOW)
 
@@ -67,6 +67,6 @@ async def test_pull_request_lookup(code):
 
 
 async def test_decoy_service_stays_healthy(monitoring):
-    """The search-service release is a distractor: its metrics never move."""
+    """Релиз search-service — отвлекающий фактор: его метрики не двигаются."""
     series = await monitoring.get_service_metrics("search-service", "error_rate", *WINDOW)
     assert max(p.value for p in series.points) < 0.01

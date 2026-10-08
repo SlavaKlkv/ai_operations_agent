@@ -1,8 +1,8 @@
-"""Explicit workflow state.
+"""Явное состояние рабочего процесса.
 
-The state is the single source of truth for a run. Nothing important lives
-only inside a prompt: every observation, tool call and decision the graph makes
-is written here, which is what makes a run replayable and auditable.
+Состояние — единственный источник правды для запуска. Ничто важное не живёт
+только внутри промпта: каждое наблюдение, вызов инструмента и решение графа
+записываются здесь, и именно это делает запуск воспроизводимым и проверяемым.
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ class ApprovalState(StrEnum):
 
 
 class ToolCallRecord(BaseModel):
-    """One executed tool call, kept for audit and evaluation."""
+    """Один выполненный вызов инструмента, сохранённый для аудита и оценки."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -61,7 +61,7 @@ class ToolCallRecord(BaseModel):
 
 
 class ProposedAction(BaseModel):
-    """A write operation the agent wants to perform, pending approval."""
+    """Операция записи, которую агент хочет выполнить, в ожидании подтверждения."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -72,10 +72,10 @@ class ProposedAction(BaseModel):
 
 
 class CollectedContext(BaseModel):
-    """Raw-but-typed observations, kept so later nodes can re-reason over them.
+    """Сырые, но типизированные наблюдения для повторного анализа в поздних узлах.
 
-    Evidence is the human-readable trace of what was found; this is the machine
-    -readable counterpart that correlation and analysis actually compute on.
+    Доказательства — это читаемая человеком трасса найденного; это её
+    машиночитаемый аналог, по которому фактически считают корреляция и анализ.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -97,7 +97,7 @@ class RunError(BaseModel):
 
 
 class AgentState(TypedDict, total=False):
-    """LangGraph state. Reducers make concurrent/looping writes additive."""
+    """Состояние LangGraph. Редьюсеры делают конкурентные/циклические записи аддитивными."""
 
     # Входные данные
     run_id: str

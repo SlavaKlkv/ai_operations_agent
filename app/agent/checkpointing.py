@@ -1,15 +1,15 @@
-"""Where a paused run is kept while it waits for a person.
+"""Где хранится приостановленный запуск, пока он ждёт человека.
 
-The approval gate is only as durable as the checkpointer behind it. With an
-in-memory saver, a restart between the proposal and the decision loses the
-investigation: the run row survives, the workflow does not, and the approval
-endpoint has nothing to resume. Local installations use SQLite; server
-deployments can select PostgreSQL.
+Шлюз подтверждения настолько же надёжен, насколько надёжен чекпоинтер за ним.
+При хранении в памяти перезапуск между предложением и решением теряет
+расследование: строка запуска выживает, рабочий процесс — нет, и у эндпоинта
+подтверждения нечего возобновлять. Локальные установки используют SQLite;
+серверные деплои могут выбрать PostgreSQL.
 
-Falling back to memory is deliberate and noisy. A missing database should not
-stop the service from starting — a read-only investigation still works — but
-it changes a documented guarantee, so it is logged at warning level and
-reported by the health endpoint rather than quietly tolerated.
+Возврат к памяти намеренный и шумный. Отсутствующая база данных не должна
+мешать сервису запуститься — исследование только для чтения всё равно
+работает — но это меняет документированную гарантию, поэтому фиксируется на
+уровне warning и сообщается эндпоинтом здоровья, а не тихо игнорируется.
 """
 
 from __future__ import annotations
@@ -32,12 +32,12 @@ _durable = False
 
 
 def _postgres_dsn(settings: Settings) -> str:
-    """The checkpointer speaks psycopg, the application speaks asyncpg."""
+    """Чекпоинтер говорит на psycopg, приложение — на asyncpg."""
     return str(settings.postgres_dsn).replace("postgresql+asyncpg://", "postgresql://")
 
 
 async def startup(settings: Settings | None = None) -> BaseCheckpointSaver:
-    """Open the checkpointer, preferring the durable one."""
+    """Открыть чекпоинтер, предпочитая надёжный."""
     global _saver, _durable
     if _saver is not None:
         return _saver
@@ -91,7 +91,8 @@ async def shutdown() -> None:
 
 
 def get_saver() -> BaseCheckpointSaver:
-    """The saver the graph was compiled with, creating a fallback if needed."""
+    """Хранитель, с которым был скомпилирован граф; при необходимости создаёт
+    запасной."""
     global _saver
     if _saver is None:
         _saver = InMemorySaver(serde=agent_serializer())
@@ -99,5 +100,5 @@ def get_saver() -> BaseCheckpointSaver:
 
 
 def is_durable() -> bool:
-    """Whether a paused approval would survive a restart, right now."""
+    """Переживёт ли приостановленное подтверждение перезапуск прямо сейчас."""
     return _durable

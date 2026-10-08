@@ -1,4 +1,4 @@
-"""Small Ollama boundary used by setup diagnostics and model validation."""
+"""Небольшая граница Ollama, используемая диагностикой настройки и проверкой моделей."""
 
 from __future__ import annotations
 
@@ -11,11 +11,11 @@ import httpx
 
 
 class OllamaUnavailable(RuntimeError):
-    """Ollama could not be reached or returned an invalid response."""
+    """Ollama недоступна или вернула некорректный ответ."""
 
 
 class ModelCompatibilityError(RuntimeError):
-    """An installed custom model failed a required capability check."""
+    """Установленная пользовательская модель не прошла обязательную проверку возможностей."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,7 +55,7 @@ class OllamaClient:
             return OllamaSnapshot(available=False, error=f"{type(exc).__name__}: {exc}")
 
     async def verify_custom_model(self, model_name: str) -> None:
-        """Require both tool calling and schema-constrained JSON before saving."""
+        """Требовать и вызов инструментов, и JSON с ограничением схемой перед сохранением."""
         tool_payload = {
             "model": model_name,
             "stream": False,
@@ -114,7 +114,8 @@ class OllamaClient:
             raise ModelCompatibilityError(f"{type(exc).__name__}: {exc}") from exc
 
     async def pull_model(self, model_name: str) -> AsyncIterator[dict[str, Any]]:
-        """Stream Ollama's newline-delimited pull progress without buffering a model."""
+        """Потоково читать разделённый по строкам прогресс загрузки Ollama,
+        не буферизуя модель."""
         timeout = httpx.Timeout(connect=5.0, read=120.0, write=30.0, pool=5.0)
         try:
             async with (

@@ -1,9 +1,9 @@
-"""Deterministic correlation primitives.
+"""Детерминированные примитивы корреляции.
 
-Detecting *when* a metric changed and *which* deployment preceded it is
-arithmetic, not language understanding. Keeping it in plain Python means the
-answer is reproducible, testable, and cannot be hallucinated: the LLM later
-explains the correlation, it does not invent it.
+Определить, когда изменилась метрика и какой деплой ей предшествовал, —
+это арифметика, а не понимание языка. Держать это на чистом Python значит, что
+ответ воспроизводим, тестируем и не может быть выдуман: LLM позже объясняет
+корреляцию, а не изобретает её.
 """
 
 from __future__ import annotations
@@ -39,11 +39,11 @@ def detect_spike(
     absolute_floor: float = DEFAULT_ABSOLUTE_FLOOR,
     baseline_points: int = 5,
 ) -> Spike | None:
-    """Find the first sustained step up in ``series``.
+    """Найти первый устойчивый скачок вверх в series.
 
-    The baseline is the mean of the first ``baseline_points`` samples, which
-    assumes the window starts before the incident — the task analysis node is
-    responsible for choosing such a window.
+    Базовый уровень — среднее первых baseline_points отсчётов, что
+    предполагает, что окно начинается до инцидента — за выбор такого окна
+    отвечает узел анализа задачи.
     """
     points = series.points
     if len(points) < baseline_points + 2:
@@ -72,22 +72,22 @@ def deployments_before(
     *,
     window: timedelta = DEFAULT_CAUSAL_WINDOW,
 ) -> list[Deployment]:
-    """Deployments that could plausibly have caused an event at ``moment``.
+    """Деплои, которые правдоподобно могли вызвать событие в moment.
 
-    Ordered nearest-first. A deployment *after* the incident started cannot be
-    its cause and is filtered out — this is what keeps the agent from blaming
-    the decoy release that happened two minutes into the incident.
+    Упорядочены от ближайшего. Деплой после начала инцидента не может быть
+    его причиной и отфильтровывается — именно это мешает агенту обвинить
+    ложный релиз, случившийся через две минуты после начала инцидента.
     """
     candidates = [d for d in deployments if moment - window <= d.deployed_at <= moment]
     return sorted(candidates, key=lambda d: d.deployed_at, reverse=True)
 
 
 def commits_in_release(commits: list[Commit], deployment: Deployment) -> list[Commit]:
-    """Commits shipped by ``deployment``: the release commit and anything before it.
+    """Коммиты, отгруженные deployment: релизный коммит и всё до него.
 
-    The synthetic provider returns a flat history, so the release commit is
-    matched by SHA and everything committed before it is treated as already
-    shipped. A real VCS provider would answer this with a revision range.
+    Синтетический провайдер возвращает плоскую историю, поэтому релизный
+    коммит сопоставляется по SHA, а всё закоммиченное до него считается уже
+    отгруженным. Настоящий VCS-провайдер ответил бы диапазоном ревизий.
     """
     released = next((c for c in commits if c.sha == deployment.commit_sha), None)
     if released is None:
@@ -96,7 +96,7 @@ def commits_in_release(commits: list[Commit], deployment: Deployment) -> list[Co
 
 
 def rank_suspicious_commits(commits: list[Commit], error_signature: str | None) -> list[Commit]:
-    """Order commits by how well their changed files match the failing stack frame."""
+    """Упорядочить коммиты по совпадению изменённых файлов с падающим стек-фреймом."""
     if not error_signature:
         return commits
 

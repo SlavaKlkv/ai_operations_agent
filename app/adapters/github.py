@@ -1,4 +1,4 @@
-"""Typed, repository-scoped providers backed by one GitHub App connection."""
+"""Типизированные провайдеры уровня репозитория на одном соединении GitHub App."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from app.services.github import GitHubConnectionError, GitHubConnector
 
 
 class GitHubDataError(RuntimeError):
-    """GitHub responded, but not with data that fits the agent's contract."""
+    """GitHub ответил, но данные не соответствуют контракту агента."""
 
 
 def _at(value: object) -> datetime:
@@ -54,7 +54,7 @@ class _RepositoryProvider:
 
 
 class GitHubCodeProvider(_RepositoryProvider):
-    """Read commits, pull requests and deployments from one selected repository."""
+    """Читает коммиты, pull request и деплои из одного выбранного репозитория."""
 
     async def get_recent_deployments(
         self, service: str, start: datetime, end: datetime
@@ -160,7 +160,7 @@ class GitHubCodeProvider(_RepositoryProvider):
 
 
 class GitHubIssueProvider(_RepositoryProvider):
-    """Read and, only after graph approval, write GitHub issues."""
+    """Читает и — только после подтверждения графа — пишет GitHub issue."""
 
     async def search_issues(
         self, query: str, service: str | None = None, state: str | None = None

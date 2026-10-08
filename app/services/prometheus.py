@@ -1,9 +1,9 @@
-"""Narrow, read-only boundary to a user-provided Prometheus HTTP API.
+"""Узкая граница только для чтения к предоставляемому пользователем HTTP API Prometheus.
 
-The agent never receives an arbitrary PromQL string from a task or a model.
-Metric names and the service label are fixed here, and the service value is
-escaped before it becomes a label matcher.  This keeps a real monitoring
-backend useful without turning the integration into a general query console.
+Агент никогда не получает произвольную строку PromQL из задачи или от модели.
+Имена метрик и label сервиса фиксированы здесь, а значение сервиса экранируется
+перед тем, как стать сопоставителем label. Это сохраняет реальный бэкенд
+мониторинга полезным, не превращая интеграцию в универсальную консоль запросов.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from app.domain.models import Alert, AlertSeverity, MetricPoint, MetricSeries
 
 
 class PrometheusConnectionError(RuntimeError):
-    """A safe, actionable error suitable for the local setup UI."""
+    """Безопасная, действенная ошибка, подходящая для локального UI настройки."""
 
 
 METRICS: dict[str, tuple[str, str]] = {
@@ -75,7 +75,7 @@ def _query(metric: str, service: str, label: str) -> tuple[str, str]:
 
 
 class PrometheusClient:
-    """Only the API operations used by the monitoring provider."""
+    """Только операции API, используемые провайдером мониторинга."""
 
     def __init__(
         self,
@@ -204,7 +204,7 @@ class PrometheusClient:
 
 
 class PrometheusMonitoringProvider:
-    """Adapter retaining the graph's typed MonitoringProvider contract."""
+    """Адаптер, сохраняющий типизированный контракт MonitoringProvider графа."""
 
     def __init__(self, client: PrometheusClient) -> None:
         self.client = client

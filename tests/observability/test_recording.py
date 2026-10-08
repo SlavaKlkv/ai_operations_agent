@@ -1,4 +1,4 @@
-"""What the agent reports about itself, and the one counter that must not move."""
+"""Что агент сообщает о себе, и единственный счётчик, который не должен изменяться."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ NOW = datetime(2026, 3, 17, 14, 32, tzinfo=UTC)
 
 
 def _value(metric, **labels) -> float:
-    """Read one sample out of the registry, or 0 when it was never touched."""
+    """Читает один образец из реестра или 0, если к нему никогда не обращались."""
     name = metric._name
     for family in metrics.REGISTRY.collect():
         for sample in family.samples:
@@ -73,8 +73,8 @@ def test_token_usage_is_split_by_direction():
 
 
 def test_model_failures_are_visible_as_failures():
-    """A degraded agent still completes runs, so the failure has to be counted
-    somewhere or the degradation is invisible."""
+    """Деградировавший агент всё равно завершает запуски, поэтому отказ нужно где-то
+    учитывать, иначе деградация незаметна."""
     from app.agent.state import RunError
 
     before = _value(metrics.llm_calls, outcome="error")
@@ -89,8 +89,8 @@ def test_model_failures_are_visible_as_failures():
     "approval", [ApprovalState.PENDING, ApprovalState.REJECTED, ApprovalState.NOT_REQUIRED]
 )
 def test_a_write_without_an_approval_increments_the_alarm(approval):
-    """This counter is what an alert pages on, so it is derived from the
-    recorded facts rather than trusted from a flag."""
+    """Именно по этому счётчику срабатывает оповещение, поэтому он выводится из
+    зафиксированных фактов, а не берётся из флага."""
     before = _value(metrics.unapproved_writes, tool="create_issue")
     state = _state(tool_calls=[_call("create_issue")], approval_state=approval)
     recording.record_run(state, duration_seconds=0.1)
@@ -119,7 +119,7 @@ def test_integration_health_is_reported_per_server():
     assert _value(metrics.checkpointer_durable) == 0
 
 
-# ── Trace ────────────────────────────────────────────────────────────────────
+# ── Трасса ───────────────────────────────────────────────────────────────────
 
 
 def test_the_trace_replays_the_nodes_in_order():

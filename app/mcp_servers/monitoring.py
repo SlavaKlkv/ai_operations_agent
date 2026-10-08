@@ -1,13 +1,15 @@
-"""Monitoring MCP server: metrics, alerts and aggregated errors.
+"""MCP-сервер мониторинга: метрики, оповещения и агрегированные ошибки.
 
-This is a real server, not a wrapper the agent imports. It runs as its own
-process, speaks MCP over stdio, and the agent reaches it only through the
-protocol. That separation is the point: swapping the synthetic dataset behind
-it for Prometheus and a log store changes this file and nothing in the agent.
+Это настоящий сервер, а не обёртка, которую импортирует агент. Он работает
+отдельным процессом, говорит на MCP поверх stdio, и агент обращается к нему
+только через протокол. В этом разделении и смысл: замена синтетического набора
+данных за ним на Prometheus и хранилище логов меняет этот файл и ничего в
+агенте.
 
-What it deliberately does *not* expose is raw log lines. ``get_error_groups``
-aggregates before returning, because an integration layer that can hand back
-unbounded volume is a layer that will eventually hand back unbounded volume.
+То, что он намеренно не раскрывает, — это сырые строки логов.
+get_error_groups агрегирует перед возвратом, потому что слой интеграции,
+способный отдать неограниченный объём, — это слой, который в конце концов его
+отдаст.
 """
 
 from __future__ import annotations
@@ -32,10 +34,10 @@ class MetricPointOut(BaseModel):
 
 
 class MetricsOut(BaseModel):
-    """Both the samples and a precomputed summary.
+    """И выборки, и предвычисленная сводка.
 
-    The summary exists so a caller that only needs "did this get worse" does
-    not have to transfer, or reason over, the full series.
+    Сводка существует, чтобы вызывающему, которому нужно лишь «стало ли хуже»,
+    не приходилось передавать или анализировать весь ряд.
     """
 
     service: str
@@ -75,10 +77,10 @@ class ServiceInfo(BaseModel):
 
 
 def build_server(scenario: Scenario = DEFAULT_SCENARIO) -> MCPServer:
-    """Construct the server over a given backing store.
+    """Создаёт сервер поверх заданного хранилища.
 
-    Parameterised so tests can connect a client to it in-process, with a
-    scenario of their choosing, rather than spawning a subprocess.
+    Параметризовано, чтобы тесты могли подключить к нему клиент в том же
+    процессе, со сценарием на свой выбор, а не порождать подпроцесс.
     """
     server = MCPServer(
         name="ops-monitoring",

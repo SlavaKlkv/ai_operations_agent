@@ -1,4 +1,4 @@
-"""GitHub Device Flow, local credential storage, and repository scope."""
+"""GitHub Device Flow, локальное хранение учётных данных и область репозитория."""
 
 from __future__ import annotations
 

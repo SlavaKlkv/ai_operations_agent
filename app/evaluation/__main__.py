@@ -1,8 +1,8 @@
-"""``python -m app.evaluation`` — run the suite from a terminal or from CI.
+"""python -m app.evaluation — запустить набор из терминала или из CI.
 
-Defaults to the deterministic agent because that is the baseline: a run with
-a model has to beat these numbers to have earned the API call. ``--llm`` runs
-the same scenarios through the configured provider.
+По умолчанию используется детерминированный агент, потому что это базовый уровень:
+запуск с моделью должен побить эти числа, чтобы заслужить вызов API. --llm
+прогоняет те же сценарии через настроенный провайдер.
 """
 
 from __future__ import annotations

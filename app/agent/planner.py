@@ -1,23 +1,23 @@
-"""Deciding what to do next — the one genuinely agentic decision in the system.
+"""Решение, что делать дальше, — единственное по-настоящему агентное решение в системе.
 
-Everything else the graph does is fixed: which context to collect, how to
-detect a spike, which deployment precedes it. The open question is what to
-look at *after* the obvious has been collected, and that depends on what the
-obvious turned up. That is the decision worth giving to a model.
+Всё остальное, что делает граф, фиксировано: какой контекст собирать, как
+обнаружить всплеск, какой деплой ему предшествует. Открытый вопрос — на что
+посмотреть после того, как собрано очевидное, и это зависит от того, что
+обнаружило очевидное. Именно это решение стоит отдавать модели.
 
-Two planners implement the same protocol.
+Два планировщика реализуют один протокол.
 
-:class:`LLMPlanner` binds the allowed tool schemas to the model and reads back
-native tool calls. It is shown the task, what has already been observed and
-what remains in the budget — nothing else. It cannot invent a tool, because
-the registry refuses names it does not know; it cannot invent arguments,
-because the schema rejects them; and it cannot loop forever, because the
-budget is checked before its answer is honoured.
+LLMPlanner привязывает разрешённые схемы инструментов к модели и
+читает обратно нативные вызовы инструментов. Ему показывают задачу, то, что
+уже наблюдалось, и то, что осталось в бюджете, — и ничего больше. Он не может
+изобрести инструмент, потому что реестр отказывает незнакомым именам; не может
+изобрести аргументы, потому что схема их отвергает; и не может зациклиться,
+потому что бюджет проверяется до того, как его ответ принят.
 
-:class:`HeuristicPlanner` answers the same question with a gap-filling rule
-set. It runs when no model is configured, and it is what the LLM planner is
-measured against: a plan that does not beat the heuristic is not worth an API
-call.
+HeuristicPlanner отвечает на тот же вопрос набором правил
+заполнения пробелов. Он работает, когда модель не настроена, и именно с ним
+сравнивают LLM-планировщик: план, не обыгрывающий эвристику, не стоит вызова
+API.
 """
 
 from __future__ import annotations
@@ -57,7 +57,7 @@ read-only.
 
 @dataclass(frozen=True, slots=True)
 class Plan:
-    """What the planner decided, plus what it cost to decide it."""
+    """Что решил планировщик плюс во что обошлось это решение."""
 
     requests: tuple[ToolRequest, ...] = ()
     #: Причина остановки планировщика, когда он ничего не запросил.
@@ -75,17 +75,17 @@ class Planner(Protocol):
     async def plan(self, state: AgentState, available: Sequence[AgentTool[Any, Any]]) -> Plan: ...
 
 
-# ── Heuristic ────────────────────────────────────────────────────────────────
+# ── Эвристика ────────────────────────────────────────────────────────────────
 
 
 class HeuristicPlanner:
-    """Close named evidence gaps in a fixed order, then stop.
+    """Закрыть названные пробелы в доказательствах в заданном порядке и остановиться.
 
-    The order encodes what an engineer would actually do: confirm the symptom
-    is real (alerts), understand its shape (latency), then read the code that
-    shipped. Each rule fires at most once because its precondition stops
-    holding as soon as the data arrives — which is also why this planner
-    terminates without needing a budget to stop it.
+    Порядок кодирует то, что инженер действительно сделал бы: подтвердить, что
+    симптом реален (оповещения), понять его форму (задержка), затем прочитать
+    отгруженный код. Каждое правило срабатывает не более одного раза, потому
+    что его предусловие перестаёт выполняться, как только приходят данные, —
+    поэтому этот планировщик и завершается без бюджета, его останавливающего.
     """
 
     async def plan(self, state: AgentState, available: Sequence[AgentTool[Any, Any]]) -> Plan:
@@ -158,7 +158,7 @@ class HeuristicPlanner:
 
 
 class LLMPlanner:
-    """Let the model choose the next tool, within the offered set."""
+    """Позволить модели выбрать следующий инструмент в пределах предложенного набора."""
 
     def __init__(self, model: BaseChatModel, *, max_requests: int = 2) -> None:
         self._model = model
@@ -201,16 +201,16 @@ def _text_of(message: Any) -> str:
     return " ".join(p for p in parts if p).strip()
 
 
-# ── Briefing ─────────────────────────────────────────────────────────────────
+# ── Сводка ───────────────────────────────────────────────────────────────────
 
 
 def render_briefing(state: AgentState, available: Sequence[AgentTool[Any, Any]]) -> str:
-    """Everything the planner is allowed to know, and nothing else.
+    """Всё, что планировщику разрешено знать, и ничего больше.
 
-    Assembled from state rather than from an accumulating message history: the
-    model sees the current findings, not a transcript of how they were reached.
-    That keeps the prompt bounded as the loop iterates, and keeps state — not
-    the conversation — the single source of truth about the run.
+    Собирается из состояния, а не из накапливаемой истории сообщений: модель
+    видит текущие находки, а не расшифровку того, как к ним пришли. Это
+    удерживает промпт ограниченным по мере итераций цикла и оставляет
+    состояние — а не разговор — единственным источником правды о запуске.
     """
     evidence = state.get("evidence", [])
     hypotheses = state.get("hypotheses", [])
@@ -246,6 +246,6 @@ def render_briefing(state: AgentState, available: Sequence[AgentTool[Any, Any]])
 
 
 def _brief_args(arguments: dict[str, Any]) -> str:
-    """Timestamps are noise in a prompt the model must not anchor on."""
+    """Метки времени — шум в промпте, к которому модель не должна привязываться."""
     interesting = {k: v for k, v in arguments.items() if k not in ("start", "end")}
     return ", ".join(f"{k}={v}" for k, v in sorted(interesting.items()))

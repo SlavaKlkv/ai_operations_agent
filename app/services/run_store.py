@@ -1,4 +1,4 @@
-"""Persistence for agent runs: turning terminal graph state into rows."""
+"""Хранение запусков агента: превращение терминального состояния графа в строки."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from app.db.models import (
 
 
 class NoPendingApproval(LookupError):
-    """A decision arrived for a run that is not waiting for one."""
+    """Решение пришло для запуска, который его не ждёт."""
 
 
 async def create_run(
@@ -61,16 +61,16 @@ async def persist_progress(
     *,
     pending: dict | None = None,
 ) -> AgentRun:
-    """Write what the run has produced so far, in one transaction.
+    """Записать то, что запуск произвёл на данный момент, в одной транзакции.
 
-    Called after every graph invocation, not only the last one — a run that
-    pauses for approval has produced a complete analysis and a proposal, and
-    losing those because the workflow is not finished would defeat the point
-    of pausing durably.
+    Вызывается после каждого вызова графа, а не только после последнего — запуск,
+    который приостанавливается для подтверждения, уже произвёл полный анализ и
+    предложение, и потерять их из-за незавершённости рабочего процесса означало бы
+    свести на нет смысл долговечной паузы.
 
-    ``pending`` is the interrupt payload when the graph stopped at the
-    approval gate. It creates the approval row: the row exists *before* the
-    action runs and is the only thing that authorises it.
+    pending — это полезная нагрузка прерывания, когда граф остановился на шлюзе
+    подтверждения. Она создаёт строку подтверждения: строка существует до
+    выполнения действия и является единственным, что его санкционирует.
     """
     if pending is not None:
         session.add(
@@ -87,7 +87,7 @@ async def persist_progress(
 
 
 async def persist_final_state(session: AsyncSession, run: AgentRun, state: AgentState) -> AgentRun:
-    """Write everything the run produced, in one transaction."""
+    """Записать всё, что произвёл запуск, в одной транзакции."""
     return await _persist(session, run, state)
 
 
@@ -99,11 +99,11 @@ async def record_decision(
     decided_by: str,
     note: str = "",
 ) -> Approval:
-    """Record a human decision before the action is attempted.
+    """Зафиксировать решение человека до того, как действие будет предпринято.
 
-    Written first, and committed, so that the audit trail shows the decision
-    even if executing the action then fails — "who approved this" must be
-    answerable independently of whether it worked.
+    Записывается первым и коммитится, чтобы журнал аудита показывал решение даже
+    если выполнение действия затем провалится — на вопрос «кто это одобрил»
+    нужно отвечать независимо от того, сработало ли оно.
     """
     approval = await _approval_in(session, run.id, ApprovalState.PENDING)
     if approval is None:
@@ -209,12 +209,12 @@ async def _persist(session: AsyncSession, run: AgentRun, state: AgentState) -> A
 async def _approval_in(
     session: AsyncSession, run_id: uuid.UUID, state: ApprovalState
 ) -> Approval | None:
-    """Load an approval by state without touching a lazy relationship.
+    """Загрузить подтверждение по состоянию, не трогая ленивую связь.
 
-    ``run.approvals`` would trigger a synchronous lazy load inside async
-    code, which asyncpg refuses. Querying explicitly also makes it obvious
-    that "the pending approval" is a database fact, not something cached on
-    an object that may be stale.
+    run.approvals вызвал бы синхронную ленивую загрузку внутри асинхронного
+    кода, от которой asyncpg отказывается. Явный запрос также делает очевидным,
+    что «ожидающее подтверждение» — это факт базы данных, а не что-то закэшированное
+    на объекте, который может устареть.
     """
     stmt = select(Approval).where(Approval.run_id == run_id, Approval.state == state)
     return (await session.execute(stmt)).scalars().first()
@@ -243,15 +243,15 @@ async def list_runs(session: AsyncSession, *, limit: int = 50) -> list[AgentRun]
 
 
 def serialise_state(state: AgentState) -> dict:
-    """JSON-safe snapshot of state, used for replay and debugging.
+    """Безопасный для JSON снимок состояния, используемый для воспроизведения и отладки.
 
-    Two things the naive version got wrong. LangGraph puts its own bookkeeping
-    on the returned state under dunder keys — ``__interrupt__`` carries objects
-    that do not serialise — and those are framework internals, not part of the
-    run's story. And an unrecognised object used to be passed through
-    untouched, so a new state field could turn a successful run into a failed
-    database write; falling back to ``repr`` keeps the snapshot honest about
-    what it could not represent instead.
+    Две вещи, которые наивная версия делала неверно. LangGraph кладёт собственную
+    служебную информацию в возвращённое состояние под dunder-ключами —
+    __interrupt__ несёт объекты, которые не сериализуются — а это внутренности
+    фреймворка, не часть истории запуска. И нераспознанный объект раньше проходил
+    насквозь нетронутым, поэтому новое поле состояния могло превратить успешный
+    запуск в неудачную запись в базу; запасной вариант через repr вместо этого
+    сохраняет честность снимка о том, что он не смог представить.
     """
 
     def encode(value):

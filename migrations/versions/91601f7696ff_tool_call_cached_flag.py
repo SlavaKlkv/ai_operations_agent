@@ -1,9 +1,10 @@
-"""Record whether a tool call was served from cache.
+"""Фиксирует, был ли вызов инструмента обслужен из кэша.
 
-Autogeneration was run against SQLite and proposed a batch of NUMERIC → UUID
-type changes as well. Those are an artefact of SQLite having no native UUID
-type: on PostgreSQL the columns are already ``uuid``, so the alterations would
-be noise at best and a table rewrite at worst. Only the new column is kept.
+Автогенерация выполнялась против SQLite и дополнительно предложила пакет
+изменений типов NUMERIC → UUID. Это артефакт того, что в SQLite нет
+встроенного типа UUID: в PostgreSQL столбцы уже ``uuid``, поэтому такие
+изменения были бы шумом в лучшем случае и перезаписью таблицы в худшем.
+Оставлен только новый столбец.
 
 Revision ID: 91601f7696ff
 Revises: 46524fabd6fa

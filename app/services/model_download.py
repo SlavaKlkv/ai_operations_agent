@@ -1,4 +1,4 @@
-"""One bounded, cancellable model download for the local setup wizard."""
+"""Одна ограниченная, отменяемая загрузка модели для локального мастера настройки."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Guard against the classic drift: models changed, migration forgotten."""
+"""Защита от классического расхождения: модели изменились, миграцию забыли."""
 
 from __future__ import annotations
 
@@ -126,7 +126,7 @@ async def test_sqlite_accepts_concurrent_local_writes(tmp_path):
 
 
 def test_downgrade_to_base_is_possible(tmp_path):
-    """A migration you cannot roll back is a migration you cannot deploy safely."""
+    """Миграцию, которую нельзя откатить, нельзя безопасно задеплоить."""
     config = Config("alembic.ini")
     config.set_main_option("script_location", "migrations")
     config.attributes["sqlalchemy_url"] = f"sqlite+aiosqlite:///{tmp_path / 'down.db'}"

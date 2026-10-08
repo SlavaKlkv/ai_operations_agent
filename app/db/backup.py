@@ -1,4 +1,5 @@
-"""Consistent backup and recoverable restore for the local SQLite database."""
+"""Согласованное резервное копирование и восстанавливаемое восстановление
+для локальной базы SQLite."""
 
 from __future__ import annotations
 
@@ -11,7 +12,7 @@ from app.db.sqlite import verify_integrity
 
 
 def create_backup(source: Path, destination: Path) -> Path:
-    """Create a consistent snapshot even while the source uses WAL."""
+    """Создать согласованный снимок, даже пока источник использует WAL."""
     verify_integrity(source)
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = _temporary_path(destination)
@@ -29,7 +30,7 @@ def create_backup(source: Path, destination: Path) -> Path:
 
 
 def restore_backup(backup: Path, destination: Path) -> Path | None:
-    """Atomically restore a verified snapshot and retain the displaced file."""
+    """Атомарно восстановить проверенный снимок и сохранить вытесненный файл."""
     verify_integrity(backup)
     destination.parent.mkdir(parents=True, exist_ok=True)
     restored = _temporary_path(destination)

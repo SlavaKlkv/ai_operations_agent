@@ -1,4 +1,4 @@
-"""Graph-level tests: routing decisions and a full deterministic run."""
+"""Тесты уровня графа: решения маршрутизации и полный детерминированный запуск."""
 
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ def test_routing_short_circuits_on_failure():
 
 
 async def test_full_run_identifies_the_release(monitoring, code, logs, fresh_state):
-    """A confident run does not finish on its own: it stops to ask."""
+    """Уверенный запуск не завершается сам: он останавливается, чтобы спросить."""
     graph = build_graph(monitoring=monitoring, code=code, logs=logs)
     final = await graph.ainvoke(fresh_state, run_config(fresh_state["run_id"]))
 
@@ -66,7 +66,7 @@ async def test_full_run_identifies_the_release(monitoring, code, logs, fresh_sta
 
 
 async def test_every_claim_is_backed_by_a_tool_call(monitoring, code, logs, fresh_state):
-    """Evidence grounding: no evidence item may cite a tool that never ran."""
+    """Привязка к доказательствам: элемент не может ссылаться на не запускавшийся инструмент."""
     graph = build_graph(monitoring=monitoring, code=code, logs=logs)
     final = await graph.ainvoke(fresh_state, run_config(fresh_state["run_id"]))
 
@@ -137,7 +137,7 @@ def _draft_call(**overrides):
 
 
 async def test_the_model_can_add_a_tool_call_and_then_conclude(monitoring, code, logs, fresh_state):
-    """The full cycle: plan → execute → evaluate → plan again → analyse."""
+    """Полный цикл: план → выполнение → оценка → снова план → анализ."""
     model = ScriptedChatModel(
         responses=[
             AIMessage(
@@ -169,7 +169,7 @@ async def test_the_model_can_add_a_tool_call_and_then_conclude(monitoring, code,
 async def test_a_model_cannot_replace_the_deterministic_verdict(
     monitoring, code, logs, fresh_state
 ):
-    """Invented causes, confidence and actions never become the run verdict."""
+    """Выдуманные причины, уверенность и действия не становятся вердиктом запуска."""
     model = ScriptedChatModel(
         responses=[
             AIMessage(content="Enough."),
@@ -214,7 +214,7 @@ async def test_the_evidence_list_is_never_authored_by_the_model(
 async def test_a_model_outage_degrades_the_run_instead_of_failing_it(
     monitoring, code, logs, fresh_state
 ):
-    """Both model calls fail. The run must still produce a grounded analysis."""
+    """Оба вызова модели падают. Запуск всё равно должен дать обоснованный анализ."""
     model = ScriptedChatModel(responses=[])
     final = await build_graph(monitoring=monitoring, code=code, logs=logs, model=model).ainvoke(
         fresh_state, run_config(fresh_state["run_id"])
@@ -228,7 +228,7 @@ async def test_a_model_outage_degrades_the_run_instead_of_failing_it(
 async def test_a_looping_model_is_stopped_by_the_iteration_ceiling(
     monitoring, code, logs, fresh_state
 ):
-    """A planner that always wants one more call must still terminate."""
+    """Планировщик, который всегда хочет ещё один вызов, всё равно должен завершиться."""
     keeps_asking = [
         AIMessage(
             content="",
@@ -258,7 +258,7 @@ async def test_a_looping_model_is_stopped_by_the_iteration_ceiling(
 
 
 async def test_use_llm_false_forces_the_deterministic_baseline(monitoring, code, logs, fresh_state):
-    """The evaluation harness needs a baseline that ignores configuration."""
+    """Стенду оценки нужен базовый вариант, игнорирующий конфигурацию."""
     final = await build_graph(monitoring=monitoring, code=code, logs=logs, use_llm=False).ainvoke(
         fresh_state, run_config(fresh_state["run_id"])
     )

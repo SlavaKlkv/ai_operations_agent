@@ -1,4 +1,4 @@
-"""FastAPI application factory."""
+"""Фабрика приложения FastAPI."""
 
 from __future__ import annotations
 

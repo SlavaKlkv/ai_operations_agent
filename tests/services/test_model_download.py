@@ -1,4 +1,4 @@
-"""Local model-pull lifecycle."""
+"""Жизненный цикл локальной загрузки модели."""
 
 from __future__ import annotations
 

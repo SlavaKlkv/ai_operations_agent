@@ -1,8 +1,8 @@
-"""Store a SHA-256 digest of each user's API token.
+"""Хранит SHA-256-дайджест API-токена каждого пользователя.
 
-Nullable because a user may exist without a credential — revoking a token
-clears the digest rather than deleting the person, so the audit trail keeps
-pointing at someone real.
+Допускает NULL, потому что пользователь может существовать без учётных
+данных — отзыв токена очищает дайджест, а не удаляет человека, поэтому
+журнал аудита продолжает указывать на реальное лицо.
 
 Revision ID: c4a7e2b91d05
 Revises: 91601f7696ff

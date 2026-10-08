@@ -1,23 +1,21 @@
-"""Caching tool results in Redis.
+"""Кэширование результатов инструментов в Redis.
 
-The agent asks external systems the same questions repeatedly: two
-investigations into the same service minutes apart fetch the same metric
-window, the same deployment list, the same aggregated errors. Each of those is
-a round trip to a system that belongs to someone else and has its own rate
-limits.
+Агент задаёт внешним системам одни и те же вопросы повторно: два расследования
+одного сервиса с разницей в минуты получают то же окно метрик, тот же список
+деплоев, те же агрегированные ошибки. Каждое из них — это round trip к системе,
+которая принадлежит кому-то другому и имеет свои лимиты.
 
-Three rules keep this from being dangerous.
+Три правила не дают этому стать опасным.
 
-*Only reads are cached.* A write has an effect, and an effect cannot be served
-from a cache. The executor decides by access class, not by name.
+Кэшируется только чтение. Запись имеет эффект, а эффект нельзя отдать из кэша.
+Исполнитель решает по классу доступа, а не по имени.
 
-*Entries expire quickly.* Monitoring data for a window that includes "now" is
-still moving; a minute of staleness is a reasonable trade for the round trip,
-an hour is not.
+Записи быстро истекают. Данные мониторинга за окно, включающее «сейчас», ещё
+меняются; минута устаревания — разумная плата за round trip, час — нет.
 
-*A missing Redis is not an error.* Every operation degrades to a miss. Caching
-is an optimisation, and an optimisation that can take the system down is a
-liability.
+Отсутствующий Redis — не ошибка. Каждая операция деградирует до промаха.
+Кэширование — это оптимизация, а оптимизация, способная уронить систему, — это
+обуза.
 """
 
 from __future__ import annotations
@@ -44,11 +42,11 @@ class ToolCache(Protocol):
 
 
 def cache_key(tool: str, arguments: dict[str, Any]) -> str:
-    """A stable key for one question asked of one tool.
+    """Стабильный ключ для одного вопроса, заданного одному инструменту.
 
-    Hashed rather than spelled out: arguments contain ISO timestamps and
-    service names, and a key built by concatenation would be long, awkward to
-    read in ``redis-cli``, and occasionally illegal.
+    Хэшируется, а не выписывается целиком: аргументы содержат ISO-отметки времени
+    и имена сервисов, а ключ, собранный конкатенацией, был бы длинным, неудобным
+    для чтения в redis-cli и иногда недопустимым.
     """
     payload = json.dumps({"tool": tool, "arguments": arguments}, sort_keys=True, default=str)
     digest = hashlib.sha256(payload.encode()).hexdigest()[:32]
@@ -56,7 +54,7 @@ def cache_key(tool: str, arguments: dict[str, Any]) -> str:
 
 
 class NullCache:
-    """What the agent uses when caching is off. Every lookup is a miss."""
+    """То, что использует агент при выключенном кэшировании. Любой поиск — промах."""
 
     async def get(self, key: str) -> dict[str, Any] | None:
         return None
@@ -66,7 +64,7 @@ class NullCache:
 
 
 class MemoryToolCache:
-    """Process-local TTL cache used by the zero-dependency local profile."""
+    """Локальный для процесса TTL-кэш, используемый локальным профилем без зависимостей."""
 
     def __init__(self) -> None:
         self._entries: dict[str, tuple[float, dict[str, Any]]] = {}
@@ -89,11 +87,11 @@ class MemoryToolCache:
 
 
 class RedisToolCache:
-    """Redis-backed cache that never raises at the caller.
+    """Кэш на базе Redis, который никогда не выбрасывает исключение у вызывающего.
 
-    Failures are logged once per operation and treated as a miss. The agent
-    must not care whether Redis is up; an investigation with a cold cache is
-    slower, and that is the entire consequence.
+    Сбои логируются один раз на операцию и трактуются как промах. Агент не должен
+    заботиться о том, поднят ли Redis; расследование с холодным кэшем медленнее, и
+    это всё последствие.
     """
 
     def __init__(self, client: Any) -> None:
@@ -122,10 +120,11 @@ class RedisToolCache:
 
 
 def build_cache(settings: Any) -> ToolCache:
-    """The configured cache, or a no-op one.
+    """Настроенный кэш или пустышка.
 
-    Constructing the client does not connect, so an unreachable Redis surfaces
-    as warnings and misses at call time rather than as a failure to start.
+    Создание клиента не устанавливает соединение, поэтому недоступный Redis
+    проявляется как предупреждения и промахи во время вызова, а не как сбой
+    запуска.
     """
     if not settings.cache_enabled:
         return NullCache()

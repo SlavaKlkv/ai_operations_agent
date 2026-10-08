@@ -1,15 +1,15 @@
-"""Knowledge MCP server: runbooks and operational documentation.
+"""MCP-сервер знаний: ранбуки и эксплуатационная документация.
 
-Retrieval is one tool among several here, not the centre of the system. The
-agent asks "is there a runbook for this" the same way it asks "what shipped" —
-so the retrieval lives behind the same protocol as everything else, and the
-ranking stays simple and inspectable rather than becoming a second project.
+Поиск здесь — один инструмент среди нескольких, а не центр системы. Агент
+спрашивает «есть ли для этого ранбук» так же, как «что выпустили», — поэтому
+поиск живёт за тем же протоколом, что и всё остальное, а ранжирование остаётся
+простым и обозримым, не превращаясь во второй проект.
 
-Scoring is BM25-flavoured lexical matching over a handful of documents: term
-frequency, a length penalty, and a bonus for a service named in the metadata.
-For a corpus of runbooks that is not a compromise — the vocabulary is small
-and technical, and an engineer can predict what a query will return, which is
-worth more here than a marginal gain in recall.
+Оценка — это лексическое сопоставление в духе BM25 по горстке документов:
+частота термина, штраф за длину и бонус за сервис, названный в метаданных. Для
+корпуса ранбуков это не компромисс — словарь мал и техничен, и инженер может
+предсказать, что вернёт запрос, а это здесь ценнее, чем маргинальный прирост
+полноты.
 """
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ class DocumentOut(BaseModel):
 def search_documents(
     corpus: tuple[Document, ...], query: str, service: str | None = None, limit: int = 3
 ) -> list[SearchHit]:
-    """Search a validated local catalogue without exposing file paths to callers."""
+    """Ищет по провалидированному локальному каталогу, не раскрывая вызывающим пути к файлам."""
     terms = _tokenise(query)
     if not terms:
         raise ToolFailure("query must contain at least one searchable word")
@@ -167,11 +167,11 @@ def _tokenise(text: str) -> list[str]:
 
 
 def _score(document: Document, terms: list[str], service: str | None, avg_len: float) -> float:
-    """BM25-style term weighting, with a bonus for the right service.
+    """Взвешивание терминов в стиле BM25 с бонусом за правильный сервис.
 
-    ``k1`` and ``b`` are the conventional defaults; there is no corpus here
-    large enough to justify tuning them, and pretending otherwise would be
-    false precision.
+    k1 и b — это обычные значения по умолчанию; здесь нет корпуса,
+    достаточно большого, чтобы оправдать их настройку, а притворяться иначе было
+    бы ложной точностью.
     """
     k1, b = 1.5, 0.75
     tokens = _tokenise(f"{document.title} {document.body} {' '.join(document.tags)}")
@@ -190,7 +190,7 @@ def _score(document: Document, terms: list[str], service: str | None, avg_len: f
 
 
 def _excerpt(document: Document, terms: list[str]) -> str:
-    """The passage around the first match, so a hit is judgeable without a read."""
+    """Фрагмент вокруг первого совпадения, чтобы попадание можно было оценить без чтения."""
     body = document.body
     lowered = body.casefold()
     position = min(

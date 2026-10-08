@@ -1,4 +1,4 @@
-"""GitHub providers cannot leave the repository selected by the user."""
+"""GitHub-провайдеры не могут выйти за пределы выбранного пользователем репозитория."""
 
 from __future__ import annotations
 

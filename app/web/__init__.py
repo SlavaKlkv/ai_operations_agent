@@ -1,1 +1,1 @@
-"""Browser interface bundled with the local application."""
+"""Браузерный интерфейс, поставляемый вместе с локальным приложением."""

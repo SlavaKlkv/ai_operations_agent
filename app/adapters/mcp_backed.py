@@ -1,21 +1,21 @@
-"""Provider implementations that reach their data over MCP.
+"""Реализации провайдеров, получающие свои данные по MCP.
 
-This is where the architectural choice of V3 lives. MCP is an *integration
-layer*, not a replacement for the agent's tool contract. The agent keeps its
-own typed registry, its own guardrails and its own bounded renderings; what
-changes is where the data comes from.
+Здесь и живёт архитектурный выбор V3. MCP — это слой интеграции, а не замена
+контракта инструментов агента. Агент сохраняет свой типизированный реестр,
+свои защитные ограничения и свои ограниченные представления; меняется лишь то,
+откуда приходят данные.
 
-Concretely: these classes implement exactly the protocols in
-``app.adapters.base`` that the mock providers implement, so
-``build_registry(monitoring, code, logs)`` is unchanged, every tool keeps its
-Pydantic schema, and swapping mock for MCP is a wiring decision. Had the
-agent's tools been generated from whatever the servers advertise, a server
-could have widened the agent's reach by editing its own manifest.
+Конкретно: эти классы реализуют ровно те протоколы из app.adapters.base,
+что и mock-провайдеры, поэтому build_registry(monitoring, code, logs) не
+меняется, каждый инструмент сохраняет свою схему Pydantic, а замена mock на MCP
+— это решение о проводке. Если бы инструменты агента генерировались из того,
+что рекламируют серверы, сервер мог бы расширить доступ агента, отредактировав
+свой собственный манифест.
 
-Everything crossing the boundary is re-validated. A remote server's response
-is untrusted input: it gets parsed into a domain model here, and a response
-that does not fit is a failure at the boundary rather than a strange value
-appearing three layers later.
+Всё, что пересекает границу, проходит повторную валидацию. Ответ удалённого
+сервера — это недоверенный ввод: здесь он разбирается в модель предметной
+области, а ответ, который не подходит, — это отказ на границе, а не странное
+значение, всплывающее тремя слоями позже.
 """
 
 from __future__ import annotations
@@ -57,7 +57,7 @@ METRIC_UNITS = {
 
 
 class RemoteDataError(RuntimeError):
-    """A server answered, but not with something this system can use."""
+    """Сервер ответил, но результатом, который эта система не может использовать."""
 
 
 def _iso(value: datetime) -> str:
@@ -70,10 +70,11 @@ def _at(value: str) -> datetime:
 
 
 def _unwrap(payload: dict[str, Any]) -> Any:
-    """MCP wraps a non-object return value in ``{"result": ...}``.
+    """MCP оборачивает возвращаемое значение, не являющееся объектом, в {"result": ...}.
 
-    A list-returning tool comes back wrapped; a model-returning tool does not.
-    Normalising here keeps that protocol detail out of every call site.
+    Инструмент, возвращающий список, приходит обёрнутым; инструмент,
+    возвращающий модель, — нет. Нормализация здесь избавляет все места вызовов
+    от этой детали протокола.
     """
     if set(payload) == {"result"}:
         return payload["result"]
@@ -81,7 +82,7 @@ def _unwrap(payload: dict[str, Any]) -> Any:
 
 
 class MCPMonitoringProvider:
-    """Metrics, alerts and aggregated errors, over the monitoring server."""
+    """Метрики, оповещения и агрегированные ошибки через сервер мониторинга."""
 
     def __init__(self, pool: MCPToolPool) -> None:
         self._pool = pool
@@ -133,12 +134,12 @@ class MCPMonitoringProvider:
 
 
 class MCPLogProvider:
-    """Aggregated application errors, over the monitoring server.
+    """Агрегированные ошибки приложения через сервер мониторинга.
 
-    A separate provider from monitoring even though one server backs both:
-    the agent's log tool and metric tool are independent capabilities, and
-    tying them to one class would make it impossible to point them at
-    different backends later — which is the normal end state.
+    Отдельный от мониторинга провайдер, хотя оба обслуживает один сервер: у
+    агента инструмент логов и инструмент метрик — независимые возможности, и
+    привязка их к одному классу лишила бы нас возможности позже направить их на
+    разные бэкенды — а это обычное конечное состояние.
     """
 
     def __init__(self, pool: MCPToolPool) -> None:
@@ -176,7 +177,7 @@ class MCPLogProvider:
 
 
 class MCPCodeProvider:
-    """Deployments, commits and pull requests, over the code server."""
+    """Деплои, коммиты и pull request через сервер кода."""
 
     def __init__(self, pool: MCPToolPool) -> None:
         self._pool = pool
@@ -234,11 +235,11 @@ class MCPCodeProvider:
             raise RemoteDataError(f"malformed commits for {service}: {exc}") from exc
 
     async def get_pull_request(self, service: str, number: int) -> PullRequest | None:
-        """A missing pull request is an answer, not a failure.
+        """Отсутствующий pull request — это ответ, а не сбой.
 
-        The server reports "no such PR" as a tool error because that is what
-        it is at the protocol level; at the domain level it is simply ``None``,
-        and the agent should not have to distinguish it from a server outage.
+        Сервер сообщает о «нет такого PR» как об ошибке инструмента, потому что
+        на уровне протокола это так и есть; на уровне предметной области это
+        просто None, и агент не должен отличать это от недоступности сервера.
         """
         try:
             payload = _unwrap(
@@ -261,11 +262,12 @@ class MCPCodeProvider:
 
 
 class MCPKnowledgeProvider:
-    """Runbook retrieval, over the knowledge server.
+    """Поиск ранбуков через сервер знаний.
 
-    Not part of :mod:`app.adapters.base`: knowledge is a capability the agent
-    gained with MCP rather than one the deterministic workflow already had, so
-    it gets its own protocol instead of being retrofitted into an existing one.
+    Не входит в app.adapters.base: знания — это возможность, которую
+    агент получил вместе с MCP, а не та, что уже была в детерминированном
+    рабочем процессе, поэтому он получает собственный протокол, вместо того
+    чтобы встраиваться в существующий.
     """
 
     def __init__(self, pool: MCPToolPool) -> None:
@@ -298,12 +300,12 @@ class MCPKnowledgeProvider:
 
 
 class MCPIssueProvider:
-    """The issue tracker, over the incident server — reads and writes.
+    """Трекер задач через сервер инцидентов — чтение и запись.
 
-    The ``approved`` flag is threaded through to the pool rather than stored
-    on this object. A provider that could be constructed "in write mode"
-    would carry that permission into every later call; passing it per call
-    keeps an approval attached to the single action it was given for.
+    Флаг approved передаётся в пул, а не хранится в этом объекте. Провайдер,
+    который можно было бы создать «в режиме записи», проносил бы это разрешение
+    в каждый последующий вызов; передача его на каждый вызов привязывает
+    подтверждение к единственному действию, для которого оно выдано.
     """
 
     def __init__(self, pool: MCPToolPool) -> None:

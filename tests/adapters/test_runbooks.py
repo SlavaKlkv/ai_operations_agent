@@ -1,4 +1,4 @@
-"""Runbook search only sees Markdown explicitly placed in its catalogue."""
+"""Поиск по ранбукам видит только Markdown, явно положенный в каталог."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Persist the active model and record it on every run.
+"""Сохраняет активную модель и записывает её при каждом запуске.
 
 Revision ID: d0c7a5e8b214
 Revises: c4a7e2b91d05

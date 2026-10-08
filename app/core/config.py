@@ -1,4 +1,4 @@
-"""Application configuration loaded from the environment."""
+"""Конфигурация приложения, загружаемая из окружения."""
 
 from functools import lru_cache
 from pathlib import Path

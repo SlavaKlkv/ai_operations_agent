@@ -1,13 +1,15 @@
-"""The single door between a decision to call a tool and the tool running.
+"""Единственная дверь между решением вызвать инструмент и его выполнением.
 
-Nothing in the graph calls a provider directly. A tool request — wherever it
-came from, an LLM or deterministic code — arrives here as a name and a dict,
-and leaves as a validated, timed, budgeted, audited invocation.
+Ничто в графе не вызывает провайдера напрямую. Запрос инструмента — откуда бы
+он ни пришёл, от LLM или от детерминированного кода — приходит сюда как имя и
+словарь, а уходит проверенным, измеренным по времени, учтённым по бюджету и
+записанным в аудит вызовом.
 
-The order of operations is the design: policy first, then argument validation,
-then execution under a timeout, then result validation. A request that fails an
-early check never reaches the provider, and the failure is returned as data the
-graph can route on rather than raised through the workflow.
+Порядок операций и есть проектное решение: сначала политика, затем валидация
+аргументов, затем исполнение с таймаутом, затем валидация результата. Запрос,
+проваливший раннюю проверку, никогда не доходит до провайдера, а сбой
+возвращается как данные, по которым граф может маршрутизировать, а не
+пробрасывается через рабочий процесс.
 """
 
 from __future__ import annotations
@@ -39,12 +41,12 @@ log = structlog.get_logger(__name__)
 
 @dataclass(frozen=True, slots=True)
 class ToolInvocation:
-    """The outcome, in the three shapes the system needs it in.
+    """Исход в трёх формах, в которых он нужен системе.
 
-    ``result`` is the typed object the graph reasons over, ``digest`` is the
-    bounded text the model is allowed to read, and ``record`` is the audit row.
-    Keeping them distinct is what stops raw provider output leaking into a
-    prompt by accident.
+    result — типизированный объект, по которому рассуждает граф;
+    digest — ограниченный текст, который модели разрешено читать;
+    record — строка аудита. Их раздельность и не даёт сырому выводу
+    провайдера случайно просочиться в промпт.
     """
 
     request: ToolRequest
@@ -62,7 +64,7 @@ class ToolInvocation:
 
 
 class ToolExecutor:
-    """Registry + policy + timing, bound together for the lifetime of a run."""
+    """Реестр + политика + тайминг, связанные вместе на время жизни запуска."""
 
     def __init__(
         self,
@@ -89,12 +91,13 @@ class ToolExecutor:
         cache: ToolCache | None = None,
         cache_ttl: int = 60,
     ) -> ToolExecutor:
-        """Rebuild an executor mid-run from what the state already records.
+        """Пересобрать исполнитель посреди запуска из того, что уже записано в состоянии.
 
-        Graph nodes are shared across concurrent runs, so the executor cannot
-        be a long-lived object holding one run's history. Reconstructing it
-        from state each time keeps repetition detection working across the
-        loop while the graph itself stays stateless and re-entrant.
+        Узлы графа разделяются между параллельными запусками, поэтому
+        исполнитель не может быть долгоживущим объектом, хранящим историю
+        одного запуска. Пересборка его из состояния каждый раз сохраняет работу
+        обнаружения повторов на протяжении цикла, пока сам граф остаётся без
+        состояния и повторно входимым.
         """
         return cls(
             registry,
@@ -114,15 +117,15 @@ class ToolExecutor:
 
     @property
     def history(self) -> tuple[str, ...]:
-        """Signatures of everything attempted, in order."""
+        """Сигнатуры всего, что было предпринято, по порядку."""
         return tuple(self._history)
 
     def available(self) -> tuple[AgentTool[Any, Any], ...]:
         return self._guardrails.available(self._registry)
 
     def authorise(self, request: ToolRequest) -> AgentTool[Any, Any]:
-        """Run every policy check. Raises rather than returning a verdict, so a
-        caller cannot accidentally ignore a refusal."""
+        """Выполнить все проверки политики. Возбуждает исключение, а не возвращает
+        вердикт, чтобы вызывающий не мог случайно проигнорировать отказ."""
         tool = self._registry.get(request.tool)
         self._guardrails.check_tool(tool)
         self._guardrails.check_repetition(request.signature, self._history)
@@ -134,11 +137,11 @@ class ToolExecutor:
         *,
         defaults: dict[str, Any] | None = None,
     ) -> ToolInvocation:
-        """Authorise, validate, run and record one tool call.
+        """Авторизовать, проверить, выполнить и записать один вызов инструмента.
 
-        ``defaults`` fill arguments the planner left out — in practice the
-        investigation's time window. They are applied before validation and
-        never override what the planner supplied explicitly.
+        defaults заполняют аргументы, которые планировщик опустил, — на
+        практике временное окно расследования. Они применяются до валидации и
+        никогда не переопределяют то, что планировщик задал явно.
         """
         try:
             tool = self._registry.get(request.tool)
@@ -212,8 +215,8 @@ class ToolExecutor:
     def _refused(
         self, request: ToolRequest, exc: Exception, *, duration_ms: float = 0.0
     ) -> ToolInvocation:
-        """A refusal is still a recorded tool call — the audit trail must show
-        what the agent tried to do, not only what it was allowed to do."""
+        """Отказ — это всё ещё записанный вызов инструмента: журнал аудита должен
+        показывать, что агент пытался сделать, а не только что ему было позволено."""
         return ToolInvocation(
             request=request,
             record=ToolCallRecord(
@@ -232,11 +235,11 @@ def _merge_defaults(
     defaults: dict[str, Any] | None,
     args_schema: type[BaseModel],
 ) -> dict[str, Any]:
-    """Fill omitted arguments, but only ones this tool actually declares.
+    """Заполнить опущенные аргументы, но лишь те, что инструмент объявляет.
 
-    Filtering by the schema matters: the window defaults are offered to every
-    call, and a tool that takes no window (``get_pull_request``) must not be
-    handed one — its schema forbids extra fields and would reject the call.
+    Фильтрация по схеме важна: значения окна по умолчанию предлагаются каждому
+    вызову, а инструменту, не принимающему окно (get_pull_request), его
+    передавать нельзя — его схема запрещает лишние поля и отвергла бы вызов.
     """
     merged = dict(arguments)
     for key, value in (defaults or {}).items():
@@ -246,12 +249,12 @@ def _merge_defaults(
 
 
 def _jsonable(arguments: dict[str, Any]) -> dict[str, Any]:
-    """Arguments are normalised to JSON primitives as early as possible.
+    """Аргументы нормализуются к примитивам JSON как можно раньше.
 
-    They are stored in JSON columns, they form the call signature used for
-    repetition detection, and they have to survive a round-trip through state —
-    all three break if a ``datetime`` object leaks through. Pydantic parses the
-    ISO strings back on validation, so nothing is lost.
+    Они хранятся в JSON-колонках, образуют сигнатуру вызова, используемую для
+    обнаружения повторов, и должны пережить круговой рейс через состояние —
+    всё три ломается, если просочится объект datetime. Pydantic разбирает
+    ISO-строки обратно при валидации, так что ничего не теряется.
     """
     return {
         key: value.isoformat() if isinstance(value, datetime) else value

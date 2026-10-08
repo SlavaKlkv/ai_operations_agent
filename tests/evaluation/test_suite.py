@@ -1,8 +1,8 @@
-"""The suite itself, run as an integration test.
+"""Сам набор, запускаемый как интеграционный тест.
 
-This is the regression gate. If a change to the planner, the correlation
-arithmetic or the analysis makes the agent worse on any of the three
-scenarios, this fails in CI rather than in a demo.
+Это регрессионный барьер. Если изменение планировщика, арифметики
+корреляции или анализа делает агента хуже хотя бы в одном из трёх
+сценариев, это падает в CI, а не на демонстрации.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from app.evaluation.scenarios import SUITE, by_name
 
 @pytest.fixture(scope="module")
 async def suite_score():
-    """One run of the whole suite, shared by the assertions below."""
+    """Один прогон всего набора, общий для проверок ниже."""
     return await run_suite(use_llm=False)
 
 
@@ -29,7 +29,7 @@ async def test_it_reaches_the_right_conclusion_on_a_release_incident():
 
 
 async def test_it_refuses_to_blame_a_release_that_cannot_be_the_cause():
-    """The decoy test: an eight-hour-old deploy is not a cause."""
+    """Тест с приманкой: деплой восьмичасовой давности не является причиной."""
     score = await run_suite([by_name("dependency-degradation")], use_llm=False)
     assert score.passed == 1, render_report(score)
 
@@ -40,7 +40,7 @@ async def test_it_reports_finding_nothing_rather_than_inventing_a_story():
 
 
 async def test_no_run_wastes_a_tool_call(suite_score):
-    """A repeated or failed call is the clearest sign of an agent flailing."""
+    """Повторный или неудачный вызов — самый явный признак того, что агент барахтается."""
     assert suite_score.total_unnecessary_calls == 0, render_report(suite_score)
 
 
@@ -54,7 +54,7 @@ async def test_every_scenario_is_covered_by_the_suite(suite_score):
 
 
 async def test_the_report_names_what_failed():
-    """A report that only counts passes is useless when something breaks."""
+    """Отчёт, который только считает успехи, бесполезен, когда что-то ломается."""
     broken = by_name("no-incident")
     impossible = type(broken)(
         **{

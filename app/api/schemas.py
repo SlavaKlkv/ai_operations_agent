@@ -1,5 +1,5 @@
-"""HTTP request/response models. Separate from domain models on purpose: the
-wire format is allowed to evolve without dragging the agent's types with it."""
+"""Модели HTTP-запросов и ответов. Намеренно отделены от доменных моделей: формат
+обмена может развиваться, не увлекая за собой типы агента."""
 
 from __future__ import annotations
 
@@ -55,8 +55,8 @@ class RunSummary(BaseModel):
 
 
 class PendingApproval(BaseModel):
-    """The write a run is waiting on. Shown in full: a reviewer approves
-    content, not a description of content."""
+    """Запись, которой ждёт запуск. Показывается полностью: проверяющий одобряет
+    содержимое, а не описание содержимого."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -67,13 +67,13 @@ class PendingApproval(BaseModel):
 
 
 class ApprovalDecision(BaseModel):
-    """A human decision: a yes or a no, and optionally why.
+    """Решение человека: «да» или «нет», и опционально причина.
 
-    Deliberately unable to express *what* to do — the action is whatever the
-    graph checkpointed, so an approval cannot be redirected onto content the
-    reviewer never saw. And deliberately unable to say *who* — identity comes
-    from the credential, because a name in a request body is a label, not an
-    identity.
+    Намеренно не способно выразить что делать — действием является то, что граф
+    сохранил в чекпоинт, поэтому подтверждение нельзя перенаправить на содержимое,
+    которого проверяющий не видел. И намеренно не способно указать кто — личность
+    берётся из учётных данных, потому что имя в теле запроса это метка, а не
+    личность.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -91,7 +91,7 @@ class RunDetail(RunSummary):
 
 
 class TraceStep(BaseModel):
-    """One observable thing the workflow did."""
+    """Одно наблюдаемое действие рабочего процесса."""
 
     step: int
     node: str
@@ -99,7 +99,7 @@ class TraceStep(BaseModel):
 
 
 class RunTrace(BaseModel):
-    """The replayable story of a run: nodes, tools, branches and failures."""
+    """Воспроизводимая история запуска: узлы, инструменты, ветви и сбои."""
 
     run_id: uuid.UUID
     status: RunStatus

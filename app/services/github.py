@@ -1,4 +1,4 @@
-"""Local GitHub App Device Flow and encrypted user-token storage."""
+"""Локальный Device Flow GitHub App и зашифрованное хранение пользовательского токена."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ API_VERSION = "2022-11-28"
 
 
 class GitHubConnectionError(Exception):
-    """A safe-to-display GitHub connection failure without secret payloads."""
+    """Безопасная для показа ошибка подключения GitHub без секретных данных."""
 
 
 @dataclass
@@ -35,7 +35,7 @@ class DeviceGrant:
 
 
 class CredentialStore:
-    """Keep ciphertext and its 0600 key in separate files beside the SQLite volume."""
+    """Хранить шифротекст и его ключ с правами 0600 в отдельных файлах рядом с томом SQLite."""
 
     def __init__(self, directory: Path) -> None:
         self.directory = directory

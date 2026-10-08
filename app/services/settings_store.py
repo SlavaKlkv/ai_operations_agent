@@ -1,4 +1,4 @@
-"""Validated settings stored in the durable application database."""
+"""Проверенные настройки, хранимые в долговечной базе данных приложения."""
 
 from __future__ import annotations
 

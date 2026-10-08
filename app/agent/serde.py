@@ -1,17 +1,17 @@
-"""How workflow state is written to, and read back from, a checkpoint.
+"""Как состояние рабочего процесса записывается в чекпоинт и читается обратно.
 
-The default LangGraph serializer will reconstruct any type it finds in a
-checkpoint. That is convenient and it is a real weakness: a checkpoint row is
-data in a database, and anything able to write to that database could choose
-what gets instantiated when the row is read back. The library says so in its
-own security note.
+Сериализатор LangGraph по умолчанию восстановит любой тип, найденный в
+чекпоинте. Это удобно и это настоящая слабость: строка чекпоинта — это данные
+в базе, и любой, кто может писать в эту базу, мог бы выбрать, что будет
+создано при чтении строки обратно. Библиотека говорит об этом в собственной
+заметке о безопасности.
 
-So the allowlist here is explicit. These are the types the agent's state is
-made of; a checkpoint containing anything else fails to deserialise instead of
-being trusted. The list is short because the state is deliberately small, and
-keeping it accurate is the cost of that guarantee — a new state type that is
-not added here will surface immediately as a failed resume, not as a silent
-security hole.
+Поэтому allowlist здесь явный. Это типы, из которых состоит состояние агента;
+чекпоинт, содержащий что-либо ещё, не десериализуется, а не принимается на
+веру. Список короткий, потому что состояние намеренно маленькое, и поддержание
+его точности — цена этой гарантии: новый тип состояния, не добавленный сюда,
+сразу проявится как неудачное возобновление, а не как тихая дыра в
+безопасности.
 """
 
 from __future__ import annotations
@@ -83,5 +83,5 @@ CHECKPOINT_TYPES: tuple[type, ...] = (
 
 
 def agent_serializer() -> JsonPlusSerializer:
-    """A serializer that will only rebuild this application's own types."""
+    """Сериализатор, который восстановит только собственные типы этого приложения."""
     return JsonPlusSerializer(allowed_msgpack_modules=CHECKPOINT_TYPES)

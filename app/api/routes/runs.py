@@ -1,4 +1,4 @@
-"""Agent run endpoints."""
+"""Эндпоинты запусков агента."""
 
 from __future__ import annotations
 
@@ -45,12 +45,13 @@ router = APIRouter(prefix="/runs", tags=["runs"])
 
 @lru_cache(maxsize=8)
 def get_graph(model_name: str | None = None):
-    """Compile once per process.
+    """Компилируется один раз на процесс.
 
-    The graph holds no per-run state — nodes read and return state, and the
-    tool executor is rebuilt from state on every call — so one compiled graph
-    serves concurrent requests safely. Compiling per request would also mean
-    re-reading credentials and rebuilding the registry on every investigation.
+    Граф не хранит состояние конкретного запуска — узлы читают и возвращают
+    состояние, а исполнитель инструментов пересобирается из состояния при каждом
+    вызове — поэтому один скомпилированный граф безопасно обслуживает параллельные
+    запросы. Компиляция на каждый запрос означала бы также повторное чтение
+    учётных данных и пересборку реестра при каждом расследовании.
     """
     settings = get_settings()
     runtime_settings = settings.model_copy(update={"llm_model": model_name or settings.llm_model})
@@ -65,11 +66,11 @@ def get_graph(model_name: str | None = None):
 async def _real_graph(
     session: AsyncSession, model_name: str | None
 ) -> tuple[object, Callable[[], Awaitable[None]]] | None:
-    """Build a graph over real read-only sources when their minimum set exists.
+    """Собрать граф поверх реальных источников только для чтения, когда есть минимум.
 
-    Real sources stay isolated from demo providers. A missing optional source
-    is visible in the trace and does not silently switch the investigation to
-    synthetic data.
+    Реальные источники остаются изолированными от demo-провайдеров. Отсутствующий
+    необязательный источник виден в трассе и не переключает расследование на
+    синтетические данные незаметно.
     """
     settings = get_settings()
     selected = await session.get(AppSetting, SELECTED_KEY)
@@ -140,11 +141,11 @@ def _to_detail(run: AgentRun) -> RunDetail:
 
 
 def _interrupt_payload(final: dict) -> dict | None:
-    """What the graph is waiting for, if it paused.
+    """Чего ждёт граф, если он приостановлен.
 
-    LangGraph reports a pause by putting the interrupt payload on the returned
-    state rather than by raising, so a caller that ignores this key silently
-    treats a half-finished run as a finished one.
+    LangGraph сообщает о паузе, кладя полезную нагрузку прерывания в возвращённое
+    состояние, а не выбрасывая исключение, поэтому вызывающий, игнорирующий этот
+    ключ, молча считает незавершённый запуск завершённым.
     """
     interrupts = final.get("__interrupt__") or ()
     return interrupts[0].value if interrupts else None
@@ -156,16 +157,16 @@ async def start_run(
     session: AsyncSession = Depends(get_session),
     principal: Principal = Depends(current_principal),
 ) -> RunDetail:
-    """Start an investigation and return its terminal state.
+    """Запустить расследование и вернуть его терминальное состояние.
 
-    The run executes inline: an investigation against mock or in-process
-    providers finishes in well under a second, and a synchronous answer keeps
-    the API honest about how long one actually takes.
+    Запуск выполняется синхронно: расследование против mock- или внутрипроцессных
+    провайдеров завершается заметно меньше чем за секунду, а синхронный ответ
+    честно показывает, сколько времени это на самом деле занимает.
 
-    "Terminal" includes *paused*. If the agent proposed a write, the graph
-    stops at the approval gate and this returns a run whose status is
-    ``awaiting_approval`` with the exact content awaiting review; the decision
-    arrives as a separate request to ``POST /runs/{id}/approval``.
+    «Терминальное» включает приостановленное. Если агент предложил запись, граф
+    останавливается на шлюзе подтверждения, и это возвращает запуск со статусом
+    awaiting_approval и точным содержимым, ожидающим проверки; решение
+    приходит отдельным запросом POST /runs/{id}/approval.
     """
     model_selection = await get_model_selection(session, get_settings())
     run = await run_store.create_run(
@@ -201,12 +202,11 @@ async def decide_approval(
     session: AsyncSession = Depends(get_session),
     principal: Principal = Depends(require_approver),
 ) -> RunDetail:
-    """Approve or reject the write the run is waiting on, and resume it.
+    """Подтвердить или отклонить запись, которой ждёт запуск, и возобновить его.
 
-    The decision does not carry the action. What gets executed is what the
-    graph checkpointed when it paused, so an approval cannot be redirected
-    onto different content than the reviewer was shown — this request says
-    yes or no, and nothing more.
+    Решение не несёт само действие. Выполняется то, что граф сохранил в чекпоинт
+    при паузе, поэтому подтверждение нельзя перенаправить на другое содержимое,
+    нежели увидел проверяющий — этот запрос говорит «да» или «нет», и не более.
     """
     run = await run_store.get_run(session, run_id)
     if run is None:
@@ -254,12 +254,12 @@ async def get_trace(
     session: AsyncSession = Depends(get_session),
     principal: Principal = Depends(current_principal),
 ) -> RunTrace:
-    """Why the agent arrived where it did.
+    """Почему агент пришёл к тому, к чему пришёл.
 
-    Reconstructed from the observations every node appended as it ran, so it
-    shows the nodes visited, the tools called and the branches taken —
-    without re-running anything. Model reasoning is deliberately absent: what
-    the agent did is auditable, what it "thought" is not evidence.
+    Восстанавливается из наблюдений, которые каждый узел добавлял по ходу работы,
+    поэтому показывает посещённые узлы, вызванные инструменты и пройденные ветви —
+    без повторного запуска. Рассуждения модели намеренно отсутствуют: то, что
+    агент сделал, проверяемо, а то, что он «думал», не является доказательством.
     """
     run = await run_store.get_run(session, run_id)
     if run is None:

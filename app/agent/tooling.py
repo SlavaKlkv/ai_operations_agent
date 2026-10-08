@@ -1,8 +1,9 @@
-"""Execution wrapper that every tool call in the graph goes through.
+"""Обёртка исполнения, через которую проходит каждый вызов инструмента в графе.
 
-It exists so that timeouts, retries, and the audit record are properties of the
-*runtime*, not of individual tools. A tool that forgets to handle a timeout is
-still bounded; a tool that succeeds is still recorded.
+Она существует, чтобы таймауты, повторы и запись аудита были свойствами
+среды исполнения, а не отдельных инструментов. Инструмент, забывший
+обработать таймаут, всё равно ограничен; инструмент, завершившийся успешно,
+всё равно записан.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ from app.agent.state import ToolCallRecord
 
 
 class ToolBudgetExceeded(RuntimeError):
-    """Raised when a run tries to exceed its allowed number of tool calls."""
+    """Возбуждается, когда запуск пытается превысить разрешённое число вызовов инструментов."""
 
 
 @dataclass(slots=True)
@@ -40,11 +41,12 @@ async def call_tool[T](
     retries: int = 1,
     summarise: Callable[[T], str] | None = None,
 ) -> ToolOutcome[T]:
-    """Run ``fn`` under a timeout, retrying transient failures.
+    """Запустить fn с таймаутом, повторяя временные сбои.
 
-    ``retries`` counts *additional* attempts after the first one. The returned
-    record always describes the final attempt, and ``attempt`` says how many
-    were needed — evaluation uses that to spot flaky or misused tools.
+    retries считает дополнительные попытки после первой. Возвращаемая
+    запись всегда описывает последнюю попытку, а attempt говорит, сколько
+    их понадобилось, — оценка использует это, чтобы выявить нестабильные или
+    неправильно используемые инструменты.
     """
     arguments = arguments or {}
     last_error: str | None = None

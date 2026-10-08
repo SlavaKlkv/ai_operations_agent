@@ -1,8 +1,8 @@
-"""Operator commands: ``python -m app.cli ...``
+"""Операторские команды: python -m app.cli ...
 
-Issuing credentials is an administrative act, not an API call. There is no
-endpoint that mints a token, because an endpoint that mints tokens is an
-endpoint that can be asked to mint one by whoever finds it.
+Выпуск учётных данных — административный акт, а не вызов API. Нет эндпоинта,
+который чеканит токен, потому что эндпоинт, чеканящий токены, — это эндпоинт,
+который может попросить выдать токен любой, кто его найдёт.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from app.db.models import User
 
 
 async def _issue(email: str, *, can_approve: bool, display_name: str) -> int:
-    """Create or re-key a user and print the token once."""
+    """Создать или перевыпустить пользователя и один раз напечатать токен."""
     async with get_sessionmaker()() as session:
         user = (await session.execute(select(User).where(User.email == email))).scalar_one_or_none()
 

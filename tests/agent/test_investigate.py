@@ -1,4 +1,4 @@
-"""The agentic cycle: selection, execution, and how the loop is made to end."""
+"""Агентный цикл: выбор, выполнение и то, как цикл заставляют завершиться."""
 
 from __future__ import annotations
 
@@ -71,8 +71,8 @@ async def test_selection_tells_the_planner_what_budget_is_left(registry):
 
 
 async def test_selection_refuses_to_plan_once_the_budget_is_spent(registry):
-    """The check happens before the planner runs, so an exhausted run costs
-    nothing further — not even a model call."""
+    """Проверка происходит до запуска планировщика, поэтому исчерпанный запуск
+    не стоит ничего дальше — даже вызова модели."""
     planner = _FixedPlanner(Plan(requests=(ToolRequest(tool="get_commits"),)))
     node = make_select_tool_node(planner, registry, Guardrails(max_tool_calls=6))
     result = await node(_state(tool_call_count=6))
@@ -165,7 +165,7 @@ async def test_a_failing_tool_does_not_abort_the_round(registry):
 
 
 async def test_execution_does_not_mutate_the_context_it_was_given(registry):
-    """LangGraph merges returned state; mutating in place hides what changed."""
+    """LangGraph сливает возвращённое состояние; мутация на месте скрывает изменения."""
     original = CollectedContext()
     node = make_execute_tool_node(registry, Guardrails())
     result = await node(
@@ -181,7 +181,7 @@ async def test_execution_does_not_mutate_the_context_it_was_given(registry):
 
 
 async def test_repetition_is_detected_across_loop_iterations(registry):
-    """The executor is rebuilt each round, so history has to come from state."""
+    """Исполнитель пересобирается каждый раунд, поэтому история должна браться из состояния."""
     request = ToolRequest(tool="get_recent_alerts", arguments={"service": "billing-service"})
     node = make_execute_tool_node(registry, Guardrails(max_identical_calls=1))
     prior = ToolCallRecord(
@@ -200,7 +200,7 @@ async def test_repetition_is_detected_across_loop_iterations(registry):
 
 
 async def test_write_tools_cannot_be_reached_from_the_investigation_loop(registry):
-    """Read-only is enforced at execution, not by hoping the planner behaves."""
+    """Режим только для чтения обеспечивается при выполнении, а не надеждой на планировщик."""
     node = make_execute_tool_node(registry, Guardrails())
     result = await node(_state(pending_requests=[ToolRequest(tool="create_issue")]))
     assert "UnknownToolError" in result["tool_calls"][0].error
@@ -258,7 +258,7 @@ def test_every_budget_independently_ends_the_loop(policy, state_overrides):
 
 
 async def test_the_heuristic_planner_terminates_the_loop_on_its_own(registry):
-    """Not a budget test: the rule set has to run out of gaps by itself."""
+    """Не тест бюджета: набор правил сам должен исчерпать пробелы."""
     from app.adapters.mock.dataset import BILLING_5XX
 
     context = CollectedContext(

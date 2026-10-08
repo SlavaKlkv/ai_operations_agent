@@ -1,4 +1,4 @@
-"""The exact local Ollama HTTP contract used by setup."""
+"""Точный HTTP-контракт локального Ollama, используемый при настройке."""
 
 from __future__ import annotations
 
