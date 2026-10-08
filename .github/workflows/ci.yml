@@ -28,6 +28,17 @@ jobs:
       - name: ruff format
         run: uv run ruff format --check .
 
+  dependencies:
+    name: Dependency review
+    runs-on: ubuntu-latest
+    # Ревью зависимостей работает только для pull request.
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
   test:
     name: Tests
     runs-on: ubuntu-latest
