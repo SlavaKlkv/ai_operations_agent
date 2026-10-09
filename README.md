@@ -145,13 +145,13 @@ demo-данные в такой запуск не попадают. Issue соз
 Диагностика и частые проблемы — в
 [руководстве по устранению неполадок](docs/troubleshooting.md).
 
-Пользовательский [Compose-файл](compose.yaml) и стартовые скрипты
-([macOS/Linux](start.sh), [Windows](start.ps1)) уже подготовлены. Пока образ
-`ghcr.io/slavaklkv/ai-operations-agent:0.1.0` не опубликован, эти скрипты не являются
-рабочим способом установки. Для проверки сборки из исходников предусмотрен
-`compose.build.yaml`; такая проверка не заменяет запуск комплекта из GitHub Release на
-macOS, Windows и Linux. Пайплайн публикации описан в [документации релиза](docs/release.md).
-Текущий быстрый старт выше остаётся сценарием разработчика.
+Пользовательский [Compose-файл](compose.yaml), стартовые скрипты
+([macOS/Linux](start.sh), [Windows](start.ps1)) и сервисные команды
+([manage.sh](manage.sh), [manage.ps1](manage.ps1)) входят в комплект
+[GitHub Release v0.1.0](https://github.com/SlavaKlkv/ai_operations_agent/releases/tag/v0.1.0).
+Скачайте архив, распакуйте и запустите `./start.sh` (или `start.ps1`) — приложение
+поднимется на http://localhost:8000/. Для проверки сборки из исходников предусмотрен
+`compose.build.yaml`. Пайплайн публикации описан в [документации релиза](docs/release.md).
 
 После публикации Release скрипты [manage.sh](manage.sh) и
 [manage.ps1](manage.ps1) управляют готовой поставкой: запуск, остановка,
