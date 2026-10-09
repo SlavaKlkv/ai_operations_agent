@@ -53,3 +53,12 @@ def test_interface_exposes_run_detail_and_diagnostics():
     assert 'id="diagnostics-grid"' in html
     assert "loadDiagnostics" in script
     assert "/trace" in script
+
+
+def test_sidebar_uses_an_internal_settings_arrow():
+    from app.web.routes import STATIC_DIR
+
+    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+
+    assert 'data-view="settings">Настройки <span aria-hidden="true">→</span>' in html
+    assert "Настройки <span>↗</span>" not in html
