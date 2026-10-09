@@ -1,6 +1,6 @@
 [project]
 name = "ai-operations-agent"
-version = "0.2.0"
+version = "0.2.1"
 description = "Agentic incident-analysis system: LangGraph orchestration, MCP integrations, human-in-the-loop actions."
 readme = "README.md"
 requires-python = ">=3.13"
