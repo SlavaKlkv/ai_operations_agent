@@ -117,6 +117,15 @@ async def test_only_supported_models_can_be_downloaded(app, client):
     assert status.json()["state"] == "complete"
 
 
+async def test_an_idle_download_reports_state_instead_of_404(app, client):
+    app.dependency_overrides[get_download_manager] = lambda: ModelDownloadManager()
+
+    response = await client.get("/setup/model/download")
+
+    assert response.status_code == 200
+    assert response.json()["state"] == "idle"
+
+
 async def test_local_storage_check_requires_a_migrated_writable_database(db_session, tmp_path):
     settings = Settings(_env_file=None, app_env="local", sqlite_path=tmp_path / "missing.db")
     check = await _storage_check(db_session, settings)

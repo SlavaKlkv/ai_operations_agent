@@ -263,6 +263,7 @@ async function loadSetup(showOverlay = true) {
 
 function renderDownload(download) {
   const panel = $("#download-progress");
+  if (!download || download.state === "idle") { panel.classList.add("hidden"); return; }
   panel.classList.remove("hidden");
   const label = download.state === "complete" ? "Загрузка завершена" : (download.error || download.status);
   const progress = download.total > 0
