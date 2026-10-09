@@ -150,4 +150,7 @@ jobs:
           fi
           curl -fsS http://127.0.0.1:8000/health
           curl -fsS http://127.0.0.1:8000/ | grep -q 'AI Operations Agent'
+          # Мало поднять контейнер: прогоняем полный контур на самом образе —
+          # расследование, остановку на подтверждении и защиту от повтора.
+          python3 tools/smoke_investigation.py http://127.0.0.1:8000
           docker rm -f aoa-smoke
