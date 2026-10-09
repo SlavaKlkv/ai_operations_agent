@@ -26,8 +26,8 @@
 его добыл, — а issue создаёт только после того, как человек прочитал текст и согласился.
 
 <video autoplay loop muted playsinline controls>
-  <source src="docs/assets/demo-dark.mp4" type="video/mp4" media="(prefers-color-scheme: dark)">
-  <source src="docs/assets/demo-light.mp4" type="video/mp4" media="(prefers-color-scheme: light)">
+  <source src="https://github.com/user-attachments/assets/597f8e8b-6196-4013-89d5-e295bbc9fc55" type="video/mp4" media="(prefers-color-scheme: dark)">
+  <source src="https://github.com/user-attachments/assets/5463807a-fe21-41a4-91fb-bd405f3aac7a" type="video/mp4" media="(prefers-color-scheme: light)">
   Интерфейс AI Operations Agent: описание инцидента, ход расследования, шлюз
   подтверждения, история, источники, диагностика и настройки.
 </video>
