@@ -183,7 +183,7 @@ async function loadTrace(runId) {
 }
 
 function diagnosticCard(title, value, note, ok) {
-  return `<article class="source-card"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(value)}</p><footer><span>${escapeHtml(note || "")}</span><span class="${ok ? "connected" : ""}">${ok ? "Ок" : "Проблема"}</span></footer></article>`;
+  return `<article class="source-card"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(value)}</p><footer><span>${escapeHtml(note || "")}</span><span class="${ok ? "connected" : "failed"}">${ok ? "OK" : "FAIL"}</span></footer></article>`;
 }
 
 async function loadDiagnostics() {
