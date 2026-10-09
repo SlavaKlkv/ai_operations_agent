@@ -96,9 +96,11 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); min-width: 320px; }
+body { margin: 0; background: var(--bg); color: var(--text); min-width: 320px; cursor: default; }
 button, input, textarea { font: inherit; }
 button { color: inherit; }
+button:not(:disabled), select:not(:disabled), a[href] { cursor: pointer; }
+textarea, input { cursor: text; }
 .shell { min-height: 100vh; display: grid; grid-template-columns: 246px 1fr; }
 .sidebar { position: sticky; top: 0; height: 100vh; border-right: 1px solid var(--line); padding: 28px 18px 22px; display: flex; flex-direction: column; background: var(--sidebar); }
 .brand { display: flex; gap: 12px; align-items: center; color: inherit; text-decoration: none; padding: 0 8px 34px; }
