@@ -331,8 +331,11 @@ async def model_download_status(
     manager: ModelDownloadManager = Depends(get_download_manager),
     _principal: Principal = Depends(current_principal),
 ) -> dict[str, str | int | None]:
+    # Пустое состояние отдаётся как 200 со state="idle": интерфейс опрашивает
+    # статус при каждой загрузке мастера, и 404 на нормальный простой засорял
+    # бы консоль и журнал сети ошибкой.
     if manager.current is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Загрузка не запущена.")
+        return {"state": "idle"}
     return manager.current.view()
 
 

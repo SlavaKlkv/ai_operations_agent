@@ -19,7 +19,9 @@ async def test_root_serves_the_local_application_shell(http_client):
 async def test_static_assets_are_bundled_and_not_protected_by_api_auth(http_client):
     stylesheet = await http_client.get("/static/styles.css")
     script = await http_client.get("/static/app.js")
+    favicon = await http_client.get("/static/favicon.svg")
 
+    assert favicon.status_code == 200
     assert stylesheet.status_code == 200
     assert "--accent" in stylesheet.text
     assert script.status_code == 200
