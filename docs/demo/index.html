@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>AI Operations Agent — демо</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --page: #f6f8fa;
+        --surface: #ffffff;
+        --text: #1f2328;
+        --muted: #656d76;
+        --border: #d0d7de;
+        --accent: #0969da;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --page: #0d1117;
+          --surface: #161b22;
+          --text: #f0f6fc;
+          --muted: #8b949e;
+          --border: #30363d;
+          --accent: #58a6ff;
+        }
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 32px 20px;
+        background: var(--page);
+        color: var(--text);
+        font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main { width: min(100%, 1180px); }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.75rem, 4vw, 2.5rem);
+        letter-spacing: -0.02em;
+      }
+
+      p { color: var(--muted); }
+
+      .demo {
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        box-shadow: 0 8px 24px rgb(27 31 35 / 12%);
+      }
+
+      video {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        background: #000;
+      }
+
+      .meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+        padding: 12px 16px;
+        font-size: 0.875rem;
+      }
+
+      a { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>AI Operations Agent</h1>
+      <p>Демо автоматически подстраивается под светлую или тёмную тему системы.</p>
+      <section class="demo" aria-label="Демонстрация интерфейса">
+        <video id="demo" autoplay controls loop muted playsinline>
+          Ваш браузер не поддерживает встроенное видео.
+        </video>
+        <div class="meta">
+          <span id="theme-label" aria-live="polite"></span>
+          <a href="https://github.com/SlavaKlkv/ai_operations_agent">Открыть репозиторий</a>
+        </div>
+      </section>
+    </main>
+    <script>
+      const video = document.querySelector('#demo');
+      const themeLabel = document.querySelector('#theme-label');
+      const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+      function setVideo(event) {
+        const isDark = event.matches;
+        const source = isDark ? 'assets/demo-dark.mp4' : 'assets/demo-light.mp4';
+        const currentTime = video.currentTime;
+
+        if (!video.src.endsWith(source)) {
+          video.src = source;
+          video.load();
+          video.addEventListener('loadedmetadata', () => {
+            video.currentTime = currentTime;
+            video.play().catch(() => {});
+          }, { once: true });
+        }
+        themeLabel.textContent = `Текущая тема: ${isDark ? 'тёмная' : 'светлая'}`;
+      }
+
+      setVideo(darkQuery);
+      darkQuery.addEventListener('change', setVideo);
+    </script>
+  </body>
+</html>
