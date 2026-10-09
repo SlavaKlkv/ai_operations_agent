@@ -125,13 +125,13 @@ def has_enough_context(state: AgentState) -> Literal["correlate", "insufficient_
 
 async def insufficient_context_node(state: AgentState) -> AgentState:
     reasons = [e.message for e in state.get("errors", [])] or [
-        "no monitoring data was available for the requested service and window"
+        "для запрошенного сервиса и окна не было данных мониторинга"
     ]
     return AgentState(
         current_step="insufficient_context",
         step_count=state.get("step_count", 0) + 1,
         status=RunStatus.FAILED,
-        final_result=("The investigation stopped before analysis: " + "; ".join(reasons) + "."),
+        final_result=("Расследование остановилось до анализа: " + "; ".join(reasons) + "."),
     )
 
 
@@ -142,19 +142,19 @@ async def finalize_node(state: AgentState) -> AgentState:
     молчание читалось бы как «ничего не стоило делать», а это другой исход.
     """
     analysis = state.get("analysis")
-    summary = analysis.summary if analysis else "No analysis was produced."
+    summary = analysis.summary if analysis else "Анализ не был построен."
     approval = state.get("approval_state")
     result = state.get("action_result") or {}
 
     if approval is ApprovalState.REJECTED:
         note = state.get("approval_note") or ""
-        summary += " The proposed issue was not created: a reviewer declined it."
-        summary += f" Reason given: {note}" if note else ""
+        summary += " Предложенная задача не создана: проверяющий отклонил её."
+        summary += f" Указанная причина: {note}" if note else ""
     elif approval is ApprovalState.APPROVED and result.get("ok"):
-        issue = (result.get("issue") or {}).get("key", "the issue")
-        summary += f" Approved and filed as {issue}."
+        issue = (result.get("issue") or {}).get("key", "задача")
+        summary += f" Подтверждено и заведено как {issue}."
     elif approval is ApprovalState.APPROVED and not result.get("ok"):
-        summary += " The approved action failed to execute; nothing was created."
+        summary += " Подтверждённое действие не выполнилось; ничего не создано."
 
     return AgentState(
         current_step="final_response",

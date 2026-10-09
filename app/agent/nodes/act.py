@@ -110,9 +110,9 @@ async def propose_action_node(state: AgentState) -> AgentState:
             "labels": sorted({"incident", analysis.service}),
         },
         rationale=(
-            f"The investigation identified a likely cause with confidence "
-            f"{analysis.confidence:.2f}; filing it preserves the evidence for whoever "
-            f"picks up {analysis.service}."
+            f"Расследование выявило вероятную причину с уверенностью "
+            f"{analysis.confidence:.2f}; заведение задачи сохранит доказательства "
+            f"для того, кто займётся сервисом {analysis.service}."
         ),
         requires_approval=True,
     )
@@ -254,7 +254,7 @@ def make_execute_action_node(registry: ToolRegistry, guardrails: Guardrails):
             [
                 Evidence(
                     kind=EvidenceKind.DOCUMENT,
-                    summary=f"action executed: {invocation.digest}",
+                    summary=f"действие выполнено: {invocation.digest}",
                     source_tool=action.tool,
                     reference=action.tool,
                 )
@@ -295,8 +295,8 @@ def make_execute_action_node(registry: ToolRegistry, guardrails: Guardrails):
 
 
 def issue_title(analysis: IncidentAnalysis) -> str:
-    started = f" from {analysis.incident_start:%H:%M} UTC" if analysis.incident_start else ""
-    return f"Elevated errors in {analysis.service}{started}"[:200]
+    started = f" с {analysis.incident_start:%H:%M} UTC" if analysis.incident_start else ""
+    return f"Повышенные ошибки в {analysis.service}{started}"[:200]
 
 
 def issue_body(analysis: IncidentAnalysis, state: AgentState) -> str:
@@ -306,43 +306,43 @@ def issue_body(analysis: IncidentAnalysis, state: AgentState) -> str:
     произошло, каковы доказательства, что подозревается и что делать — с
     каждым утверждением, отслеживаемым до породившего его инструмента.
     """
-    lines = ["## Summary", analysis.summary or "No summary was produced.", ""]
+    lines = ["## Итог", analysis.summary or "Сводка не была построена.", ""]
 
     if analysis.suspected_causes:
-        lines.append("## Suspected cause")
+        lines.append("## Подозреваемая причина")
         lines += [
-            f"- **{h.confidence:.0%} confidence** — {h.statement}"
+            f"- **уверенность {h.confidence:.0%}** — {h.statement}"
             for h in analysis.suspected_causes
         ]
         lines.append("")
 
     if analysis.symptoms:
-        lines.append("## Symptoms")
+        lines.append("## Симптомы")
         lines += [f"- {s}" for s in analysis.symptoms]
         lines.append("")
 
     if analysis.evidence:
-        lines.append("## Evidence")
+        lines.append("## Доказательства")
         lines += [f"- `{e.source_tool}` — {e.summary}" for e in analysis.evidence]
         lines.append("")
 
     if analysis.recommended_actions:
-        lines.append("## Recommended actions")
+        lines.append("## Рекомендуемые действия")
         lines += [f"{n}. {a}" for n, a in enumerate(analysis.recommended_actions, 1)]
         lines.append("")
 
     failures = [e.message for e in state.get("errors", []) if e.recoverable]
     if failures:
-        lines.append("## Data that could not be collected")
+        lines.append("## Данные, которые не удалось собрать")
         lines += [f"- {m}" for m in failures]
         lines.append("")
 
     lines += [
         "---",
         (
-            f"Filed by the AI Operations Agent from run `{state.get('run_id')}` after "
-            f"{state.get('tool_call_count', 0)} tool calls. Reviewed and approved by a human "
-            "before creation."
+            f"Заведено AI Operations Agent по запуску `{state.get('run_id')}` после "
+            f"{state.get('tool_call_count', 0)} вызовов инструментов. Проверено и одобрено "
+            "человеком перед созданием."
         ),
     ]
     return "\n".join(lines)[:MAX_BODY_CHARS]

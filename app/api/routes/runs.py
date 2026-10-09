@@ -210,10 +210,11 @@ async def decide_approval(
     """
     run = await run_store.get_run(session, run_id)
     if run is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="run not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Запуск не найден.")
     if run.status is not RunStatus.AWAITING_APPROVAL:
         raise HTTPException(
-            status.HTTP_409_CONFLICT, detail=f"run is {run.status}, not awaiting approval"
+            status.HTTP_409_CONFLICT,
+            detail=f"Запуск в состоянии {run.status}, а не ждёт подтверждения.",
         )
 
     await run_store.record_decision(
@@ -263,7 +264,7 @@ async def get_trace(
     """
     run = await run_store.get_run(session, run_id)
     if run is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="run not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Запуск не найден.")
 
     snapshot = run.state_snapshot or {}
     entries = [
@@ -304,5 +305,5 @@ async def get_run(
 ) -> RunDetail:
     run = await run_store.get_run(session, run_id)
     if run is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="run not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Запуск не найден.")
     return _to_detail(run)

@@ -30,8 +30,8 @@ def _metric_evidence(series: MetricSeries) -> Evidence | None:
     return Evidence(
         kind=EvidenceKind.METRIC,
         summary=(
-            f"{series.metric} for {series.service} peaked at {peak.value} {series.unit} "
-            f"(mean {series.mean():.4f} {series.unit} over the window)"
+            f"{series.metric} для {series.service} достиг пика {peak.value} {series.unit} "
+            f"(в среднем {series.mean():.4f} {series.unit} по окну)"
         ),
         source_tool="get_service_metrics",
         reference=f"{series.service}/{series.metric}",
@@ -43,8 +43,8 @@ def _deployment_evidence(deployment: Deployment) -> Evidence:
     return Evidence(
         kind=EvidenceKind.DEPLOYMENT,
         summary=(
-            f"{deployment.service} {deployment.version} deployed to "
-            f"{deployment.environment} from commit {deployment.commit_sha[:8]}"
+            f"{deployment.service} {deployment.version} развёрнут в "
+            f"{deployment.environment} из коммита {deployment.commit_sha[:8]}"
         ),
         source_tool="get_recent_deployments",
         reference=f"{deployment.service}@{deployment.version}",
@@ -56,9 +56,9 @@ def _error_evidence(group: ErrorGroup) -> Evidence:
     return Evidence(
         kind=EvidenceKind.LOG,
         summary=(
-            f"{group.count}x {group.error_type} between "
-            f"{group.first_seen:%H:%M} and {group.last_seen:%H:%M}"
-            + (f" at {group.stack_top}" if group.stack_top else "")
+            f"{group.count}x {group.error_type} с "
+            f"{group.first_seen:%H:%M} по {group.last_seen:%H:%M}"
+            + (f" в {group.stack_top}" if group.stack_top else "")
         ),
         source_tool="get_error_groups",
         reference=group.error_type,
@@ -69,7 +69,7 @@ def _error_evidence(group: ErrorGroup) -> Evidence:
 def _alert_evidence(alert: Alert) -> Evidence:
     return Evidence(
         kind=EvidenceKind.ALERT,
-        summary=f"alert {alert.name} ({alert.severity}) fired: {alert.description}",
+        summary=f"алерт {alert.name} ({alert.severity}) сработал: {alert.description}",
         source_tool="get_recent_alerts",
         reference=alert.name,
         observed_at=alert.fired_at,
@@ -97,7 +97,7 @@ def make_collect_context_node(
                     RunError(
                         node="collect_initial_context",
                         kind="insufficient_input",
-                        message="no target service or time window was resolved from the task",
+                        message="из задачи не удалось определить целевой сервис или временное окно",
                         recoverable=False,
                     )
                 ],

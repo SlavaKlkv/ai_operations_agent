@@ -91,7 +91,7 @@ SUITE: tuple[EvalScenario, ...] = (
             "explains this; blaming the old deploy would be the characteristic failure."
         ),
         expected_service="checkout-service",
-        expected_in_conclusion=("not explained by any deployment",),
+        expected_in_conclusion=("не объясняется ни одним деплоем",),
         forbidden_in_conclusion=("v4.2.0", "b1d0f7c9"),
         max_confidence=0.5,
         required_tools=BASELINE_TOOLS,
@@ -109,7 +109,7 @@ SUITE: tuple[EvalScenario, ...] = (
             "that could be told about a recent deploy."
         ),
         expected_service="search-service",
-        expected_in_conclusion=("No conclusive cause",),
+        expected_in_conclusion=("убедительная причина не найдена",),
         forbidden_in_conclusion=("v3.1.0", "fuzzy matching"),
         max_confidence=0.3,
         max_tool_calls=8,
