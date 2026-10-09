@@ -403,7 +403,7 @@ def architecture(p: Palette) -> Canvas:
 
     # Хранилище и наблюдаемость
     c.add(region(p, 486, 496, 482, 96, "состояние и телеметрия"))
-    c.add(box(p, 504, 524, 140, 50, "PostgreSQL", "запуски · подтверждения\nаудит · чекпоинты"))
+    c.add(box(p, 504, 524, 140, 50, "SQLite", "запуски · подтверждения\nаудит · чекпоинты"))
     c.add(box(p, 656, 524, 140, 50, "Prometheus", "стоимость запуска\nбезопасность записи"))
     c.add(box(p, 808, 524, 142, 50, "Grafana", "дашборд\nи алерты"))
     c.add(arrow(p, [(422, 254), (486, 254)], "", tone="muted"))
@@ -659,12 +659,99 @@ def guardrails(p: Palette) -> Canvas:
     return c
 
 
+# ── Диаграмма 4: хранение данных ─────────────────────────────────────────────
+
+
+def data_schema(p: Palette) -> Canvas:
+    c = Canvas(1000, 470)
+
+    c.add(heading(p, 32, 34, "Хранение данных"))
+    c.add(
+        caption(
+            p,
+            32,
+            54,
+            "Один файл SQLite, две независимые группы таблиц с разными владельцами схемы.",
+        )
+    )
+
+    c.add(region(p, 32, 84, 936, 300, "ai_operations_agent.db · один файл (WAL)"))
+
+    # Цвет — функция, а не украшение: тот же язык, что и в остальных схемах
+    # (accent — состояние агента, success — проверенные данные, attention — человек,
+    # neutral — идентичность и журнал, ghost — служебное).
+    # Схема приложения: то, что отвечает на вопрос аудита «что агент сделал и на основании чего».
+    c.add(region(p, 52, 120, 588, 244, "схема приложения — владелец: Alembic"))
+    app_tables = (
+        ("users", "neutral"),
+        ("app_settings", "neutral"),
+        ("alembic_version", "ghost"),
+        ("agent_runs", "accent"),
+        ("tool_calls", "success"),
+        ("incident_analyses", "success"),
+        ("approvals", "attention"),
+        ("audit_events", "neutral"),
+    )
+    for index, (name, tone) in enumerate(app_tables):
+        column, row = index % 3, index // 3
+        c.add(box(p, 68 + column * 188, 164 + row * 56, 172, 44, name, tone=tone, mono=True))
+
+    # Чекпоинтер: таблицы создаёт сам LangGraph, а не миграции.
+    c.add(region(p, 664, 120, 288, 244, "чекпоинтер — владелец: LangGraph"))
+    c.add(
+        box(
+            p,
+            680,
+            164,
+            256,
+            56,
+            "checkpoints",
+            "thread_id · checkpoint_id\nparent — цепочка версий",
+            tone="accent",
+            mono=True,
+        )
+    )
+    c.add(box(p, 680, 236, 256, 56, "writes", "task_id · channel\nvalue", tone="accent", mono=True))
+    c.add(caption(p, 680, 316, "BLOB = сериализованный AgentState", size=10.5))
+    c.add(caption(p, 680, 332, "(allowlist типов, app/agent/serde.py)", size=10.5))
+
+    c.add(
+        caption(
+            p,
+            52,
+            376,
+            "API-движок (SQLAlchemy) и чекпоинтер открывают этот файл под WAL — это "
+            "осознанный выбор.",
+        )
+    )
+
+    c.add(
+        caption(
+            p,
+            32,
+            412,
+            "Группы нельзя бэкапить по отдельности: backup и restore (manage.sh) снимают файл "
+            "целиком и покрывают обе.",
+        )
+    )
+    c.add(
+        caption(
+            p,
+            32,
+            432,
+            "В серверном профиле те же две роли играют PostgreSQL: STORAGE_BACKEND=postgres и "
+            "CHECKPOINTER=postgres.",
+        )
+    )
+    return c
+
+
 DIAGRAMS = {
     "architecture": (
         architecture,
         "Архитектура AI Operations Agent",
         "Агент живёт за FastAPI-сервисом и дотягивается до четырёх внешних систем "
-        "через MCP-серверы; состояние в PostgreSQL, телеметрия в Prometheus.",
+        "через MCP-серверы; состояние в SQLite, телеметрия в Prometheus.",
     ),
     "workflow": (
         workflow,
@@ -677,6 +764,12 @@ DIAGRAMS = {
         "Чего агент не может",
         "Три слоя контроля: модель предлагает, реестр проверяет и отказывает, человек "
         "санкционирует каждую запись.",
+    ),
+    "schema": (
+        data_schema,
+        "Схема данных AI Operations Agent",
+        "Один файл SQLite содержит две группы таблиц: схему приложения под Alembic и "
+        "таблицы чекпоинтера LangGraph; бэкап охватывает обе.",
     ),
 }
 
