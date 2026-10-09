@@ -92,6 +92,16 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Scan the image for known vulnerabilities
+        # Уязвимый образ не должен быть подписан и опубликован: падаем на CRITICAL
+        # с исправлением, игнорируя то, что ещё не выпущено апстримом.
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
       - uses: sigstore/cosign-installer@v3
 
       - name: Sign the published image (keyless)
