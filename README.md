@@ -25,12 +25,14 @@
 возвращает разбор, в котором каждое утверждение привязано к вызову инструмента, который
 его добыл, — а issue создаёт только после того, как человек прочитал текст и согласился.
 
-<video autoplay loop muted playsinline controls>
-  <source src="https://github.com/user-attachments/assets/597f8e8b-6196-4013-89d5-e295bbc9fc55" type="video/mp4" media="(prefers-color-scheme: dark)">
-  <source src="https://github.com/user-attachments/assets/5463807a-fe21-41a4-91fb-bd405f3aac7a" type="video/mp4" media="(prefers-color-scheme: light)">
-  Интерфейс AI Operations Agent: описание инцидента, ход расследования, шлюз
-  подтверждения, история, источники, диагностика и настройки.
-</video>
+<video src="https://github.com/user-attachments/assets/597f8e8b-6196-4013-89d5-e295bbc9fc55" controls></video>
+
+<details>
+<summary>Светлая тема</summary>
+
+<video src="https://github.com/user-attachments/assets/5463807a-fe21-41a4-91fb-bd405f3aac7a" controls></video>
+
+</details>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.svg">
