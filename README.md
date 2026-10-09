@@ -32,7 +32,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.svg">
-  <img alt="Архитектура: FastAPI, LangGraph-воркфлоу, MCP-клиент и четыре MCP-сервера, PostgreSQL и Prometheus" src="docs/assets/architecture-light.svg">
+  <img alt="Архитектура: FastAPI, LangGraph-воркфлоу, MCP-клиент и четыре MCP-сервера, SQLite и Prometheus" src="docs/assets/architecture-light.svg">
 </picture>
 
 ## Чем это отличается от чат-бота
@@ -379,6 +379,29 @@ no-incident               PASS        6     7     0       4
 
 `python -m app.evaluation --llm` прогоняет те же сценарии через настроенную модель,
 `--json` выдаёт машиночитаемый результат для трендов.
+
+## Хранение данных
+
+Локальная поставка хранит всё в одном файле SQLite (`SQLITE_PATH`, по умолчанию
+`data/ai_operations_agent.db`). В нём две независимые группы таблиц с разными владельцами
+схемы:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/schema-dark.svg">
+  <img alt="Схема данных: один файл SQLite с двумя группами таблиц — схема приложения под Alembic и таблицы чекпоинтера LangGraph" src="docs/assets/schema-light.svg">
+</picture>
+
+- **Схема приложения** — её создают миграции Alembic. Это то, что отвечает на вопрос аудита
+  «что агент сделал и на основании чего»: `users`, `app_settings`, `agent_runs`, `tool_calls`,
+  `incident_analyses`, `approvals`, `audit_events`.
+- **Чекпоинтер LangGraph** — таблицы `checkpoints` и `writes`, куда сохраняется состояние
+  графа. Их создаёт сам чекпоинтер при старте, а не миграции, и в них лежит
+  сериализованный `AgentState` (с allowlist типов, `app/agent/serde.py`).
+
+Обе группы делят один файл под WAL, поэтому резервная копия берётся целиком: `backup` и
+`restore` из `manage.sh` покрывают и аудит, и память приостановленных запусков — раздельно
+их бэкапить нельзя. В серверном профиле те же две роли играют PostgreSQL
+(`STORAGE_BACKEND=postgres`, `CHECKPOINTER=postgres`).
 
 ## Наблюдаемость
 

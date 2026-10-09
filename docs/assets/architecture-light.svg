@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" width="1000" height="620" role="img" aria-labelledby="title desc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif">
   <title id="title">Архитектура AI Operations Agent</title>
-  <desc id="desc">Агент живёт за FastAPI-сервисом и дотягивается до четырёх внешних систем через MCP-серверы; состояние в PostgreSQL, телеметрия в Prometheus.</desc>
+  <desc id="desc">Агент живёт за FastAPI-сервисом и дотягивается до четырёх внешних систем через MCP-серверы; состояние в SQLite, телеметрия в Prometheus.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#59636e"/>
@@ -104,7 +104,7 @@
 <rect x="486" y="496" width="482" height="96" rx="12" fill="none" stroke="#d1d9e0" stroke-width="1.25" stroke-dasharray="6 5"/>
 <text x="500" y="515" font-size="11" font-weight="600" letter-spacing="0.6" fill="#59636e">СОСТОЯНИЕ И ТЕЛЕМЕТРИЯ</text>
 <rect x="504" y="524" width="140" height="50" rx="8" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.5"/>
-<text x="574.0" y="528.0" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328">PostgreSQL</text>
+<text x="574.0" y="528.0" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328">SQLite</text>
 <text x="574.0" y="545.0" text-anchor="middle" font-size="11.5" fill="#59636e">запуски ·</text>
 <text x="574.0" y="559.0" text-anchor="middle" font-size="11.5" fill="#59636e">подтверждения</text>
 <text x="574.0" y="573.0" text-anchor="middle" font-size="11.5" fill="#59636e">аудит · чекпоинты</text>
