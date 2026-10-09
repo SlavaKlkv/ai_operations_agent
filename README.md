@@ -223,14 +223,14 @@ curl -sX POST localhost:8000/runs \
     "incident_start": "2026-03-17T14:32:00Z",
     "confidence": 0.9,
     "suspected_causes": [{
-      "statement": "billing-service v1.8.4 introduced the failure: it shipped 5 min before
-                    the error rate rose 29x, and 9f2c41ab changes the failing code path",
+      "statement": "billing-service v1.8.4 привнёс сбой: он вышел за 5 мин
+                    до роста частоты ошибок в 29x, и 9f2c41ab меняет код на пути к сбою",
       "confidence": 0.9
     }]
   },
   "pending_approval": {
     "tool": "create_issue",
-    "arguments": { "title": "Elevated errors in billing-service from 14:32 UTC", "body": "## Summary …" }
+    "arguments": { "title": "Повышенные ошибки в billing-service с 14:32 UTC", "body": "## Итог …" }
   }
 }
 ```
