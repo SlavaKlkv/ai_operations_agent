@@ -43,8 +43,8 @@ def test_interface_exposes_run_detail_and_diagnostics():
     """Веха 2: у запуска есть ход, а у приложения — локальная диагностика."""
     from app.web.routes import STATIC_DIR
 
-    html = (STATIC_DIR / "index.html").read_text()
-    script = (STATIC_DIR / "app.js").read_text()
+    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+    script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
 
     assert 'data-view="diagnostics"' in html
     assert 'id="trace-list"' in html

@@ -62,7 +62,7 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(
         title="AI Operations Agent",
-        version="0.1.0",
+        version="0.2.0",
         summary="Agentic incident analysis with human-approved write actions.",
         description=(
             "Investigates backend incidents by correlating deployments, metrics, logs and "

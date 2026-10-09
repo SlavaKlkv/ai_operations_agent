@@ -17,7 +17,7 @@ async def health() -> HealthResponse:
     settings = get_settings()
     return HealthResponse(
         status="ok",
-        version="0.1.0",
+        version="0.2.0",
         environment=settings.app_env,
         # Значение показывается, потому что влияет на гарантию API: без постоянного
         # чекпоинтера запуск в ожидании подтверждения теряется при перезапуске.
