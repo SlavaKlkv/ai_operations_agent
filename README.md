@@ -25,10 +25,9 @@
 возвращает разбор, в котором каждое утверждение привязано к вызову инструмента, который
 его добыл, — а issue создаёт только после того, как человек прочитал текст и согласился.
 
-<p align="center">
-  <a href="https://slavaklkv.github.io/ai_operations_agent/">Открыть интерактивное демо</a><br>
-  Демонстрация автоматически выбирает светлую или тёмную версию интерфейса.
-</p>
+**demo**
+
+https://github.com/user-attachments/assets/597f8e8b-6196-4013-89d5-e295bbc9fc55
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.svg">
