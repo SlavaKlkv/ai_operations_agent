@@ -13,6 +13,9 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+from typing import Any
+
 from app.adapters.base import (
     CodeProvider,
     IssueProvider,
@@ -48,7 +51,7 @@ from app.domain.models import IssueDraft
 RENDER_LIMIT = 8
 
 
-def _require_window(args) -> tuple:
+def _require_window(args: Any) -> tuple[datetime, datetime]:
     """Окна инжектируются исполнителем; попадание в обработчик без окна — это баг."""
     if args.start is None or args.end is None:
         raise ValueError("time window was not resolved before the tool ran")
@@ -243,7 +246,7 @@ def build_registry(
         assert issues is not None
         return IssueResult(issue=await issues.add_issue_comment(args.key, args.text, author=actor))
 
-    tools = [
+    tools: list[AgentTool[Any, Any]] = [
         AgentTool(
             name="get_service_metrics",
             description=(

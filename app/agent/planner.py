@@ -22,7 +22,7 @@ API.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
@@ -112,7 +112,7 @@ class HeuristicPlanner:
         )
 
     @staticmethod
-    def _candidates(service: str, context: CollectedContext):
+    def _candidates(service: str, context: CollectedContext) -> Iterator[tuple[ToolRequest, str]]:
         if not context.alerts:
             yield (
                 ToolRequest(

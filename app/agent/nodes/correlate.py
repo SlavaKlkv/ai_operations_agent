@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+from langgraph.graph._node import StateNode
+
 from app.adapters.base import CodeProvider
 from app.agent.correlation import (
+    Spike,
     commits_in_release,
     deployments_before,
     detect_spike,
@@ -13,13 +16,15 @@ from app.agent.correlation import (
 )
 from app.agent.state import AgentState, RunError
 from app.agent.tooling import call_tool
-from app.domain.models import Evidence, EvidenceKind, Hypothesis
+from app.domain.models import Commit, Deployment, Evidence, EvidenceKind, Hypothesis
 
 #: Насколько далеко до всплеска искать выпущенный вместе с ним код.
 COMMIT_LOOKBACK = timedelta(hours=6)
 
 
-def make_correlate_node(code: CodeProvider, *, timeout: float = 15.0):
+def make_correlate_node(
+    code: CodeProvider, *, timeout: float = 15.0
+) -> StateNode[AgentState, None]:
     async def correlate_node(state: AgentState) -> AgentState:
         context = state.get("context")
         service = state.get("target_service") or "unknown"
@@ -28,7 +33,9 @@ def make_correlate_node(code: CodeProvider, *, timeout: float = 15.0):
         error_rate = context.metrics.get("error_rate") if context else None
         spike = detect_spike(error_rate) if error_rate else None
 
-        if spike is None:
+        # context отсутствует — значит, всплеск искать не в чём; проверка также сужает
+        # тип context для mypy на всём дальнейшем пути.
+        if context is None or spike is None:
             return AgentState(
                 current_step="correlate",
                 step_count=step,
@@ -140,7 +147,9 @@ def make_correlate_node(code: CodeProvider, *, timeout: float = 15.0):
     return correlate_node
 
 
-def _release_hypothesis(suspect, ranked, spike, stack_top) -> Hypothesis:
+def _release_hypothesis(
+    suspect: Deployment, ranked: list[Commit], spike: Spike, stack_top: str | None
+) -> Hypothesis:
     """Уверенность растёт с силой совпадения и никогда не превышает 0.9.
 
     Временная близость сама по себе — корреляция; падающий стек-фрейм внутри

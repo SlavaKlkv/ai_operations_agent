@@ -42,6 +42,7 @@ eval:  ## Запустить набор оценочных сценариев а
 lint:  ## Проверить стиль и типы
 	$(VENV)/ruff check .
 	$(VENV)/ruff format --check .
+	$(VENV)/mypy app
 
 format:  ## Автоматически исправить форматирование и замечания линтера
 	$(VENV)/ruff check --fix .

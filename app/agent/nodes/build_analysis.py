@@ -17,13 +17,16 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 import structlog
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
+from langgraph.graph._node import StateNode
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.agent.llm import LLMError, Usage, structured
-from app.agent.state import AgentState, RunError, RunStatus
+from app.agent.state import AgentState, CollectedContext, RunError, RunStatus
 from app.domain.models import Confidence, EvidenceKind, Hypothesis, IncidentAnalysis
 
 log = structlog.get_logger(__name__)
@@ -79,7 +82,9 @@ class AnalysisDraft(BaseModel):
     )
 
 
-def make_build_analysis_node(model: BaseChatModel | None = None):
+def make_build_analysis_node(
+    model: BaseChatModel | None = None,
+) -> StateNode[AgentState, None]:
     """Собрать узел. Без модели он отрисовывает отчёт детерминированно."""
 
     async def build_analysis_node(state: AgentState) -> AgentState:
@@ -223,13 +228,13 @@ def _deterministic(state: AgentState, hypotheses: list[Hypothesis]) -> IncidentA
     )
 
 
-def _incident_start(state: AgentState):
+def _incident_start(state: AgentState) -> datetime | None:
     return next(
         (e.observed_at for e in state.get("evidence", []) if e.source_tool == "detect_spike"), None
     )
 
 
-def _recommended_actions(context, best) -> list[str]:
+def _recommended_actions(context: CollectedContext | None, best: Hypothesis | None) -> list[str]:
     if best is None or best.confidence < CONFIDENCE_FLOOR:
         return [
             "Расширьте окно расследования и запустите его заново: текущих доказательств "
@@ -250,7 +255,7 @@ def _recommended_actions(context, best) -> list[str]:
     return actions
 
 
-def _summary(service: str, best, confidence: float) -> str:
+def _summary(service: str, best: Hypothesis | None, confidence: float) -> str:
     if best is None:
         return f"Для проблемы в сервисе {service} убедительная причина не найдена."
     qualifier = "Вероятная" if confidence >= CONFIDENCE_FLOOR else "Возможная"

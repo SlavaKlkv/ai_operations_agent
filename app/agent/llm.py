@@ -28,6 +28,7 @@ import structlog
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
+from langchain_core.runnables import Runnable
 from pydantic import BaseModel, Field, ValidationError
 
 from app.core.config import Settings, get_settings
@@ -95,7 +96,7 @@ def build_chat_model(settings: Settings | None = None) -> BaseChatModel | None:
 
 
 async def invoke(
-    model: BaseChatModel, messages: Sequence[BaseMessage], **kwargs: Any
+    runnable: Runnable[Any, Any], messages: Sequence[BaseMessage], **kwargs: Any
 ) -> tuple[AIMessage, Usage]:
     """Один вызов модели с замером времени и подсчётом токенов.
 
@@ -105,7 +106,7 @@ async def invoke(
     """
     started = time.perf_counter()
     try:
-        response = await model.ainvoke(list(messages), **kwargs)
+        response = await runnable.ainvoke(list(messages), **kwargs)
     except Exception as exc:
         raise LLMError(f"{type(exc).__name__}: {exc}") from exc
     elapsed = (time.perf_counter() - started) * 1000

@@ -51,12 +51,14 @@ HTTP-запросом от отдельного человека, а не кол
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from app.adapters.base import (
     CodeProvider,
@@ -98,7 +100,7 @@ from app.agent.tools.catalog import build_registry
 from app.services.cache import ToolCache
 
 
-def run_config(run_id: str) -> dict[str, dict[str, str]]:
+def run_config(run_id: str) -> RunnableConfig:
     """Чекпоинт-поток для одного запуска.
 
     Идентификатор запуска — это идентификатор потока, поэтому возобновление
@@ -172,13 +174,13 @@ def build_graph(
     issues: IssueProvider | None = None,
     knowledge: KnowledgeProvider | None = None,
     model: BaseChatModel | None = None,
-    checkpointer: BaseCheckpointSaver | None = None,
+    checkpointer: BaseCheckpointSaver[Any] | None = None,
     planner: Planner | None = None,
     guardrails: Guardrails | None = None,
     cache: ToolCache | None = None,
     use_llm: bool = True,
     enable_issue_tools: bool = True,
-):
+) -> CompiledStateGraph[AgentState, Any, Any, Any]:
     """Скомпилировать рабочий процесс.
 
     Каждый участник инжектируем, потому что каждого из них тесту, сценарию

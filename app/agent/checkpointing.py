@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from contextlib import AsyncExitStack
+from typing import Any
 
 import structlog
 from langgraph.checkpoint.base import BaseCheckpointSaver
@@ -27,7 +28,7 @@ from app.db.sqlite import configure_checkpointer
 log = structlog.get_logger(__name__)
 
 _stack = AsyncExitStack()
-_saver: BaseCheckpointSaver | None = None
+_saver: BaseCheckpointSaver[Any] | None = None
 _durable = False
 
 
@@ -36,7 +37,7 @@ def _postgres_dsn(settings: Settings) -> str:
     return str(settings.postgres_dsn).replace("postgresql+asyncpg://", "postgresql://")
 
 
-async def startup(settings: Settings | None = None) -> BaseCheckpointSaver:
+async def startup(settings: Settings | None = None) -> BaseCheckpointSaver[Any]:
     """Открыть чекпоинтер, предпочитая надёжный."""
     global _saver, _durable
     if _saver is not None:
@@ -90,7 +91,7 @@ async def shutdown() -> None:
     _saver, _durable = None, False
 
 
-def get_saver() -> BaseCheckpointSaver:
+def get_saver() -> BaseCheckpointSaver[Any]:
     """Хранитель, с которым был скомпилирован граф; при необходимости создаёт
     запасной."""
     global _saver
