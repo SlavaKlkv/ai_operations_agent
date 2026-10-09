@@ -1,6 +1,6 @@
 [project]
 name = "ai-operations-agent"
-version = "0.2.0"
+version = "0.3.0"
 description = "Agentic incident-analysis system: LangGraph orchestration, MCP integrations, human-in-the-loop actions."
 readme = "README.md"
 requires-python = ">=3.13"
@@ -76,3 +76,8 @@ python_version = "3.13"
 plugins = ["pydantic.mypy"]
 strict = true
 warn_return_any = true
+
+[dependency-groups]
+dev = [
+    "playwright>=1.63.0",
+]

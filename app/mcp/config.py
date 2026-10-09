@@ -12,7 +12,7 @@ import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover — цикл импорта важен только для проверки типов
     from mcp.server.mcpserver import MCPServer
@@ -60,7 +60,7 @@ class ServerSpec:
         return not self.allowed_tools or tool_name in self.allowed_tools
 
 
-def _stdio(module: str, **kwargs) -> ServerSpec:
+def _stdio(module: str, **kwargs: Any) -> ServerSpec:
     """Сервер, запускаемый из этого репозитория, с использованием текущего интерпретатора.
 
     sys.executable, а не просто python, чтобы virtualenv, контейнер и

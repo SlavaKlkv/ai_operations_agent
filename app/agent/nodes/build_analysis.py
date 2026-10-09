@@ -17,13 +17,16 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 import structlog
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
+from langgraph.graph._node import StateNode
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.agent.llm import LLMError, Usage, structured
-from app.agent.state import AgentState, RunError, RunStatus
+from app.agent.state import AgentState, CollectedContext, RunError, RunStatus
 from app.domain.models import Confidence, EvidenceKind, Hypothesis, IncidentAnalysis
 
 log = structlog.get_logger(__name__)
@@ -45,6 +48,7 @@ is a finding. Distinguish the two.
 - Confidence above 0.85 requires evidence connecting a specific change to the \
 specific failure, not just timing.
 - Recommended actions must be things an on-call engineer can do now.
+- Write the observable symptoms in Russian.
 - Be concise. No preamble, no restating the task.
 """
 
@@ -78,7 +82,9 @@ class AnalysisDraft(BaseModel):
     )
 
 
-def make_build_analysis_node(model: BaseChatModel | None = None):
+def make_build_analysis_node(
+    model: BaseChatModel | None = None,
+) -> StateNode[AgentState, None]:
     """Собрать узел. Без модели он отрисовывает отчёт детерминированно."""
 
     async def build_analysis_node(state: AgentState) -> AgentState:
@@ -222,36 +228,38 @@ def _deterministic(state: AgentState, hypotheses: list[Hypothesis]) -> IncidentA
     )
 
 
-def _incident_start(state: AgentState):
+def _incident_start(state: AgentState) -> datetime | None:
     return next(
         (e.observed_at for e in state.get("evidence", []) if e.source_tool == "detect_spike"), None
     )
 
 
-def _recommended_actions(context, best) -> list[str]:
+def _recommended_actions(context: CollectedContext | None, best: Hypothesis | None) -> list[str]:
     if best is None or best.confidence < CONFIDENCE_FLOOR:
         return [
-            "Widen the investigation window and re-run: the current evidence does not "
-            "identify a cause with enough confidence to act on."
+            "Расширьте окно расследования и запустите его заново: текущих доказательств "
+            "недостаточно, чтобы с достаточной уверенностью назвать причину."
         ]
     actions = []
     if context and context.deployments:
         suspect = context.deployments[0]
-        actions.append(f"Roll back {suspect.service} to the previous release and confirm recovery.")
+        actions.append(
+            f"Откатите {suspect.service} до предыдущего релиза и подтвердите восстановление."
+        )
     if context and context.commits:
         actions.append(
-            f"Review {context.commits[0].short_sha} — {context.commits[0].message} — "
-            "for the unhandled case visible in the logs."
+            f"Проверьте {context.commits[0].short_sha} — {context.commits[0].message} — "
+            "на необработанный случай, видимый в логах."
         )
-    actions.append("Add a regression test covering the failing code path before re-deploying.")
+    actions.append("Добавьте регрессионный тест на падающий путь кода перед повторным деплоем.")
     return actions
 
 
-def _summary(service: str, best, confidence: float) -> str:
+def _summary(service: str, best: Hypothesis | None, confidence: float) -> str:
     if best is None:
-        return f"No conclusive cause found for the reported problem in {service}."
-    qualifier = "likely" if confidence >= CONFIDENCE_FLOOR else "possible"
-    return f"{qualifier.capitalize()} cause for the {service} incident: {best.statement}."
+        return f"Для проблемы в сервисе {service} убедительная причина не найдена."
+    qualifier = "Вероятная" if confidence >= CONFIDENCE_FLOOR else "Возможная"
+    return f"{qualifier} причина инцидента в {service}: {best.statement}."
 
 
 # ── Промпт ───────────────────────────────────────────────────────────────────

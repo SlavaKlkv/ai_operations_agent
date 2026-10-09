@@ -14,13 +14,17 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
 from app.agent.state import AgentState, ApprovalState, RunStatus
 from app.observability import metrics
+
+if TYPE_CHECKING:  # pragma: no cover — цикл импорта важен только для проверки типов
+    from app.mcp.client import ServerStatus
 
 log = structlog.get_logger(__name__)
 
@@ -90,7 +94,9 @@ def _record_write_safety(state: AgentState) -> None:
             )
 
 
-def record_integration_health(statuses, *, durable_checkpointer: bool) -> None:
+def record_integration_health(
+    statuses: Iterable[ServerStatus], *, durable_checkpointer: bool
+) -> None:
     for status in statuses:
         metrics.mcp_server_up.labels(server=status.name, required=str(status.required).lower()).set(
             1 if status.connected else 0

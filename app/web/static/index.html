@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark light">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <title>AI Operations Agent</title>
   <script>
     (function () {
@@ -31,11 +32,11 @@
         <button class="nav-item" data-view="history"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7.5 12 12 15.5 14"></polyline></svg></span>История</button>
         <button class="nav-item" data-view="sources"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><polygon points="12 2.8 21.2 12 12 21.2 2.8 12"></polygon></svg></span>Источники</button>
         <button class="nav-item" data-view="diagnostics"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3.6"></circle></svg></span>Диагностика</button>
+        <button class="nav-item" data-view="settings"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></span>Настройки</button>
       </nav>
 
       <div class="sidebar-footer">
         <div class="system-state"><span class="pulse"></span><span><b>Локальный режим</b><small id="storage-state">Проверяем состояние…</small></span></div>
-        <button class="settings-link" data-view="settings">Настройки <span>↗</span></button>
       </div>
     </aside>
 
@@ -93,19 +94,18 @@
 
       <section class="view" id="view-history"><div class="section-head"><div><p class="kicker">RUN ARCHIVE</p><h2>История расследований</h2></div><button class="secondary" id="refresh-history">Обновить</button></div><div class="history-list" id="history-list"></div></section>
       <section class="view" id="view-sources"><div class="section-head"><div><p class="kicker">CONNECTIONS</p><h2>Источники данных</h2></div></div><div class="source-grid" id="source-grid"><div class="empty-card">Состояние источников загружается…</div></div></section>
-      <section class="view" id="view-diagnostics"><div class="section-head"><div><p class="kicker">LOCAL DIAGNOSTICS</p><h2>Диагностика</h2></div><button class="secondary" id="refresh-diagnostics" type="button">Обновить</button></div><div class="source-grid" id="diagnostics-grid"><div class="empty-card">Собираем состояние…</div></div><div class="settings-card"><h3>Отчёт для поддержки</h3><p>Отчёт без секретов формируется командой <code>./manage.sh report agent-report.json</code> (или <code>manage.ps1 -Command report</code>). Токены и пароли в нём маскируются.</p></div></section>
-      <section class="view" id="view-settings"><div class="section-head"><div><p class="kicker">LOCAL CONTROL</p><h2>Настройки</h2></div></div><div class="settings-card"><h3>Локальная сессия</h3><p>Интерфейс работает без API-токена. Данные расследований остаются в локальном хранилище приложения.</p><p class="settings-note" id="active-model">Проверяем активную модель…</p><button class="secondary" id="open-setup" type="button">Открыть мастер настройки</button></div></section>
+      <section class="view" id="view-diagnostics"><div class="section-head"><div><p class="kicker">LOCAL DIAGNOSTICS</p><h2>Диагностика</h2></div><button class="secondary" id="refresh-diagnostics" type="button">Обновить</button></div><div class="source-grid" id="diagnostics-grid"><div class="empty-card">Собираем состояние…</div></div><div class="settings-card diagnostics-report"><h3>Отчёт</h3><p>Снимок технического состояния приложения помогает разобраться в неполадке. Создайте его командой <code>./manage.sh report agent-report.json</code> (в Windows — <code>manage.ps1 -Command report</code>). Перед сохранением токены и пароли автоматически маскируются.</p></div></section>
+      <section class="view" id="view-settings">
+        <div class="section-head"><div><p class="kicker">LOCAL CONTROL</p><h2>Настройки</h2></div><span class="setup-progress" id="setup-progress">Проверка…</span></div>
+        <div class="settings-card settings-summary"><h3>Локальная сессия</h3><p>Интерфейс работает без API-токена. Данные расследований остаются в локальном хранилище приложения.</p><p class="settings-note" id="active-model">Проверяем активную модель…</p></div>
+        <section class="settings-block" id="model-setup"><div class="section-title"><div><span>01</span><div><h3>Модель Ollama</h3><p id="model-caption">Загружаем доступные модели…</p></div></div></div><div class="profile-grid" id="profile-grid"></div><div class="download-progress hidden" id="download-progress" role="status"></div><form class="custom-model" id="custom-model-form"><label>Другая установленная модель <span>Не проверена</span><input id="custom-model-name" list="installed-models" placeholder="Например, qwen3:14b"></label><datalist id="installed-models"></datalist><button class="secondary" type="submit">Проверить и выбрать</button></form></section>
+        <section class="settings-block github-setup"><div class="section-title"><div><span>02</span><div><h3>GitHub</h3><p id="github-caption">Проверяем подключение…</p></div></div></div><div id="github-controls"></div><div id="github-preview"></div></section>
+        <section class="settings-block"><div class="section-title"><div><span>03</span><div><h3>Источники данных</h3><p>Доступность источников для новых расследований.</p></div></div></div><div class="source-grid" id="settings-sources"><div class="empty-card">Проверяем источники…</div></div></section>
+        <section class="settings-block"><div class="section-title"><div><span>04</span><div><h3>Хранилище</h3><p>Где хранятся расследования, подтверждения и настройки.</p></div></div></div><div class="source-grid" id="settings-storage"><div class="empty-card">Проверяем хранилище…</div></div></section>
+        <div class="setup-actions"><p>Demo-режим доступен без подключения GitHub.</p><button class="secondary" id="refresh-setup" type="button">Проверить снова</button><button class="primary compact" id="finish-setup" type="button">Начать работу</button></div>
+      </section>
     </main>
   </div>
-  <section class="setup-overlay hidden" id="setup-overlay" role="dialog" aria-modal="true" aria-labelledby="setup-title">
-    <div class="setup-dialog">
-      <div class="setup-heading"><div><p class="kicker">FIRST RUN</p><h2 id="setup-title" tabindex="-1">Настройка AI Operations Agent</h2><p>Проверим локальные компоненты и выберем модель для новых расследований.</p></div><span class="setup-progress" id="setup-progress">Проверка…</span></div>
-      <div class="setup-checks" id="setup-checks"><div class="empty-card">Проверяем окружение…</div></div>
-      <section class="model-setup" id="model-setup"><div class="section-title"><div><span>02</span><div><h3>Модель Ollama</h3><p id="model-caption">Загружаем доступные модели…</p></div></div></div><div class="profile-grid" id="profile-grid"></div><div class="download-progress hidden" id="download-progress" role="status"></div><form class="custom-model" id="custom-model-form"><label>Другая установленная модель <span>Не проверена</span><input id="custom-model-name" list="installed-models" placeholder="Например, qwen3:14b"></label><datalist id="installed-models"></datalist><button class="secondary" type="submit">Проверить и выбрать</button></form></section>
-      <section class="github-setup"><div class="section-title"><div><span>03</span><div><h3>GitHub</h3><p id="github-caption">Проверяем подключение…</p></div></div></div><div id="github-controls"></div><div id="github-preview"></div></section>
-      <div class="setup-actions"><p>Demo-режим доступен без подключения GitHub.</p><button class="secondary" id="continue-demo" type="button">Продолжить в demo-режиме</button><button class="primary compact" id="finish-setup" type="button" disabled>Начать работу</button></div>
-    </div>
-  </section>
   <div class="toast" id="toast" role="status"></div>
   <script src="/static/app.js" defer></script>
 </body>

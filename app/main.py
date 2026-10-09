@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import structlog
@@ -22,7 +23,7 @@ log = structlog.get_logger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     configure_logging(settings.log_level)
     log.info("application.start", environment=settings.app_env)
@@ -62,7 +63,7 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(
         title="AI Operations Agent",
-        version="0.2.0",
+        version="0.3.0",
         summary="Agentic incident analysis with human-approved write actions.",
         description=(
             "Investigates backend incidents by correlating deployments, metrics, logs and "

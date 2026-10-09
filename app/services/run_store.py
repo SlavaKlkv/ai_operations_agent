@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -59,7 +60,7 @@ async def persist_progress(
     run: AgentRun,
     state: AgentState,
     *,
-    pending: dict | None = None,
+    pending: dict[str, Any] | None = None,
 ) -> AgentRun:
     """Записать то, что запуск произвёл на данный момент, в одной транзакции.
 
@@ -242,7 +243,7 @@ async def list_runs(session: AsyncSession, *, limit: int = 50) -> list[AgentRun]
     return list((await session.execute(stmt)).scalars())
 
 
-def serialise_state(state: AgentState) -> dict:
+def serialise_state(state: AgentState) -> dict[str, Any]:
     """Безопасный для JSON снимок состояния, используемый для воспроизведения и отладки.
 
     Две вещи, которые наивная версия делала неверно. LangGraph кладёт собственную
@@ -254,7 +255,7 @@ def serialise_state(state: AgentState) -> dict:
     сохраняет честность снимка о том, что он не смог представить.
     """
 
-    def encode(value):
+    def encode(value: Any) -> Any:
         if isinstance(value, datetime):
             return value.isoformat()
         if hasattr(value, "model_dump"):

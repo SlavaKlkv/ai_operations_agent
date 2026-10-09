@@ -2,7 +2,7 @@ name: ai-operations-agent-local
 
 services:
   app:
-    image: ${AOA_IMAGE:-ghcr.io/slavaklkv/ai-operations-agent:0.2.0}
+    image: ${AOA_IMAGE:-ghcr.io/slavaklkv/ai-operations-agent:0.3.0}
     environment:
       APP_ENV: local
       AUTH_ENABLED: "false"

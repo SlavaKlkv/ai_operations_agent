@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum
+from typing import Any
 
 from app.agent.state import AgentState, ApprovalState
 from app.evaluation.scenarios import EvalScenario
@@ -58,7 +59,7 @@ class RunScore:
     def failures(self) -> tuple[Check, ...]:
         return tuple(c for c in self.checks if c.failed)
 
-    def as_dict(self) -> dict:
+    def as_dict(self) -> dict[str, Any]:
         return {
             "scenario": self.scenario,
             "passed": self.passed,
@@ -103,7 +104,7 @@ class SuiteScore:
     def total_unnecessary_calls(self) -> int:
         return sum(r.unnecessary_tool_calls for r in self.runs)
 
-    def as_dict(self) -> dict:
+    def as_dict(self) -> dict[str, Any]:
         return {
             "passed": self.passed,
             "total": self.total,

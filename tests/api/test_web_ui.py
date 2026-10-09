@@ -11,7 +11,9 @@ async def test_root_serves_the_local_application_shell(http_client):
     assert 'id="approval"' in response.text
     assert 'id="history-list"' in response.text
     assert 'id="source-grid"' in response.text
-    assert 'id="setup-overlay"' in response.text
+    assert "<h3>Отчёт</h3>" in response.text
+    assert 'id="view-settings"' in response.text
+    assert 'id="settings-sources"' in response.text
     assert 'id="profile-grid"' in response.text
     assert 'id="token"' not in response.text
 
@@ -19,7 +21,9 @@ async def test_root_serves_the_local_application_shell(http_client):
 async def test_static_assets_are_bundled_and_not_protected_by_api_auth(http_client):
     stylesheet = await http_client.get("/static/styles.css")
     script = await http_client.get("/static/app.js")
+    favicon = await http_client.get("/static/favicon.svg")
 
+    assert favicon.status_code == 200
     assert stylesheet.status_code == 200
     assert "--accent" in stylesheet.text
     assert script.status_code == 200
@@ -51,3 +55,13 @@ def test_interface_exposes_run_detail_and_diagnostics():
     assert 'id="diagnostics-grid"' in html
     assert "loadDiagnostics" in script
     assert "/trace" in script
+
+
+def test_sidebar_settings_is_a_regular_navigation_item():
+    """«Настройки» — обычный пункт навигации, как остальные разделы."""
+    from app.web.routes import STATIC_DIR
+
+    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+
+    assert 'class="nav-item" data-view="settings"' in html
+    assert "settings-link" not in html

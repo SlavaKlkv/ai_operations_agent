@@ -2,39 +2,7 @@ const state = { currentRun: null, health: null, setup: null };
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 let downloadWatching = false;
-let setupReturnFocus = null;
 
-function setSetupOpen(open) {
-  const overlay = $("#setup-overlay");
-  if (open && overlay.classList.contains("hidden")) {
-    setupReturnFocus = document.activeElement;
-    overlay.classList.remove("hidden");
-    $(".shell").inert = true;
-    $("#setup-title").focus();
-  } else if (!open) {
-    overlay.classList.add("hidden");
-    $(".shell").inert = false;
-    if (setupReturnFocus?.isConnected && setupReturnFocus !== document.body) {
-      setupReturnFocus.focus();
-    } else {
-      $("#task").focus();
-    }
-  }
-}
-
-$("#setup-overlay").addEventListener("keydown", (event) => {
-  if (event.key !== "Tab") return;
-  const focusable = $$("#setup-overlay a[href], #setup-overlay button:not(:disabled), #setup-overlay input:not(:disabled), #setup-overlay select:not(:disabled)")
-    .filter((element) => element.getClientRects().length);
-  if (!focusable.length) return;
-  if (event.shiftKey && (document.activeElement === focusable[0] || document.activeElement === $("#setup-title"))) {
-    event.preventDefault(); focusable.at(-1).focus();
-  } else if (!event.shiftKey && document.activeElement === $("#setup-title")) {
-    event.preventDefault(); focusable[0].focus();
-  } else if (!event.shiftKey && document.activeElement === focusable.at(-1)) {
-    event.preventDefault(); focusable[0].focus();
-  }
-});
 function headers() {
   return { "Content-Type": "application/json" };
 }
@@ -57,15 +25,19 @@ function toast(message, error = false) {
   toast.timer = setTimeout(() => { element.className = "toast"; }, 4200);
 }
 
-function navigate(name) {
+function showView(name) {
   $$(".view").forEach((view) => view.classList.toggle("active", view.id === `view-${name}`));
   $$(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
   const titles = { investigate: "Новое расследование", history: "История", sources: "Источники данных", diagnostics: "Диагностика", settings: "Настройки" };
   $("#view-title").textContent = titles[name];
+}
+
+function navigate(name) {
+  showView(name);
   if (name === "history") loadHistory();
   if (name === "sources") loadSources();
   if (name === "diagnostics") loadDiagnostics();
-  if (name === "settings") loadSetup(false);
+  if (name === "settings") loadSetup();
 }
 
 function statusLabel(status) {
@@ -91,7 +63,7 @@ function renderRun(run) {
   $("#run-panel").classList.add("hidden");
   $("#result").classList.remove("hidden");
   $("#result-summary").textContent = run.analysis?.summary || run.final_result || "Расследование завершено без вывода.";
-  $("#confidence").textContent = run.analysis ? `${Math.round(run.analysis.confidence * 100)}% confidence` : statusLabel(run.status);
+  $("#confidence").textContent = run.analysis ? `уверенность ${Math.round(run.analysis.confidence * 100)}%` : statusLabel(run.status);
   $("#symptoms").innerHTML = (run.analysis?.symptoms || ["Подтверждённые симптомы не найдены."]).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
   $("#actions").innerHTML = (run.analysis?.recommended_actions || ["Уточните описание и повторите расследование."]).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
   const evidence = run.analysis?.evidence || [];
@@ -116,7 +88,7 @@ async function startInvestigation(event) {
   button.disabled = true;
   $("#result").classList.add("hidden");
   panel.classList.remove("hidden");
-  $("#run-id").textContent = "new run";
+  $("#run-id").textContent = "новый запуск";
   try {
     const payload = { task: $("#task").value.trim() };
     const service = $("#service").value.trim();
@@ -209,23 +181,11 @@ async function loadDiagnostics() {
   }
 }
 
-function setupCheck(title, check) {
-  return `<article class="setup-check${check.ready ? " ready" : ""}"><span>${check.ready ? "✓" : "○"}</span><div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(check.status)}</p>${check.action ? `<p class="action">${escapeHtml(check.action)}</p>` : ""}</div></article>`;
-}
-
-function renderSetup(data, showOverlay = true) {
+function renderSetup(data) {
   state.setup = data;
-  const sourceChecks = data.sources.map((source) => setupCheck(source.name, {
-    ready: source.ready,
-    status: source.detail,
-    action: source.ready ? null : (source.required ? "Проверьте обязательный источник." : "Можно настроить позже."),
-  })).join("");
-  $("#setup-checks").innerHTML = [
-    setupCheck("Ollama", data.ollama),
-    setupCheck("Локальное хранилище", data.storage),
-    setupCheck("GitHub", data.github),
-    sourceChecks,
-  ].join("");
+
+  $("#settings-sources").innerHTML = data.sources.map((source) => `<article class="source-card"><h3>${escapeHtml(source.name)}</h3><p>${escapeHtml(source.detail)}</p><footer><span>${source.required ? "Обязательный" : "Дополнительный"}</span><span class="${source.ready ? "connected" : "failed"}">${source.ready ? "Готов" : "Недоступен"}</span></footer></article>`).join("") || '<div class="empty-card">Источники не обнаружены.</div>';
+  $("#settings-storage").innerHTML = `<article class="source-card"><h3>Локальное хранилище</h3><p>${escapeHtml(data.storage.status)}</p><footer><span>${escapeHtml(data.storage.action || "Расследования, подтверждения и настройки")}</span><span class="${data.storage.ready ? "connected" : "failed"}">${data.storage.ready ? "OK" : "FAIL"}</span></footer></article>`;
 
   const installed = new Set(data.model.installed_models);
   $("#profile-grid").innerHTML = data.model.profiles.map((profile) => {
@@ -235,34 +195,35 @@ function renderSetup(data, showOverlay = true) {
     return `<button class="profile-card${active ? " active" : ""}" type="button" ${!data.ollama.ready ? "disabled" : (isInstalled ? `data-profile="${profile.slug}"` : `data-download="${profile.slug}"`)}><header><h4>${escapeHtml(profile.label)}</h4><code>${escapeHtml(profile.model_name)}</code></header><p>${escapeHtml(profile.description)}</p><footer><span>≈ ${profile.download_size_gb} ГБ</span><span>${action}</span></footer></button>`;
   }).join("");
   $("#installed-models").innerHTML = data.model.installed_models.map((name) => `<option value="${escapeHtml(name)}"></option>`).join("");
-  $("#model-caption").textContent = data.model.installed
+  const ollamaNote = data.ollama.ready ? "" : "Ollama недоступен · ";
+  $("#model-caption").textContent = ollamaNote + (data.model.installed
     ? `Активна ${data.model.selection.model_name}${data.model.selection.verified ? " · проверенный профиль" : " · не проверена"}`
-    : `Модель ${data.model.selection.model_name} не установлена`;
+    : `Модель ${data.model.selection.model_name} не установлена`);
   $("#active-model").textContent = `Модель для новых расследований: ${data.model.selection.model_name}${data.model.selection.verified ? "" : " · Не проверена"}`;
 
   const checks = [data.ollama.ready, data.model.installed, data.storage.ready, data.github.ready, ...data.sources.filter((item) => item.required).map((item) => item.ready)];
   const readyCount = checks.filter(Boolean).length;
   $("#setup-progress").textContent = `${readyCount} из ${checks.length} готово`;
-  $("#finish-setup").disabled = !data.ready;
-  if (showOverlay) setSetupOpen(true);
+
   $$("[data-profile]").forEach((button) => button.addEventListener("click", () => selectModel({ profile: button.dataset.profile })));
   $$("[data-download]").forEach((button) => button.addEventListener("click", () => startModelDownload(button.dataset.download)));
 }
 
-async function loadSetup(showOverlay = true) {
+async function loadSetup() {
   try {
     const data = await api("/setup");
-    renderSetup(data, showOverlay && sessionStorage.getItem("aoa-demo-continued") !== "true");
+    renderSetup(data);
     await loadDownload();
     await loadGitHub();
   } catch (error) {
     $("#active-model").textContent = "Настройки недоступны";
-    if (showOverlay) toast(`Не удалось проверить настройку: ${error.message}`, true);
+    toast(`Не удалось проверить настройку: ${error.message}`, true);
   }
 }
 
 function renderDownload(download) {
   const panel = $("#download-progress");
+  if (!download || download.state === "idle") { panel.classList.add("hidden"); return; }
   panel.classList.remove("hidden");
   const label = download.state === "complete" ? "Загрузка завершена" : (download.error || download.status);
   const progress = download.total > 0
@@ -330,7 +291,7 @@ async function loadGitHub() {
     $("#github-caption").textContent = `Аккаунт ${status.login} подключён${status.selected ? ` · ${status.selected.full_name}` : " · выберите репозиторий"}`;
     controls.innerHTML = `<button class="secondary" id="github-disconnect" type="button">Отключить</button>${status.install_url ? `<a class="secondary" href="${escapeHtml(status.install_url)}" target="_blank" rel="noopener noreferrer">Установить GitHub App</a>` : ""}<select id="github-installation" aria-label="Установка GitHub App"><option value="">Выберите установку</option></select><select id="github-repository" aria-label="Репозиторий"><option value="">Выберите репозиторий</option></select>`;
     $("#github-disconnect").addEventListener("click", async () => {
-      try { await api("/github", { method: "DELETE" }); await loadSetup(true); }
+      try { await api("/github", { method: "DELETE" }); await loadSetup(); }
       catch (error) { toast(error.message, true); }
     });
     const installations = await api("/github/installations");
@@ -350,7 +311,7 @@ async function loadGitHub() {
       if (!event.target.value) return;
       try {
         await api("/github/repository", { method: "PUT", body: JSON.stringify({ installation_id: Number($("#github-installation").value), repository_id: Number(event.target.value) }) });
-        await loadSetup(true);
+        await loadSetup();
       } catch (error) { toast(error.message, true); }
     });
     if (status.selected) {
@@ -388,7 +349,7 @@ async function startGitHubConnection() {
       if (!active) break;
       const result = await api(`/github/device/${encodeURIComponent(grant.flow_id)}/poll`, { method: "POST" });
       if (result.state === "pending") { grant.interval = result.retry_after || grant.interval; continue; }
-      if (result.state === "connected") { toast(`GitHub: ${result.login} подключён`); await loadSetup(true); break; }
+      if (result.state === "connected") { toast(`GitHub: ${result.login} подключён`); await loadSetup(); break; }
       toast(result.state === "denied" ? "Подключение отклонено" : "Код истёк. Начните заново.", true);
       await loadGitHub();
       break;
@@ -401,7 +362,7 @@ async function selectModel(payload) {
   try {
     await api("/setup/model", { method: "PUT", body: JSON.stringify(payload) });
     toast(payload.profile === "custom" ? "Совместимая модель выбрана с пометкой «Не проверена»" : "Профиль модели изменён");
-    await loadSetup(true);
+    await loadSetup();
   } catch (error) { toast(error.message, true); }
 }
 
@@ -453,11 +414,10 @@ $("#approve").addEventListener("click", () => decide(true));
 $("#reject").addEventListener("click", () => decide(false));
 $("#refresh-history").addEventListener("click", loadHistory);
 $("#refresh-diagnostics").addEventListener("click", loadDiagnostics);
-$("#open-setup").addEventListener("click", () => { sessionStorage.removeItem("aoa-demo-continued"); loadSetup(true); });
-$("#continue-demo").addEventListener("click", () => { sessionStorage.setItem("aoa-demo-continued", "true"); setSetupOpen(false); });
-$("#finish-setup").addEventListener("click", () => { setSetupOpen(false); toast("Настройка завершена"); });
+$("#refresh-setup").addEventListener("click", loadSetup);
+$("#finish-setup").addEventListener("click", () => { navigate("investigate"); toast("Настройка завершена"); });
 $("#custom-model-form").addEventListener("submit", (event) => { event.preventDefault(); selectModel({ profile: "custom", model_name: $("#custom-model-name").value.trim() }); });
 $("#theme-toggle").addEventListener("click", toggleTheme);
 applyTheme(currentTheme());
 checkHealth();
-loadSetup(true);
+loadSetup().then(() => { if (state.setup && !state.setup.ready) showView("settings"); });

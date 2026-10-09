@@ -98,4 +98,4 @@ async def test_analysis_refuses_to_recommend_action_without_confidence(fresh_sta
     analysis = update["analysis"]
     assert analysis.confidence == 0.2
     assert analysis.requires_human_review is True
-    assert "Roll back" not in " ".join(analysis.recommended_actions)
+    assert "Откатите" not in " ".join(analysis.recommended_actions)

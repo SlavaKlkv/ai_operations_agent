@@ -51,12 +51,14 @@ HTTP-запросом от отдельного человека, а не кол
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from app.adapters.base import (
     CodeProvider,
@@ -98,7 +100,7 @@ from app.agent.tools.catalog import build_registry
 from app.services.cache import ToolCache
 
 
-def run_config(run_id: str) -> dict[str, dict[str, str]]:
+def run_config(run_id: str) -> RunnableConfig:
     """Чекпоинт-поток для одного запуска.
 
     Идентификатор запуска — это идентификатор потока, поэтому возобновление
@@ -125,13 +127,13 @@ def has_enough_context(state: AgentState) -> Literal["correlate", "insufficient_
 
 async def insufficient_context_node(state: AgentState) -> AgentState:
     reasons = [e.message for e in state.get("errors", [])] or [
-        "no monitoring data was available for the requested service and window"
+        "для запрошенного сервиса и окна не было данных мониторинга"
     ]
     return AgentState(
         current_step="insufficient_context",
         step_count=state.get("step_count", 0) + 1,
         status=RunStatus.FAILED,
-        final_result=("The investigation stopped before analysis: " + "; ".join(reasons) + "."),
+        final_result=("Расследование остановилось до анализа: " + "; ".join(reasons) + "."),
     )
 
 
@@ -142,19 +144,19 @@ async def finalize_node(state: AgentState) -> AgentState:
     молчание читалось бы как «ничего не стоило делать», а это другой исход.
     """
     analysis = state.get("analysis")
-    summary = analysis.summary if analysis else "No analysis was produced."
+    summary = analysis.summary if analysis else "Анализ не был построен."
     approval = state.get("approval_state")
     result = state.get("action_result") or {}
 
     if approval is ApprovalState.REJECTED:
         note = state.get("approval_note") or ""
-        summary += " The proposed issue was not created: a reviewer declined it."
-        summary += f" Reason given: {note}" if note else ""
+        summary += " Предложенная задача не создана: проверяющий отклонил её."
+        summary += f" Указанная причина: {note}" if note else ""
     elif approval is ApprovalState.APPROVED and result.get("ok"):
-        issue = (result.get("issue") or {}).get("key", "the issue")
-        summary += f" Approved and filed as {issue}."
+        issue = (result.get("issue") or {}).get("key", "задача")
+        summary += f" Подтверждено и заведено как {issue}."
     elif approval is ApprovalState.APPROVED and not result.get("ok"):
-        summary += " The approved action failed to execute; nothing was created."
+        summary += " Подтверждённое действие не выполнилось; ничего не создано."
 
     return AgentState(
         current_step="final_response",
@@ -172,13 +174,13 @@ def build_graph(
     issues: IssueProvider | None = None,
     knowledge: KnowledgeProvider | None = None,
     model: BaseChatModel | None = None,
-    checkpointer: BaseCheckpointSaver | None = None,
+    checkpointer: BaseCheckpointSaver[Any] | None = None,
     planner: Planner | None = None,
     guardrails: Guardrails | None = None,
     cache: ToolCache | None = None,
     use_llm: bool = True,
     enable_issue_tools: bool = True,
-):
+) -> CompiledStateGraph[AgentState, Any, Any, Any]:
     """Скомпилировать рабочий процесс.
 
     Каждый участник инжектируем, потому что каждого из них тесту, сценарию

@@ -12,6 +12,7 @@ from __future__ import annotations
 import time
 import uuid
 from collections.abc import Sequence
+from typing import cast
 
 import structlog
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -24,7 +25,7 @@ from app.adapters.mock.providers import (
     MockMonitoringProvider,
 )
 from app.agent.graph import build_graph, run_config
-from app.agent.state import initial_state
+from app.agent.state import AgentState, initial_state
 from app.evaluation.metrics import RunScore, SuiteScore, score_run
 from app.evaluation.scenarios import SUITE, EvalScenario
 
@@ -64,7 +65,7 @@ async def run_scenario(
         state["proposed_actions"] = state.get("proposed_actions") or []
 
     latency_ms = (time.perf_counter() - started) * 1000
-    score = score_run(expected, state, latency_ms)
+    score = score_run(expected, cast(AgentState, state), latency_ms)
     log.info(
         "evaluation.scenario",
         scenario=expected.name,

@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import sqlite3
 from pathlib import Path
+from typing import Any
 
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -20,7 +21,7 @@ def configure_engine(engine: AsyncEngine) -> None:
     """Позволить соединениям API и чекпоинтера безопасно делить локальную базу."""
 
     @event.listens_for(engine.sync_engine, "connect")
-    def _set_pragmas(dbapi_connection, _connection_record) -> None:
+    def _set_pragmas(dbapi_connection: Any, _connection_record: Any) -> None:
         cursor = dbapi_connection.cursor()
         cursor.execute(f"PRAGMA busy_timeout={BUSY_TIMEOUT_MS}")
         cursor.execute("PRAGMA journal_mode=WAL")
@@ -28,7 +29,7 @@ def configure_engine(engine: AsyncEngine) -> None:
         cursor.close()
 
 
-async def configure_checkpointer(connection) -> None:
+async def configure_checkpointer(connection: Any) -> None:
     await connection.execute(f"PRAGMA busy_timeout={BUSY_TIMEOUT_MS}")
     await connection.execute("PRAGMA journal_mode=WAL")
     await connection.execute("PRAGMA foreign_keys=ON")

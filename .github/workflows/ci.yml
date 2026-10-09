@@ -27,17 +27,27 @@ jobs:
         run: uv run ruff check .
       - name: ruff format
         run: uv run ruff format --check .
+      - name: mypy
+        run: uv run mypy app
 
   dependencies:
-    name: Dependency review
+    name: Dependency audit
     runs-on: ubuntu-latest
-    # Ревью зависимостей работает только для pull request.
+    # Аудит зависимостей работает только для pull request.
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v4
+      - uses: astral-sh/setup-uv@v6
         with:
-          fail-on-severity: high
+          enable-cache: true
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Audit locked dependencies for known vulnerabilities
+        # GitHub dependency graph для этого репозитория недоступен, поэтому
+        # проверяем зафиксированный lock-файл напрямую через pip-audit.
+        # Версия pip-audit закреплена, чтобы результат не менялся от релиза к релизу.
+        run: |
+          uv export --frozen --no-emit-project --format requirements-txt -o requirements-audit.txt
+          uvx 'pip-audit==2.10.1' -r requirements-audit.txt --disable-pip --progress-spinner off
 
   test:
     name: Tests (${{ matrix.os }})
@@ -142,4 +152,7 @@ jobs:
           fi
           curl -fsS http://127.0.0.1:8000/health
           curl -fsS http://127.0.0.1:8000/ | grep -q 'AI Operations Agent'
+          # Мало поднять контейнер: прогоняем полный контур на самом образе —
+          # расследование, остановку на подтверждении и защиту от повтора.
+          python3 tools/smoke_investigation.py http://127.0.0.1:8000
           docker rm -f aoa-smoke

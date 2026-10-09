@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+from langgraph.graph._node import StateNode
+
 from app.adapters.base import CodeProvider
 from app.agent.correlation import (
+    Spike,
     commits_in_release,
     deployments_before,
     detect_spike,
@@ -13,13 +16,15 @@ from app.agent.correlation import (
 )
 from app.agent.state import AgentState, RunError
 from app.agent.tooling import call_tool
-from app.domain.models import Evidence, EvidenceKind, Hypothesis
+from app.domain.models import Commit, Deployment, Evidence, EvidenceKind, Hypothesis
 
 #: Насколько далеко до всплеска искать выпущенный вместе с ним код.
 COMMIT_LOOKBACK = timedelta(hours=6)
 
 
-def make_correlate_node(code: CodeProvider, *, timeout: float = 15.0):
+def make_correlate_node(
+    code: CodeProvider, *, timeout: float = 15.0
+) -> StateNode[AgentState, None]:
     async def correlate_node(state: AgentState) -> AgentState:
         context = state.get("context")
         service = state.get("target_service") or "unknown"
@@ -28,7 +33,9 @@ def make_correlate_node(code: CodeProvider, *, timeout: float = 15.0):
         error_rate = context.metrics.get("error_rate") if context else None
         spike = detect_spike(error_rate) if error_rate else None
 
-        if spike is None:
+        # context отсутствует — значит, всплеск искать не в чём; проверка также сужает
+        # тип context для mypy на всём дальнейшем пути.
+        if context is None or spike is None:
             return AgentState(
                 current_step="correlate",
                 step_count=step,
@@ -37,7 +44,7 @@ def make_correlate_node(code: CodeProvider, *, timeout: float = 15.0):
                     RunError(
                         node="correlate",
                         kind="no_signal",
-                        message="no sustained error-rate spike found in the requested window",
+                        message="в запрошенном окне не найдено устойчивого всплеска частоты ошибок",
                     )
                 ],
                 observations=[{"node": "correlate", "spike": None}],
@@ -48,8 +55,8 @@ def make_correlate_node(code: CodeProvider, *, timeout: float = 15.0):
             Evidence(
                 kind=EvidenceKind.METRIC,
                 summary=(
-                    f"error_rate for {service} rose from a {spike.baseline:.2%} baseline "
-                    f"to {spike.peak:.2%} ({spike.factor:.0f}x) starting "
+                    f"error_rate для {service} вырос с базовых {spike.baseline:.2%} "
+                    f"до {spike.peak:.2%} ({spike.factor:.0f}x) начиная с "
                     f"{spike.started_at:%H:%M} UTC"
                 ),
                 source_tool="detect_spike",
@@ -85,8 +92,8 @@ def make_correlate_node(code: CodeProvider, *, timeout: float = 15.0):
                 Evidence(
                     kind=EvidenceKind.DEPLOYMENT,
                     summary=(
-                        f"{suspect.service} {suspect.version} was deployed "
-                        f"{int(lead.total_seconds() // 60)} min before the spike"
+                        f"{suspect.service} {suspect.version} развёрнут "
+                        f"за {int(lead.total_seconds() // 60)} мин до всплеска"
                     ),
                     source_tool="get_recent_deployments",
                     reference=f"{suspect.service}@{suspect.version}",
@@ -94,13 +101,11 @@ def make_correlate_node(code: CodeProvider, *, timeout: float = 15.0):
                 )
             )
             for commit in ranked[:3]:
+                touched = ", ".join(f.path for f in commit.files) or "нет файлов"
                 evidence.append(
                     Evidence(
                         kind=EvidenceKind.COMMIT,
-                        summary=(
-                            f"{commit.short_sha} {commit.message} "
-                            f"(touches {', '.join(f.path for f in commit.files) or 'no files'})"
-                        ),
+                        summary=f"{commit.short_sha} {commit.message} (затрагивает {touched})",
                         source_tool="get_commits",
                         reference=commit.sha,
                         observed_at=commit.committed_at,
@@ -112,8 +117,8 @@ def make_correlate_node(code: CodeProvider, *, timeout: float = 15.0):
             hypotheses.append(
                 Hypothesis(
                     statement=(
-                        f"the {service} error spike at {spike.started_at:%H:%M} UTC is not "
-                        "explained by any deployment in the causal window"
+                        f"всплеск ошибок {service} в {spike.started_at:%H:%M} UTC "
+                        "не объясняется ни одним деплоем в причинном окне"
                     ),
                     confidence=0.3,
                     supporting_evidence=("error_rate",),
@@ -142,7 +147,9 @@ def make_correlate_node(code: CodeProvider, *, timeout: float = 15.0):
     return correlate_node
 
 
-def _release_hypothesis(suspect, ranked, spike, stack_top) -> Hypothesis:
+def _release_hypothesis(
+    suspect: Deployment, ranked: list[Commit], spike: Spike, stack_top: str | None
+) -> Hypothesis:
     """Уверенность растёт с силой совпадения и никогда не превышает 0.9.
 
     Временная близость сама по себе — корреляция; падающий стек-фрейм внутри
@@ -165,11 +172,11 @@ def _release_hypothesis(suspect, ranked, spike, stack_top) -> Hypothesis:
             supporting.append(top.sha)
 
     statement = (
-        f"{suspect.service} {suspect.version} introduced the failure: it shipped "
-        f"{int(lead_minutes)} min before the error rate rose {spike.factor:.0f}x"
+        f"{suspect.service} {suspect.version} привнёс сбой: он вышел "
+        f"за {int(lead_minutes)} мин до роста частоты ошибок в {spike.factor:.0f}x"
     )
     if top:
-        statement += f", and {top.short_sha} ({top.message}) changes the failing code path"
+        statement += f", и {top.short_sha} ({top.message}) меняет код на пути к сбою"
 
     return Hypothesis(
         statement=statement,
