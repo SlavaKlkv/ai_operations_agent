@@ -124,6 +124,9 @@ jobs:
           bundle="ai-operations-agent-${VERSION}"
           mkdir -p "$bundle"
           cp compose.yaml start.sh start.ps1 manage.sh manage.ps1 README.md LICENSE "$bundle/"
+          # README ссылается на документацию и схемы относительно себя; без docs/
+          # в скачанном комплекте эти ссылки и картинки битые.
+          cp -r docs "$bundle/"
           chmod +x "$bundle/start.sh" "$bundle/manage.sh"
           # Закрепляем в комплекте точную версию образа по умолчанию, чтобы
           # скачанный релиз запускал именно этот образ, а не версию из дерева.
