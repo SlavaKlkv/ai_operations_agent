@@ -25,10 +25,12 @@
 возвращает разбор, в котором каждое утверждение привязано к вызову инструмента, который
 его добыл, — а issue создаёт только после того, как человек прочитал текст и согласился.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/ui-investigate-dark.png">
-  <img alt="Интерфейс AI Operations Agent: поле для описания инцидента, ход расследования и состояние локальных источников" src="docs/assets/ui-investigate-light.png">
-</picture>
+<video autoplay loop muted playsinline controls>
+  <source src="docs/assets/demo-dark.mp4" type="video/mp4" media="(prefers-color-scheme: dark)">
+  <source src="docs/assets/demo-light.mp4" type="video/mp4" media="(prefers-color-scheme: light)">
+  Интерфейс AI Operations Agent: описание инцидента, ход расследования, шлюз
+  подтверждения, история, источники, диагностика и настройки.
+</video>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.svg">
