@@ -39,8 +39,8 @@ repository хранит текущую версию разработки — и�
 ```bash
 # 1. Комплект распакован рядом с каталогом, где запускаются команды.
 shasum -a 256 -c SHA256SUMS.txt        # или: sha256sum -c SHA256SUMS.txt
-tar -xzf ai-operations-agent-0.1.0.tar.gz
-cd ai-operations-agent-0.1.0
+tar -xzf ai-operations-agent-<версия>.tar.gz
+cd ai-operations-agent-<версия>
 
 # 2. Один сервис, порт только на loopback, валидная конфигурация.
 docker compose -f compose.yaml config | grep -E '127\.0\.0\.1|published'
