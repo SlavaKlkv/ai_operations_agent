@@ -95,7 +95,7 @@ jobs:
       - name: Scan the image for known vulnerabilities
         # Уязвимый образ не должен быть подписан и опубликован: падаем на CRITICAL
         # с исправлением, игнорируя то, что ещё не выпущено апстримом.
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
           severity: CRITICAL
