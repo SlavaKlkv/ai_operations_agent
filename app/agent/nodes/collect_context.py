@@ -8,6 +8,11 @@
 
 from __future__ import annotations
 
+import functools
+from typing import Any
+
+from langgraph.graph._node import StateNode
+
 from app.adapters.base import CodeProvider, LogProvider, MonitoringProvider
 from app.agent.state import AgentState, CollectedContext, RunError, RunStatus
 from app.agent.tooling import call_tool
@@ -82,7 +87,7 @@ def make_collect_context_node(
     logs: LogProvider,
     *,
     timeout: float = 15.0,
-):
+) -> StateNode[AgentState, None]:
     """Собрать узел, привязанный к конкретным провайдерам (mock, MCP-провайдеры, ...)."""
 
     async def collect_context_node(state: AgentState) -> AgentState:
@@ -106,13 +111,13 @@ def make_collect_context_node(
         records = []
         context = CollectedContext()
         evidence: list[Evidence] = []
-        observations: list[dict] = []
+        observations: list[dict[str, Any]] = []
         errors: list[RunError] = []
 
         for metric in BASELINE_METRICS:
             outcome = await call_tool(
                 "get_service_metrics",
-                lambda m=metric: monitoring.get_service_metrics(service, m, start, end),
+                functools.partial(monitoring.get_service_metrics, service, metric, start, end),
                 arguments={"service": service, "metric": metric},
                 timeout=timeout,
                 summarise=lambda s: f"{len(s.points)} points",
@@ -123,11 +128,12 @@ def make_collect_context_node(
                 item = _metric_evidence(outcome.value)
                 if item:
                     evidence.append(item)
+                peak = outcome.value.peak()
                 observations.append(
                     {
                         "tool": "get_service_metrics",
                         "metric": metric,
-                        "peak": outcome.value.peak().value if outcome.value.peak() else None,
+                        "peak": peak.value if peak else None,
                         "mean": outcome.value.mean(),
                     }
                 )

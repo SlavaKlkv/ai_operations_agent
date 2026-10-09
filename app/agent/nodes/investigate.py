@@ -15,9 +15,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any, Literal
 
 import structlog
+from langgraph.graph._node import StateNode
 
 from app.agent.guardrails import BudgetExhausted, Guardrails
 from app.agent.planner import Planner
@@ -58,7 +60,9 @@ EVIDENCE_KINDS: dict[str, EvidenceKind] = {
 # ── select_tool ──────────────────────────────────────────────────────────────
 
 
-def make_select_tool_node(planner: Planner, registry: ToolRegistry, guardrails: Guardrails):
+def make_select_tool_node(
+    planner: Planner, registry: ToolRegistry, guardrails: Guardrails
+) -> StateNode[AgentState, None]:
     """Спросить у планировщика следующий шаг в пределах оставшегося бюджета."""
 
     async def select_tool_node(state: AgentState) -> AgentState:
@@ -135,7 +139,7 @@ def make_execute_tool_node(
     *,
     cache: ToolCache | None = None,
     cache_ttl: int = 60,
-):
+) -> StateNode[AgentState, None]:
     """Выполнить запрошенное планировщиком под политикой и вобрать результаты."""
 
     async def execute_tool_node(state: AgentState) -> AgentState:
@@ -222,7 +226,9 @@ async def evaluate_observation_node(state: AgentState) -> AgentState:
     )
 
 
-def make_route_after_evaluation(guardrails: Guardrails):
+def make_route_after_evaluation(
+    guardrails: Guardrails,
+) -> Callable[[AgentState], Literal["select_tool", "generate_analysis"]]:
     """Маршрутизация — чистая функция состояния, поэтому её можно тестировать отдельно."""
 
     def route_after_evaluation(state: AgentState) -> Literal["select_tool", "generate_analysis"]:
@@ -292,6 +298,6 @@ def _absorb(context: CollectedContext, invocation: ToolInvocation) -> None:
             pass  # Ранбук — доказательство для оператора, а не выведенный факт.
 
 
-def _merge[T](existing: list[T], incoming: tuple[T, ...], *, key) -> list[T]:
+def _merge[T](existing: list[T], incoming: tuple[T, ...], *, key: Callable[[T], Any]) -> list[T]:
     seen = {key(item) for item in existing}
     return existing + [item for item in incoming if key(item) not in seen]

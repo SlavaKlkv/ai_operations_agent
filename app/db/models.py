@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import (
     JSON,
@@ -92,7 +93,7 @@ class AgentRun(Base, TimestampMixin):
 
     final_result: Mapped[str | None] = mapped_column(Text, nullable=True)
     #: Полное конечное состояние для проверки запуска без повторного выполнения.
-    state_snapshot: Mapped[dict] = mapped_column(JSONType, nullable=False, default=dict)
+    state_snapshot: Mapped[dict[str, Any]] = mapped_column(JSONType, nullable=False, default=dict)
 
     user: Mapped[User | None] = relationship(back_populates="runs")
     tool_calls: Mapped[list[ToolCall]] = relationship(
@@ -121,7 +122,7 @@ class ToolCall(Base):
 
     tool: Mapped[str] = mapped_column(String(200), nullable=False)
     node: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    arguments: Mapped[dict] = mapped_column(JSONType, nullable=False, default=dict)
+    arguments: Mapped[dict[str, Any]] = mapped_column(JSONType, nullable=False, default=dict)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     duration_ms: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     attempt: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
@@ -147,7 +148,7 @@ class IncidentAnalysisRecord(Base, TimestampMixin):
     confidence: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
     #: Проверенный IncidentAnalysis, сохранённый без изменений.
-    payload: Mapped[dict] = mapped_column(JSONType, nullable=False, default=dict)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONType, nullable=False, default=dict)
 
     run: Mapped[AgentRun] = relationship(back_populates="analyses")
 
@@ -166,7 +167,7 @@ class Approval(Base, TimestampMixin):
         ForeignKey("agent_runs.id", ondelete="CASCADE"), nullable=False
     )
     tool: Mapped[str] = mapped_column(String(200), nullable=False)
-    arguments: Mapped[dict] = mapped_column(JSONType, nullable=False, default=dict)
+    arguments: Mapped[dict[str, Any]] = mapped_column(JSONType, nullable=False, default=dict)
     rationale: Mapped[str] = mapped_column(Text, nullable=False, default="")
     state: Mapped[ApprovalState] = mapped_column(
         SAEnum(ApprovalState, native_enum=False, length=32),
@@ -177,7 +178,7 @@ class Approval(Base, TimestampMixin):
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     decision_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     #: Результат выполненного действия, связывающий подтверждение с эффектом.
-    execution_result: Mapped[dict | None] = mapped_column(JSONType, nullable=True)
+    execution_result: Mapped[dict[str, Any] | None] = mapped_column(JSONType, nullable=True)
 
     run: Mapped[AgentRun] = relationship(back_populates="approvals")
 
@@ -195,4 +196,4 @@ class AuditEvent(Base):
     at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     actor: Mapped[str] = mapped_column(String(320), nullable=False)
     action: Mapped[str] = mapped_column(String(200), nullable=False)
-    detail: Mapped[dict] = mapped_column(JSONType, nullable=False, default=dict)
+    detail: Mapped[dict[str, Any]] = mapped_column(JSONType, nullable=False, default=dict)

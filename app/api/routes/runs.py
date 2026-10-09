@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import time
 import uuid
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from functools import lru_cache
+from typing import Any, cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,7 +19,7 @@ from app.adapters.runbooks import LocalRunbookProvider
 from app.agent.checkpointing import get_saver
 from app.agent.graph import build_graph, run_config
 from app.agent.llm import build_chat_model
-from app.agent.state import ApprovalState, RunStatus, initial_state
+from app.agent.state import AgentState, ApprovalState, RunStatus, initial_state
 from app.api.routes.github import SELECTED_KEY, _connector_for
 from app.api.schemas import (
     ApprovalDecision,
@@ -42,9 +44,13 @@ from app.services.settings_store import get_model_selection
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 
+#: Компилированный граф один раз на процесс. Явный тип нужен, чтобы слой API
+#: видел ainvoke и не терял проверку типов на главном пути запуска.
+RunGraph = CompiledStateGraph[AgentState, Any, Any, Any]
+
 
 @lru_cache(maxsize=8)
-def get_graph(model_name: str | None = None):
+def get_graph(model_name: str | None = None) -> RunGraph:
     """Компилируется один раз на процесс.
 
     Граф не хранит состояние конкретного запуска — узлы читают и возвращают
@@ -65,7 +71,7 @@ def get_graph(model_name: str | None = None):
 
 async def _real_graph(
     session: AsyncSession, model_name: str | None
-) -> tuple[object, Callable[[], Awaitable[None]]] | None:
+) -> tuple[RunGraph, Callable[[], Awaitable[None]]] | None:
     """Собрать граф поверх реальных источников только для чтения, когда есть минимум.
 
     Реальные источники остаются изолированными от demo-провайдеров. Отсутствующий
@@ -110,7 +116,7 @@ async def _real_graph(
 
 async def _graph_for_run(
     session: AsyncSession, model_name: str | None
-) -> tuple[object, Callable[[], Awaitable[None]] | None]:
+) -> tuple[RunGraph, Callable[[], Awaitable[None]] | None]:
     real = await _real_graph(session, model_name)
     return real if real is not None else (get_graph(model_name), None)
 
@@ -140,7 +146,7 @@ def _to_detail(run: AgentRun) -> RunDetail:
     return detail
 
 
-def _interrupt_payload(final: dict) -> dict | None:
+def _interrupt_payload(final: Mapping[str, Any]) -> dict[str, Any] | None:
     """Чего ждёт граф, если он приостановлен.
 
     LangGraph сообщает о паузе, кладя полезную нагрузку прерывания в возвращённое
@@ -181,9 +187,12 @@ async def start_run(
     started = time.perf_counter()
     graph, close_graph = await _graph_for_run(session, run.model_name)
     try:
-        final = await graph.ainvoke(
-            initial_state(str(run.id), payload.task, payload.target_service),
-            run_config(str(run.id)),
+        final = cast(
+            AgentState,
+            await graph.ainvoke(
+                initial_state(str(run.id), payload.task, payload.target_service),
+                run_config(str(run.id)),
+            ),
         )
     finally:
         if close_graph is not None:
@@ -229,15 +238,18 @@ async def decide_approval(
     started = time.perf_counter()
     graph, close_graph = await _graph_for_run(session, run.model_name)
     try:
-        final = await graph.ainvoke(
-            Command(
-                resume={
-                    "approved": decision.approved,
-                    "decided_by": principal.actor,
-                    "note": decision.note,
-                }
+        final = cast(
+            AgentState,
+            await graph.ainvoke(
+                Command(
+                    resume={
+                        "approved": decision.approved,
+                        "decided_by": principal.actor,
+                        "note": decision.note,
+                    }
+                ),
+                run_config(str(run.id)),
             ),
-            run_config(str(run.id)),
         )
     finally:
         if close_graph is not None:

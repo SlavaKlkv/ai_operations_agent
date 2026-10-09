@@ -292,7 +292,7 @@ class MCPToolPool:
                 f"{tool.qualified_name} returned no structured content; "
                 "this integration requires tools that declare an output schema"
             )
-        return structured
+        return dict(structured)
 
 
 def _flatten(exc: BaseException) -> BaseException:

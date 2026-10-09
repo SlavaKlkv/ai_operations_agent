@@ -7,7 +7,12 @@ from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
 from sqlalchemy import DateTime, MetaData, func
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.core.config import Settings, get_settings
@@ -44,11 +49,11 @@ def utcnow() -> datetime:
     return datetime.now(UTC)
 
 
-_engine = None
+_engine: AsyncEngine | None = None
 _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 
 
-def build_engine(settings: Settings):
+def build_engine(settings: Settings) -> AsyncEngine:
     if settings.storage_backend == "sqlite":
         settings.sqlite_path.parent.mkdir(parents=True, exist_ok=True)
     engine = create_async_engine(settings.database_dsn, pool_pre_ping=True)
@@ -57,7 +62,7 @@ def build_engine(settings: Settings):
     return engine
 
 
-def get_engine():
+def get_engine() -> AsyncEngine:
     global _engine
     if _engine is None:
         _engine = build_engine(get_settings())

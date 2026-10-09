@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -27,7 +28,7 @@ class ToolCallView(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     tool: str
-    arguments: dict
+    arguments: dict[str, Any]
     started_at: datetime
     duration_ms: float
     attempt: int
@@ -62,7 +63,7 @@ class PendingApproval(BaseModel):
 
     approval_id: uuid.UUID
     tool: str
-    arguments: dict
+    arguments: dict[str, Any]
     rationale: str = ""
 
 
@@ -87,7 +88,7 @@ class RunDetail(RunSummary):
     tool_calls: list[ToolCallView] = Field(default_factory=list)
     pending_approval: PendingApproval | None = None
     approved_by: str | None = None
-    action_result: dict | None = None
+    action_result: dict[str, Any] | None = None
 
 
 class TraceStep(BaseModel):
@@ -95,7 +96,7 @@ class TraceStep(BaseModel):
 
     step: int
     node: str
-    detail: dict = Field(default_factory=dict)
+    detail: dict[str, Any] = Field(default_factory=dict)
 
 
 class RunTrace(BaseModel):

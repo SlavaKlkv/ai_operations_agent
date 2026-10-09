@@ -22,6 +22,7 @@ from __future__ import annotations
 from typing import Any, Literal
 
 import structlog
+from langgraph.graph._node import StateNode
 from langgraph.types import interrupt
 
 from app.agent.guardrails import Guardrails
@@ -33,7 +34,7 @@ from app.agent.state import (
     RunStatus,
 )
 from app.agent.tools.base import ToolRegistry, ToolRequest
-from app.agent.tools.executor import ToolExecutor
+from app.agent.tools.executor import ToolExecutor, ToolInvocation
 from app.domain.models import Evidence, EvidenceKind, IncidentAnalysis
 
 log = structlog.get_logger(__name__)
@@ -146,7 +147,8 @@ async def request_approval_node(state: AgentState) -> AgentState:
     Command(resume=…) перезапускает этот узел с начала, и во второй раз
     interrupt возвращает решение вместо паузы.
     """
-    action = (state.get("proposed_actions") or [None])[0]
+    actions = state.get("proposed_actions") or []
+    action = actions[0] if actions else None
     if action is None:
         return AgentState(
             current_step="request_approval",
@@ -201,12 +203,15 @@ def route_after_approval(state: AgentState) -> Literal["execute_action", "final_
 # ── execute_action ───────────────────────────────────────────────────────────
 
 
-def make_execute_action_node(registry: ToolRegistry, guardrails: Guardrails):
+def make_execute_action_node(
+    registry: ToolRegistry, guardrails: Guardrails
+) -> StateNode[AgentState, None]:
     """Выполнить одобренную запись один раз под политикой, расширенной только для этого шага."""
 
     async def execute_action_node(state: AgentState) -> AgentState:
         step = state.get("step_count", 0) + 1
-        action = (state.get("proposed_actions") or [None])[0]
+        actions = state.get("proposed_actions") or []
+        action = actions[0] if actions else None
 
         if state.get("approval_state") is not ApprovalState.APPROVED or action is None:
             # Эшелонированная защита: маршрутизация уже запрещает это, а исполнитель
@@ -362,7 +367,7 @@ def _field(decision: Any, name: str, *, default: Any) -> Any:
     return getattr(decision, name, default)
 
 
-def _result_payload(invocation) -> dict[str, Any]:
+def _result_payload(invocation: ToolInvocation) -> dict[str, Any]:
     if invocation.result is None:
         return {"ok": False, "error": invocation.error}
     return {"ok": True, **invocation.result.model_dump(mode="json")}

@@ -106,11 +106,12 @@ class RedisToolCache:
         if raw is None:
             return None
         try:
-            return json.loads(raw)
+            data = json.loads(raw)
         except (TypeError, ValueError):
             # Повреждённая запись считается промахом, а не сбоем; хранить её незачем.
             log.warning("cache.corrupt_entry", key=key)
             return None
+        return data if isinstance(data, dict) else None
 
     async def set(self, key: str, value: dict[str, Any], *, ttl: int) -> None:
         try:

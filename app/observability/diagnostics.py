@@ -75,7 +75,8 @@ def build_report(settings: Settings) -> dict[str, Any]:
     }
     # Сериализуем и маскируем текст целиком: так в отчёт не утечёт фрагмент,
     # прорвавшийся в любое из полей выше.
-    return json.loads(redact(json.dumps(report, ensure_ascii=False)))
+    rebuilt = json.loads(redact(json.dumps(report, ensure_ascii=False)))
+    return rebuilt if isinstance(rebuilt, dict) else report
 
 
 def render_report(settings: Settings) -> str:
