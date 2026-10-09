@@ -11,8 +11,8 @@ services:
       CACHE_BACKEND: memory
       CHECKPOINTER: sqlite
       OLLAMA_BASE_URL: ${AOA_HOST_OLLAMA_URL:-http://host.docker.internal:11434}
-      GITHUB_APP_CLIENT_ID: ${GITHUB_APP_CLIENT_ID:-}
-      GITHUB_APP_SLUG: ${GITHUB_APP_SLUG:-}
+      GITHUB_APP_CLIENT_ID: ${GITHUB_APP_CLIENT_ID:-Iv23liLYQVw9grNxl1dJ}
+      GITHUB_APP_SLUG: ${GITHUB_APP_SLUG:-ai-operations-agent-local}
       RUNBOOKS_DIR: /srv/app/data/runbooks
     extra_hosts:
       - host.docker.internal:host-gateway

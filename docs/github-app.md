@@ -2,10 +2,24 @@
 
 Этот файл описывает конфигурацию разработчика, а не действие каждого пользователя.
 Пользователь подключается через GitHub Device Flow без PAT, client secret и собственного
-публичного сервера. Пока общая App не зарегистрирована, мастер честно показывает, что
-GitHub не настроен, и допускает только demo-режим. Для real-run добавьте GitHub,
-Prometheus и хотя бы один локальный runbook: тогда расследование не смешивает
-их с синтетическими MCP-данными.
+публичного сервера. Общая App проекта уже зарегистрирована, а её публичные идентификаторы
+заданы по умолчанию в `compose.yaml`, поэтому в базовом сценарии настраивать ничего не нужно.
+Для real-run добавьте GitHub, Prometheus и хотя бы один локальный runbook: тогда
+расследование не смешивает их с синтетическими MCP-данными.
+
+## Общая App проекта
+
+| Поле | Значение |
+|---|---|
+| GitHub App | [ai-operations-agent-local](https://github.com/apps/ai-operations-agent-local) |
+| App ID | `5244310` |
+| Slug | `ai-operations-agent-local` |
+| Client ID | `Iv23liLYQVw9grNxl1dJ` |
+| Device Flow | включён |
+
+Публичные `GITHUB_APP_CLIENT_ID` и `GITHUB_APP_SLUG` заданы по умолчанию в
+[`compose.yaml`](../compose.yaml) и могут быть перекрыты переменными окружения. Private key,
+client secret или user token в образ не попадают.
 
 ## Регистрация
 
