@@ -13,13 +13,20 @@
 macOS; они лежат в ``docs/assets/cursor-shapes`` и в репозиторий не попадают
 (исключены через ``.git/info/exclude``), как и в эталонном проекте.
 
+Ролик начинается со знакомства с темами: тёмная тема держится две секунды,
+затем настоящим нажатием на переключатель включается светлая ещё на две, и
+снова тёмная — после чего играется основной сценарий. Обе темы живут в одном
+файле ``docs/assets/demo.mp4``.
+
 Расследование против локальной Ollama идёт минуты, поэтому длительная
 обработка не показывается целиком: в кадр попадают начало (панель «Выполняется»)
 и результат, а сама пауза вырезается склейкой. Ничего не ускоряется и не
 дорисовывается — между началом и результатом просто нет кадров.
 
-Роль играется дважды — с тёмной и со светлой темой, — чтобы README мог
-подставить ролик по теме системы так же, как это делают ``<picture>``-схемы.
+Ролик укладывается в 40 секунд. Если он всё же длиннее, все прокрутки
+ускоряются одинаково ровно настолько, чтобы уложиться: паузы и остальное
+движение остаются в настоящем темпе. Ускорение делается нарезкой по отметкам
+сценария, а не перезаписью, поэтому результат детерминирован.
 
 Перед первым запуском нужен браузер Playwright и ffmpeg::
 
@@ -29,8 +36,7 @@ macOS; они лежат в ``docs/assets/cursor-shapes`` и в репозито
 сама запись::
 
     uv run python -m tools.record_demo --seed
-    uv run python -m tools.record_demo --theme dark
-    uv run python -m tools.record_demo --theme light
+    uv run python -m tools.record_demo
 """
 
 from __future__ import annotations
@@ -86,6 +92,13 @@ SCROLL_WAIT_MS = 24
 SCREEN_HOLD = 2.0
 # Пауза между секциями внутри одного экрана.
 SECTION_PAUSE = 0.8
+
+# Вступление ролика: сколько держится каждая тема до начала сценария.
+INTRO_DARK_HOLD = 2.0
+INTRO_LIGHT_HOLD = 2.0
+
+# Верхняя граница длительности ролика: если он длиннее, прокрутки ускоряются.
+TARGET_DURATION = 40.0
 
 # Размер указателя задаётся его долей от интерфейса, а не «натуральной»
 # величиной вырезки. Указатель должен быть виден и примерно втрое ниже кнопки,
@@ -208,9 +221,13 @@ CURSOR_LAYER_JS = """
 class Recorder:
     """Ведёт курсор, клавиатуру и прокрутку так, как это делает человек."""
 
-    def __init__(self, page: Page) -> None:
+    def __init__(self, page: Page, t0: float) -> None:
         self.page = page
+        self.t0 = t0
         self.pos = Point(VIEWPORT["width"] * 0.5, VIEWPORT["height"] * 0.5)
+        # Интервалы движения колеса (в секундах от t0): по ним прокрутки
+        # ускоряются отдельно от пауз, если ролик не укладывается в лимит.
+        self.scrolls: list[tuple[float, float]] = []
 
     # --- Курсор ---
 
@@ -265,6 +282,7 @@ class Recorder:
         считается один раз, поэтому у низа страницы колесо не крутится вхолостую
         — раньше именно это давало дрожь в конце.
         """
+        begin = time.monotonic()
         direction = 1 if delta > 0 else -1
         remaining = abs(delta)
         while remaining > 0.5:
@@ -272,6 +290,7 @@ class Recorder:
             self.page.mouse.wheel(0, direction * amount)
             self.page.wait_for_timeout(wait)
             remaining -= amount
+        self.scrolls.append((begin - self.t0, time.monotonic() - self.t0))
 
     def scroll_to(self, selector: str, align: float = 0.5, tolerance: float = 24) -> None:
         """Плавно подводит элемент к заданной доле высоты кадра.
@@ -328,8 +347,8 @@ def seed_history(url: str) -> None:
             print(f"  [{body['status']:>18}] {task[:64]}")
 
 
-def scenario(page: Page, url: str, theme: str, t0: float) -> dict[str, float]:
-    rec = Recorder(page)
+def scenario(page: Page, url: str, t0: float) -> tuple[dict[str, float], list[tuple[float, float]]]:
+    rec = Recorder(page, t0)
     started = time.monotonic()
     markers: dict[str, float] = {}
 
@@ -346,8 +365,22 @@ def scenario(page: Page, url: str, theme: str, t0: float) -> dict[str, float]:
     assert form is not None and field is not None
     rec.pos = Point(form["x"] - 34, field["y"] + field["height"] * 0.5)
     page.mouse.move(rec.pos.x, rec.pos.y)
-    rec.pause(0.6)
+
+    # Вступление: знакомство с темами до начала сценария — тёмная тема,
+    # переключение на светлую настоящим нажатием и возврат к тёмной. Всё до
+    # отметки ``start`` (загрузка страницы) в ролик не попадает.
+    step("intro dark")
+    rec.pause(0.4)
     markers["start"] = time.monotonic() - t0
+    rec.pause(INTRO_DARK_HOLD)
+
+    step("intro light")
+    rec.click("#theme-toggle", settle=0.2)
+    rec.pause(INTRO_LIGHT_HOLD)
+
+    step("intro dark again")
+    rec.click("#theme-toggle", settle=0.2)
+    rec.pause(0.4)
 
     # 1. Запрос набирается посимвольно, а не появляется целиком.
     step("type request")
@@ -433,28 +466,115 @@ def scenario(page: Page, url: str, theme: str, t0: float) -> dict[str, float]:
     # После перезагрузки слой курсора ещё не получал mousemove — показываем его.
     rec.pointer(VIEWPORT["width"] * 0.55, VIEWPORT["height"] * 0.5)
     rec.pause(1.0)
+    markers["end"] = time.monotonic() - t0
 
-    return markers
+    return markers, rec.scrolls
 
 
-def convert(webm: Path, output: Path, markers: dict[str, float]) -> None:
+def kept_intervals(markers: dict[str, float]) -> list[tuple[float, float]]:
+    """Отрезки записи, попадающие в ролик: до отправки и после результата.
+
+    Между отправкой и результатом расследование идёт минуты — кадры этой паузы
+    не показываются, поэтому между отрезками склейка, а не ускорение.
+    """
+    return [(markers["start"], markers["cut"]), (markers["result"], markers["end"])]
+
+
+def _scroll_spans(
+    markers: dict[str, float], scrolls: list[tuple[float, float]]
+) -> list[tuple[float, float]]:
+    """Прокрутки, оставшиеся в ролике, с обрезкой по его отрезкам."""
+    spans: list[tuple[float, float]] = []
+    for begin, end in scrolls:
+        for a, b in kept_intervals(markers):
+            left, right = max(begin, a), min(end, b)
+            if right > left:
+                spans.append((left, right))
+    return sorted(spans)
+
+
+def speed_factor(markers: dict[str, float], scrolls: list[tuple[float, float]]) -> float:
+    """Во сколько раз ускорить прокрутки, чтобы уложиться в ``TARGET_DURATION``.
+
+    Длительность без ускорения равна сумме отрезков ролика, а прокрутки дают
+    вклад ``scroll_total / speed``. Множитель выводится из равенства итога цели:
+    ``speed = scroll_total / (scroll_total - (base - target))``. Если ролик и так
+    короче цели или прокрутки не успевают закрыть разницу, ускорения нет.
+    """
+    base = sum(b - a for a, b in kept_intervals(markers))
+    total = sum(b - a for a, b in _scroll_spans(markers, scrolls))
+    shortfall = base - TARGET_DURATION
+    if shortfall <= 0 or total <= shortfall:
+        return 1.0
+    return total / (total - shortfall)
+
+
+def _segments(
+    markers: dict[str, float], scrolls: list[tuple[float, float]]
+) -> list[tuple[float, float, bool]]:
+    """Разбивает ролик на отрезки: паузы (в темпе) и прокрутки (ускоряются)."""
+    spans = _scroll_spans(markers, scrolls)
+    segments: list[tuple[float, float, bool]] = []
+    for a, b in kept_intervals(markers):
+        cursor = a
+        for begin, end in spans:
+            begin, end = max(begin, a), min(end, b)
+            if end <= begin:
+                continue
+            if begin > cursor:
+                segments.append((cursor, begin, False))
+            segments.append((begin, end, True))
+            cursor = end
+        if cursor < b:
+            segments.append((cursor, b, False))
+    return segments
+
+
+def probe_duration(path: Path) -> float:
+    out = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "default=noprint_wrappers=1:nokey=1",
+            str(path),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return float(out.stdout.strip())
+
+
+def convert(
+    webm: Path,
+    output: Path,
+    markers: dict[str, float],
+    scrolls: list[tuple[float, float]],
+) -> None:
     """Перекодирует запись в H.264, вырезая паузу ожидания расследования.
 
-    Первый кадр — уже рабочее состояние вместе с курсором: запись начинается на
-    готовом экране, курсор ставится первым движением до отметки ``start``, и
-    всё до неё отбрасывается. Между началом обработки (``cut``) и готовым
-    результатом (``result``) кадров нет — это склейка, а не ускорение, поэтому
-    ничего не дёргается. Каждый оставшийся отрезок идёт в реальном темпе.
+    Первые кадры (загрузка страницы) отбрасываются: ролик начинается на готовом
+    экране вместе с курсором. Между началом обработки (``cut``) и результатом
+    (``result``) кадров нет — это склейка, а не ускорение, поэтому ничего не
+    дёргается. Прокрутки при необходимости ускоряются одним множителем, а паузы
+    и остальное движение остаются в настоящем темпе.
     """
-    start = markers["start"]
-    cut = markers["cut"]
-    result = markers["result"]
-    filter_complex = (
-        "[0:v]split=2[a][b];"
-        f"[a]trim=start={start:.3f}:end={cut:.3f},setpts=PTS-STARTPTS,fps=30[v0];"
-        f"[b]trim=start={result:.3f},setpts=PTS-STARTPTS,fps=30[v1];"
-        "[v0][v1]concat=n=2:v=1:a=0,format=yuv420p[out]"
-    )
+    speed = speed_factor(markers, scrolls)
+    segments = _segments(markers, scrolls)
+    count = len(segments)
+    parts = [f"[0:v]split={count}" + "".join(f"[c{i}]" for i in range(count))]
+    labels = []
+    for i, (begin, end, is_scroll) in enumerate(segments):
+        pts = f"(PTS-STARTPTS)/{speed:.4f}" if is_scroll and speed > 1 else "PTS-STARTPTS"
+        parts.append(f"[c{i}]trim=start={begin:.3f}:end={end:.3f},setpts={pts},fps=30[o{i}]")
+        labels.append(f"[o{i}]")
+    parts.append("".join(labels) + f"concat=n={count}:v=1:a=0,format=yuv420p[out]")
+    filter_complex = ";".join(parts)
+
     output.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(
         [
@@ -481,12 +601,13 @@ def convert(webm: Path, output: Path, markers: dict[str, float]) -> None:
         ],
         check=True,
     )
+    print(f"  длительность {probe_duration(output):.1f}s, прокрутки x{speed:.2f}")
 
 
-def record(url: str, theme: str, output: Path, headed: bool, keep_webm: bool) -> None:
+def record(url: str, output: Path, headed: bool, keep_webm: bool) -> None:
     assets = cursor_assets()
-    videos = output.parent / "_recording" / theme
-    shutil.rmtree(videos, ignore_errors=True)
+    videos = output.parent / "_recording" / "video"
+    shutil.rmtree(videos.parent, ignore_errors=True)
     videos.mkdir(parents=True, exist_ok=True)
 
     with sync_playwright() as playwright:
@@ -500,13 +621,14 @@ def record(url: str, theme: str, output: Path, headed: bool, keep_webm: bool) ->
             record_video_size=VIDEO_SIZE,
             locale="ru-RU",
             # Тема живёт в localStorage и применяется до первой отрисовки, поэтому
-            # кадр не мигает белым.
+            # кадр не мигает белым. Ролик начинается тёмной темой, дальше сценарий
+            # сам переключает её на светлую и обратно.
             storage_state={
                 "cookies": [],
                 "origins": [
                     {
                         "origin": url,
-                        "localStorage": [{"name": "aoa-theme", "value": theme}],
+                        "localStorage": [{"name": "aoa-theme", "value": "dark"}],
                     }
                 ],
             },
@@ -515,28 +637,28 @@ def record(url: str, theme: str, output: Path, headed: bool, keep_webm: bool) ->
 
         page = context.new_page()
         t0 = time.monotonic()
-        markers: dict[str, float] | None = None
+        result: tuple[dict[str, float], list[tuple[float, float]]] | None = None
         try:
-            markers = scenario(page, url, theme, t0)
+            result = scenario(page, url, t0)
         finally:
             video = page.video
             context.close()
             browser.close()
-            if video is not None and markers is not None:
+            if video is not None and result is not None:
+                markers, scrolls = result
                 source = Path(video.path())
-                convert(source, output, markers)
+                convert(source, output, markers, scrolls)
                 if not keep_webm:
                     shutil.rmtree(videos, ignore_errors=True)
                     # Оставляем после записи только готовый mp4.
                     with contextlib.suppress(OSError):
                         videos.parent.rmdir()
-                print(f"Готово ({theme}): {output}")
+                print(f"Готово: {output}")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", default="http://localhost:8000", help="адрес стенда")
-    parser.add_argument("--theme", choices=["dark", "light"], default="dark")
     parser.add_argument("--output", type=Path, default=None)
     parser.add_argument("--headed", action="store_true", help="запускать браузер с окном")
     parser.add_argument("--keep-webm", action="store_true")
@@ -554,8 +676,8 @@ def main() -> int:
     if shutil.which("ffmpeg") is None:
         raise SystemExit("Нужен ffmpeg: запись пишется в webm и перекодируется в mp4")
 
-    output = args.output or ASSETS_DIR / f"demo-{args.theme}.mp4"
-    record(args.url, args.theme, output, args.headed, args.keep_webm)
+    output = args.output or ASSETS_DIR / "demo.mp4"
+    record(args.url, output, args.headed, args.keep_webm)
     return 0
 
 
