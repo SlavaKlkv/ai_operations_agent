@@ -92,74 +92,105 @@
 
 ## Быстрый старт
 
-Нужны Docker, [uv](https://docs.astral.sh/uv/) и
-[Ollama](https://ollama.com/download).
+Нужны только [Docker](https://www.docker.com/products/docker-desktop/) и
+[Ollama](https://ollama.com/download). Python, PostgreSQL, Redis и клонирование
+репозитория не требуются: приложение — это один контейнер, а данные лежат в локальном
+volume.
+
+**1. Запустить приложение.**
+
+Скачайте архив последнего релиза со
+[страницы Releases](https://github.com/SlavaKlkv/ai_operations_agent/releases/latest),
+распакуйте его и запустите скрипт запуска.
+
+macOS и Linux:
 
 ```bash
-git clone https://github.com/SlavaKlkv/ai_operations_agent.git
-cd ai_operations_agent
-cp .env.example .env
-
-ollama pull qwen3:8b          # Standard-профиль, около 5,2 ГБ
-
-make install                  # venv и зависимости
-make up                       # PostgreSQL и Redis
-make migrate                  # схема БД
-make token EMAIL=you@example.com APPROVE=1   # токен показывается один раз
-make run                      # http://localhost:8000/docs
+shasum -a 256 -c SHA256SUMS.txt      # или: sha256sum -c SHA256SUMS.txt
+tar -xzf ai-operations-agent-<версия>.tar.gz
+cd ai-operations-agent-<версия>
+./start.sh
 ```
 
-Без Docker и без базы тоже работает — прогон оценки не требует ничего, кроме зависимостей:
+Windows (PowerShell):
 
-```bash
-make eval
+```powershell
+Expand-Archive ai-operations-agent-<версия>.zip -DestinationPath .
+cd ai-operations-agent-<версия>
+./start.ps1
 ```
 
-### Локальный мастер настройки (текущая сборка)
+Скрипт загружает versioned-образ из GHCR и поднимает один сервис, слушающий только
+`127.0.0.1:8000`. Первая загрузка образа разовая.
 
-Встроенный интерфейс на [http://localhost:8000/](http://localhost:8000/) проверяет
-Ollama, SQLite и источники.
-Профиль Light (`qwen3:4b`) или Standard (`qwen3:8b`) можно выбрать после установки;
-если модели нет, мастер загружает её через локальную Ollama с прогрессом и возможностью
-отмены. Произвольную уже установленную модель можно выбрать после smoke-test, но она
-остаётся помеченной как непроверенная. Выбранная модель применяется только к новым
-расследованиям.
+**2. Открыть интерфейс.**
 
-Подключение GitHub использует общую GitHub App и Device Flow, когда публичные
-`GITHUB_APP_CLIENT_ID` и `GITHUB_APP_SLUG` заданы в конфигурации. Пока нет регистрации App,
-GitHub недоступен. После подключения, настройки Prometheus и добавления хотя бы одного
-локального runbook новые расследования используют только реальные источники. Вводить PAT
-не требуется.
-Конфигурация разработчика и текущие ограничения описаны в
-[документации GitHub App](docs/github-app.md).
+Перейдите на [http://localhost:8000/](http://localhost:8000/). Мастер первого запуска
+последовательно проверит Ollama, наличие модели, доступность и запись в SQLite-volume и
+состояние источников. Выберите профиль Light (`qwen3:4b`, около 2,5 ГБ) или Standard
+(`qwen3:8b`, около 5,2 ГБ, по умолчанию); если модели нет, мастер загрузит её через
+локальную Ollama с прогрессом и возможностью отмены. Любую уже установленную модель можно
+выбрать после smoke-test, но она останется помеченной «Не проверена». Профиль применяется
+только к новым расследованиям.
 
-Реальный Prometheus можно подключить как read-only источник через
-`PROMETHEUS_URL`; допустимые URL, метрики и ограничения описаны в
-[документации Prometheus](docs/prometheus.md). При готовом real-run граф
-использует его вместе с выбранным GitHub-репозиторием и локальными runbook;
-demo-данные в такой запуск не попадают. Issue создаётся только после показа
-точного текста и отдельного подтверждения.
+**3. Подключить источники (необязательно).**
 
-Пользовательские Markdown-runbook хранятся на постоянном volume; безопасный
-формат каталога и пример файла приведены в [документации runbook](docs/runbooks.md).
-Диагностика и частые проблемы — в
-[руководстве по устранению неполадок](docs/troubleshooting.md).
+- **GitHub.** Кнопка «Подключить GitHub» в мастере запускает GitHub Device Flow: приложение
+  показывает ссылку `https://github.com/login/device` и короткий код, а установка выдаётся
+  только на выбранные аккаунты и репозитории. PAT и собственная GitHub App не нужны.
+- **Prometheus.** Реальный мониторинг подключается как read-only источник через
+  `PROMETHEUS_URL`; допустимые метрики и ограничения — в
+  [документации Prometheus](docs/prometheus.md).
+- **Runbook.** Пользовательские Markdown-runbook хранятся на постоянном volume; формат
+  каталога и пример — в [документации runbook](docs/runbooks.md).
 
-Пользовательский [Compose-файл](compose.yaml), стартовые скрипты
-([macOS/Linux](start.sh), [Windows](start.ps1)) и сервисные команды
-([manage.sh](manage.sh), [manage.ps1](manage.ps1)) входят в комплект
-[GitHub Release v0.1.0](https://github.com/SlavaKlkv/ai_operations_agent/releases/tag/v0.1.0).
-Скачайте архив, распакуйте и запустите `./start.sh` (или `start.ps1`) — приложение
-поднимется на http://localhost:8000/. Для проверки сборки из исходников предусмотрен
-`compose.build.yaml`. Пайплайн публикации описан в [документации релиза](docs/release.md).
+Минимальные разрешения общей GitHub App и их обоснование описаны в
+[документации GitHub App](docs/github-app.md). Пока GitHub не подключён, а Prometheus и
+runbook не заданы, расследование идёт в demo-режиме; после подключения новые расследования
+используют только реальные источники и не смешивают их с синтетическими данными.
 
-После публикации Release скрипты [manage.sh](manage.sh) и
-[manage.ps1](manage.ps1) управляют готовой поставкой: запуск, остановка,
-обновление, диагностика и проверяемый SQLite backup/restore. Остановка и обновление
-сохраняют volume. Удаление данных требует отдельного явного аргумента
-`--delete-data` или `-DeleteData`.
+**4. Провести первое расследование.**
+
+Опишите инцидент в поле на стартовой странице. Агент соберёт доказательства из подключённых
+источников, покажет ход расследования, временную шкалу и рекомендации, а если причина
+найдена — черновик issue, ожидающий вашего подтверждения. До подтверждения во внешних
+системах ничего не меняется. Мастер можно открыть заново из «Настройки»; диагностика и
+частые проблемы — в [руководстве по устранению неполадок](docs/troubleshooting.md).
+
+### Обслуживание
+
+Команды обслуживания лежат рядом с `compose.yaml` — в [manage.sh](manage.sh) для macOS и
+Linux и [manage.ps1](manage.ps1) для Windows:
+
+| Задача | macOS и Linux | Windows |
+|---|---|---|
+| Состояние и логи | `./manage.sh diagnose` | `./manage.ps1 diagnose` |
+| Остановить, сохранив данные | `./manage.sh stop` | `./manage.ps1 stop` |
+| Обновить образ и перезапустить | `./manage.sh update` | `./manage.ps1 update` |
+| Отчёт без секретов | `./manage.sh report agent-report.json` | `./manage.ps1 report agent-report.json` |
+| Резервная копия / восстановление | `./manage.sh backup agent.db` / `./manage.sh restore agent.db` | `./manage.ps1 backup agent.db` / `./manage.ps1 restore agent.db` |
+| Полное удаление данных | `./manage.sh destroy --delete-data` | `./manage.ps1 destroy -DeleteData` |
+
+Остановка и обновление сохраняют volume; удаление данных требует отдельного явного
+аргумента. Порядок выпуска, проверка артефактов и откат — в
+[документации релиза](docs/release.md).
+
+### Известные ограничения локального режима
+
+- GitHub не может присылать webhook на `localhost`, поэтому расследование запускается
+  вручную, а данные запрашиваются по API;
+- автоматический запуск по событию и фоновая работа при выключенном компьютере отложены до
+  появления отдельного публичного сервиса;
+- порт по умолчанию открыт только на `127.0.0.1`, то есть приложение доступно лишь с этого
+  компьютера;
+- токены и данные остаются локально; резервная копия одной SQLite не переносит авторизацию
+  GitHub — ключ и зашифрованный токен хранятся отдельными файлами рядом с базой.
 
 ## Демонстрация: от жалобы до issue
+
+Это тот же сценарий, что в браузере, но через HTTP API — так его воспроизводит тестовая
+сюита, а не обычный пользователь. В локальном режиме `AUTH_ENABLED=false`, поэтому заголовок
+`authorization` не требуется; примеры ниже показывают полный серверный вариант.
 
 Синтетический мир, встроенный в репозиторий, описывает реальный инцидент:
 в 14:27 UTC выкатывается `billing-service v1.8.4`, в 14:32 доля 5xx прыгает с 0.4 % до
@@ -368,7 +399,10 @@ make observability      # поднимает стек вместе с Prometheus
 
 ## Конфигурация
 
-Всё через переменные окружения, полный список — в [`.env.example`](.env.example).
+Базовому сценарию `.env` не нужен: значения по умолчанию заданы в пользовательском
+[`compose.yaml`](compose.yaml). Тонкая настройка — через переменные окружения, полный
+список — в [`.env.example`](.env.example); серверный профиль дополнительно использует
+PostgreSQL и Redis.
 
 | Переменная | По умолчанию | Смысл |
 |---|---|---|
@@ -389,13 +423,33 @@ make observability      # поднимает стек вместе с Prometheus
 | `CHECKPOINTER` | `sqlite` | `sqlite` и `postgres` сохраняют паузу; `memory` — только для тестов |
 | `POSTGRES_*`, `REDIS_URL` | см. пример | Хранилища |
 
-## Разработка
+## Разработка из исходников
+
+Пользовательский запуск выше не требует репозитория. Разработка — отдельный путь: нужны
+Python 3.13, [uv](https://docs.astral.sh/uv/), Docker (для PostgreSQL и Redis) и Ollama.
+
+```bash
+git clone https://github.com/SlavaKlkv/ai_operations_agent.git
+cd ai_operations_agent
+cp .env.example .env
+
+ollama pull qwen3:8b          # Standard-профиль, около 5,2 ГБ
+
+make install                  # venv и зависимости
+make up                       # PostgreSQL и Redis
+make migrate                  # схема БД
+make token EMAIL=you@example.com APPROVE=1   # токен показывается один раз
+make run                      # http://localhost:8000/docs
+```
+
+Проверки, которые гоняет CI. Прогон оценки не требует Docker и базы — только зависимости:
 
 ```bash
 make check        # линт, тесты, оценка — всё, что гоняет CI
 make test         # pytest с покрытием
 make lint         # ruff check и format --check
 make format       # автоисправление
+make eval         # только оценочные сценарии агента
 ```
 
 Тесты сгруппированы по подсистемам: `tests/agent`, `tests/agent/tools`, `tests/mcp`,
