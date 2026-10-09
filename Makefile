@@ -1,5 +1,9 @@
 .DEFAULT_GOAL := help
 VENV := .venv/bin
+# Рядом лежат пользовательский compose.yaml (только сервис app) и dev-стек
+# docker-compose.yml. Без явного -f `docker compose` выбирает compose.yaml, поэтому
+# dev-цели адресуют docker-compose.yml напрямую.
+DEV_COMPOSE := docker compose -f docker-compose.yml
 
 .PHONY: help install up down observability migrate run token users test eval lint format check clean
 
@@ -11,15 +15,15 @@ install:  ## Создать виртуальное окружение и уст�
 	uv pip install -e ".[dev]"
 
 up:  ## Запустить PostgreSQL и Redis
-	docker compose up -d postgres redis
+	$(DEV_COMPOSE) up -d postgres redis
 
 observability:  ## Запустить полный стек с Prometheus и Grafana
-	docker compose --profile observability up -d
+	$(DEV_COMPOSE) --profile observability up -d
 	@echo "Grafana  http://localhost:$${GRAFANA_PORT:-3000}/d/ai-operations-agent"
 	@echo "Metrics  http://localhost:8000/metrics"
 
 down:  ## Остановить стек
-	docker compose --profile observability down
+	$(DEV_COMPOSE) --profile observability down
 
 migrate:  ## Применить миграции базы данных
 	$(VENV)/alembic upgrade head
