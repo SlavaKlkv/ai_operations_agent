@@ -1,22 +1,21 @@
-"""Who is calling, and what they are allowed to do.
+"""Кто вызывает и что ему разрешено делать.
 
-The approval endpoint is the reason this exists. Before authentication, the
-name of the person approving a write arrived *in the request body* — which
-means it was a label, not an identity: anyone could sign a decision with
-someone else's address. An audit trail built on that is decoration.
+Эндпоинт подтверждения — причина существования этого модуля. До аутентификации
+имя человека, подтверждающего запись, приходило в теле запроса — значит, это
+была метка, а не личность: любой мог подписать решение чужим адресом. Журнал
+аудита, построенный на этом, — просто украшение.
 
-So identity comes from the credential and nothing else. The request says what
-to decide; who decided it is not the caller's to assert.
+Поэтому личность берётся из учётных данных и ниоткуда больше. Запрос говорит,
+что решить; кто это решил — не вызывающему утверждать.
 
-Two levels, because the actions genuinely differ in consequence. Any
-authenticated user can start an investigation — it only reads. Approving a
-write requires ``can_approve``, which is a property of the user row and not of
-the request.
+Два уровня, потому что действия действительно различаются по последствиям. Любой
+аутентифицированный пользователь может запустить расследование — оно только
+читает. Подтверждение записи требует can_approve, а это свойство строки
+пользователя, а не запроса.
 
-Tokens are stored as SHA-256 digests. They are high-entropy random strings
-rather than passwords, so a slow KDF buys nothing against a brute-force that
-is already infeasible; what matters is that a leaked database does not hand
-over working credentials.
+Токены хранятся как дайджесты SHA-256. Это случайные строки с высокой энтропией,
+а не пароли, поэтому медленный KDF ничего не даёт против перебора, который и так
+неосуществим; важно, чтобы утёкшая база не отдавала рабочие учётные данные.
 """
 
 from __future__ import annotations
@@ -47,7 +46,7 @@ bearer = HTTPBearer(auto_error=False, description="API token issued with `make t
 
 @dataclass(frozen=True, slots=True)
 class Principal:
-    """The authenticated caller. The only source of an actor's identity."""
+    """Аутентифицированный вызывающий. Единственный источник личности действующего лица."""
 
     email: str
     can_approve: bool
@@ -63,7 +62,7 @@ DEVELOPMENT_PRINCIPAL = Principal(email="anonymous@localhost", can_approve=True,
 
 
 def issue_token() -> tuple[str, str]:
-    """A new token and the digest to store. The token is never stored."""
+    """Новый токен и дайджест для хранения. Сам токен никогда не хранится."""
     token = TOKEN_PREFIX + secrets.token_urlsafe(TOKEN_BYTES)
     return token, hash_token(token)
 
@@ -78,12 +77,12 @@ async def current_principal(
     session: AsyncSession = Depends(get_session),
     settings: Settings = Depends(get_settings),
 ) -> Principal:
-    """Resolve the caller, or refuse the request.
+    """Определить вызывающего или отклонить запрос.
 
-    With ``auth_enabled=false`` every caller is the development principal.
-    That is a deliberate escape hatch for running the stack locally without
-    issuing a token first — and it is reported by ``/health``, because a
-    deployment that has it on by accident should be able to notice.
+    При auth_enabled=false каждый вызывающий — это development-принципал.
+    Это намеренная лазейка для локального запуска стека без предварительного
+    выпуска токена — и она отражается в /health, потому что деплой, случайно
+    включивший её, должен иметь возможность это заметить.
     """
     if not settings.auth_enabled:
         return DEVELOPMENT_PRINCIPAL
@@ -115,11 +114,11 @@ async def current_principal(
 async def require_approver(
     principal: Principal = Depends(current_principal),
 ) -> Principal:
-    """Approving a write is a separate permission from starting a run.
+    """Подтверждение записи — отдельное разрешение от запуска расследования.
 
-    Read-only investigation is cheap and reversible; authorising a change to
-    an external system is neither, so it is not granted by merely holding a
-    valid token.
+    Расследование только для чтения дешево и обратимо; санкционирование изменения
+    во внешней системе — ни то, ни другое, поэтому оно не выдаётся просто за
+    наличие действующего токена.
     """
     if not principal.can_approve:
         raise HTTPException(

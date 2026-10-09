@@ -1,6 +1,6 @@
-"""Correlation is the part that must never be left to the model, so it is
-tested as ordinary arithmetic: does it find the step, and does it refuse to
-blame something that happened after the fact."""
+"""Корреляция — та часть, которую нельзя оставлять модели, поэтому она
+tестируется как обычная арифметика: находит ли она ступеньку и отказывается
+ли винить то, что случилось уже после факта."""
 
 from __future__ import annotations
 
@@ -44,12 +44,12 @@ def test_flat_series_has_no_spike():
 
 
 def test_single_blip_is_not_a_spike():
-    """One bad sample is noise; the detector requires the level to hold."""
+    """Один плохой отсчёт — шум; детектор требует, чтобы уровень держался."""
     assert detect_spike(_series([0.004] * 6 + [0.2] + [0.004] * 6)) is None
 
 
 def test_large_relative_jump_below_absolute_floor_is_ignored():
-    """0.00001 → 0.001 is a 100x jump nobody should be paged for."""
+    """0.00001 → 0.001 — стократный скачок, из-за которого никого не должны поднимать."""
     assert detect_spike(_series([0.00001] * 6 + [0.001] * 6)) is None
 
 

@@ -1,9 +1,10 @@
-"""The MCP servers, exercised through a real client over the protocol.
+"""Серверы MCP, проверяемые через настоящий клиент по протоколу.
 
-Every test here connects an actual ``mcp.Client`` to the server object. The
-transport is in-process so the suite stays fast, but discovery, JSON-RPC,
-schema validation and error mapping are the real thing — testing the handler
-functions directly would skip exactly the layer these files exist to provide.
+Каждый тест здесь подключает реальный mcp.Client к объекту сервера.
+Транспорт внутрипроцессный, чтобы набор оставался быстрым, но обнаружение,
+JSON-RPC, валидация схем и отображение ошибок — настоящие: проверка функций-
+обработчиков напрямую пропустила бы именно тот слой, для которого и существуют
+эти файлы.
 """
 
 from __future__ import annotations
@@ -21,7 +22,7 @@ WINDOW = {"start": "2026-03-17T14:00:00Z", "end": "2026-03-17T15:00:00Z"}
 
 
 def _payload(result):
-    """Unwrap the ``{"result": ...}`` envelope MCP puts around scalars/lists."""
+    """Разворачивает обёртку {"result": ...}, которой MCP окружает скаляры/списки."""
     content = result.structured_content
     return content["result"] if set(content) == {"result"} else content
 
@@ -30,7 +31,7 @@ def _error(result) -> str:
     return " ".join(block.text for block in result.content)
 
 
-# ── Monitoring ───────────────────────────────────────────────────────────────
+# ── Мониторинг ───────────────────────────────────────────────────────────────
 
 
 async def test_monitoring_advertises_read_only_tools_and_a_resource(scenario):
@@ -65,7 +66,7 @@ async def test_metrics_come_back_with_a_precomputed_summary(scenario):
 
 
 async def test_errors_are_aggregated_never_returned_raw(scenario):
-    """The protocol boundary is where log volume has to be stopped."""
+    """Граница протокола — это то место, где нужно останавливать объём логов."""
     async with Client(build_monitoring_server(scenario)) as client:
         groups = _payload(
             await client.call_tool("get_error_groups", {"service": "billing-service", **WINDOW})
@@ -86,7 +87,7 @@ async def test_min_count_drops_the_long_tail(scenario):
 
 
 async def test_an_anticipated_failure_keeps_its_message(scenario):
-    """A crash tells the caller only the tool name; a ToolFailure explains."""
+    """Падение сообщает вызывающему только имя инструмента; ToolFailure объясняет."""
     async with Client(build_monitoring_server(scenario)) as client:
         result = await client.call_tool("get_error_rate", {"service": "does-not-exist", **WINDOW})
     assert result.is_error
@@ -101,8 +102,8 @@ async def test_an_anticipated_failure_keeps_its_message(scenario):
     ],
 )
 async def test_the_server_validates_its_own_inputs(scenario, window, expected):
-    """A server cannot assume a well-behaved client: anything that speaks the
-    protocol can call it, including something driven by a language model."""
+    """Сервер не может рассчитывать на благонадёжного клиента: вызвать его может
+    что угодно, говорящее по протоколу, включая что-то управляемое языковой моделью."""
     async with Client(build_monitoring_server(scenario)) as client:
         result = await client.call_tool(
             "get_service_metrics",
@@ -119,7 +120,7 @@ async def test_the_services_resource_describes_what_is_monitored(scenario):
     assert "error_rate" in text
 
 
-# ── Code ─────────────────────────────────────────────────────────────────────
+# ── Код ──────────────────────────────────────────────────────────────────────
 
 
 async def test_deployments_come_back_newest_first(scenario):
@@ -160,12 +161,12 @@ async def test_commits_carry_the_files_they_changed(scenario):
     assert {f["path"] for f in release["files"]} == {"billing/charge.py", "billing/tax/rates.py"}
 
 
-# ── Incident ─────────────────────────────────────────────────────────────────
+# ── Инцидент ─────────────────────────────────────────────────────────────────
 
 
 async def test_write_tools_declare_themselves_as_writes():
-    """The client classifies by annotation, so this declaration is the whole
-    basis on which create_issue is treated as dangerous."""
+    """Клиент классифицирует по аннотации, поэтому это объявление — вся основа,
+    по которой create_issue считается опасным."""
     async with Client(build_incident_server(IssueStore(seed_issues()))) as client:
         by_name = {t.name: t for t in (await client.list_tools()).tools}
     assert by_name["search_issues"].annotations.read_only_hint is True
@@ -198,7 +199,7 @@ async def test_creating_an_issue_writes_through_to_the_store():
 
 
 async def test_a_duplicate_title_is_refused_by_the_server():
-    """Client-side care is not a substitute: the server has to refuse too."""
+    """Забота на стороне клиента не заменяет: сервер тоже должен отказывать."""
     store = IssueStore(seed_issues())
     async with Client(build_incident_server(store)) as client:
         await client.call_tool("create_issue", {"title": "Same", "body": "a"})
@@ -245,7 +246,7 @@ async def test_the_policy_resource_states_the_write_rules():
     assert "create_issue" in text
 
 
-# ── Knowledge ────────────────────────────────────────────────────────────────
+# ── База знаний ──────────────────────────────────────────────────────────────
 
 
 async def test_runbook_search_ranks_the_relevant_document_first():

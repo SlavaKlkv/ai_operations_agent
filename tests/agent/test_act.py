@@ -1,4 +1,4 @@
-"""Proposing, approving and executing a write — the part with consequences."""
+"""Предложение, подтверждение и выполнение записи — часть с последствиями."""
 
 from __future__ import annotations
 
@@ -52,6 +52,13 @@ def _state(**overrides):
         "task": "billing-service 5xx",
         "target_service": "billing-service",
         "analysis": _analysis(),
+        "hypotheses": [
+            Hypothesis(
+                statement="v1.8.4 broke charging",
+                confidence=0.85,
+                supporting_evidence=("billing-service/error_rate",),
+            )
+        ],
         "tool_calls": [],
         "errors": [],
         "observations": [],
@@ -78,13 +85,26 @@ async def test_a_confident_analysis_produces_a_reviewable_proposal():
 
 
 async def test_a_low_confidence_analysis_proposes_nothing():
-    """An issue filed on a guess costs someone an investigation to disprove."""
+    """Issue, заведённый по догадке, стоит кому-то расследования, чтобы его опровергнуть."""
     below = PROPOSAL_CONFIDENCE_FLOOR - 0.1
     result = await propose_action_node(_state(analysis=_analysis(below)))
 
     assert result["proposed_actions"] == []
     assert result["approval_state"] is ApprovalState.NOT_REQUIRED
-    assert "below the" in result["observations"][0]["reason"]
+    assert "must both reach" in result["observations"][0]["reason"]
+
+
+async def test_a_model_confidence_cannot_override_a_weak_deterministic_hypothesis():
+    result = await propose_action_node(
+        _state(
+            analysis=_analysis(0.95),
+            hypotheses=[Hypothesis(statement="only a weak lead", confidence=0.3)],
+        )
+    )
+
+    assert result["proposed_actions"] == []
+    assert result["approval_state"] is ApprovalState.NOT_REQUIRED
+    assert "deterministic hypothesis 0.30" in result["observations"][0]["reason"]
 
 
 async def test_no_analysis_means_no_proposal():
@@ -136,7 +156,7 @@ def test_the_body_admits_what_could_not_be_collected():
 
 
 def test_the_body_is_bounded():
-    """An issue is read by a person; a log dump is not an incident report."""
+    """Issue читает человек; свалка логов — не отчёт об инциденте."""
     huge = _analysis().model_copy(update={"symptoms": ["x" * 500] * 200})
     assert len(issue_body(huge, _state())) <= 20_000
 
@@ -175,7 +195,7 @@ async def test_an_approved_action_runs_and_records_its_effect(registry):
     [ApprovalState.PENDING, ApprovalState.REJECTED, ApprovalState.NOT_REQUIRED],
 )
 async def test_the_write_step_refuses_without_an_approval(registry, approval):
-    """Defence in depth: routing already prevents this, and it is still checked."""
+    """Эшелонированная защита: маршрутизация уже предотвращает это, но проверка остаётся."""
     node = make_execute_action_node(registry, Guardrails())
     result = await node(
         _state(
@@ -188,7 +208,7 @@ async def test_the_write_step_refuses_without_an_approval(registry, approval):
 
 
 async def test_the_write_permission_covers_only_the_approved_tool(registry):
-    """Approving an issue does not also unlock commenting on one."""
+    """Подтверждение issue не открывает заодно и комментирование."""
     node = make_execute_action_node(registry, Guardrails())
     result = await node(
         _state(
@@ -224,7 +244,7 @@ async def test_a_failed_write_fails_the_run_rather_than_reporting_success(regist
 
 
 async def test_write_tools_stay_invisible_to_the_investigation_loop(registry):
-    """The registry contains them; the default policy does not expose them."""
+    """Реестр их содержит; политика по умолчанию их не открывает."""
     policy = Guardrails()
     offered = {t.name for t in policy.available(registry)}
     assert "create_issue" not in offered
@@ -234,12 +254,12 @@ async def test_write_tools_stay_invisible_to_the_investigation_loop(registry):
     }
 
 
-# ── End to end ───────────────────────────────────────────────────────────────
+# ── Сквозной сценарий ────────────────────────────────────────────────────────
 
 
 async def test_the_approved_content_is_what_was_shown(monitoring, code, logs, fresh_state):
-    """The reviewer sees the issue body; the resume carries only a decision,
-    so what gets filed cannot differ from what was approved."""
+    """Ревьюер видит тело issue; возобновление несёт только решение,
+    поэтому заведённое не может отличаться от одобренного."""
     issues = MockIssueProvider()
     graph = build_graph(monitoring=monitoring, code=code, logs=logs, issues=issues, use_llm=False)
     config = run_config(fresh_state["run_id"])
@@ -278,9 +298,9 @@ async def test_a_rejected_run_leaves_the_tracker_untouched(monitoring, code, log
 async def test_resuming_reads_the_run_from_the_checkpoint_not_from_the_caller(
     monitoring, code, logs, fresh_state
 ):
-    """The resume carries a decision and nothing else — no task, no analysis,
-    no proposal. Everything the write needs has to come back from the
-    checkpoint, which is what makes the pause survivable across requests."""
+    """Возобновление несёт только решение — ни задачи, ни анализа,
+    ни предложения. Всё, что нужно записи, должно вернуться из
+    чекпоинта, и именно это делает паузу переживающей запросы."""
     issues = MockIssueProvider()
     config = run_config(fresh_state["run_id"])
     graph = build_graph(monitoring=monitoring, code=code, logs=logs, issues=issues, use_llm=False)
@@ -297,7 +317,7 @@ async def test_resuming_reads_the_run_from_the_checkpoint_not_from_the_caller(
 
 
 async def test_a_second_run_gets_its_own_thread(monitoring, code, logs):
-    """Two investigations must not be able to resume into each other."""
+    """Два расследования не должны возобновляться друг в друга."""
     from app.agent.state import initial_state
 
     issues = MockIssueProvider()

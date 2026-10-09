@@ -1,17 +1,18 @@
-"""Assemble the structured IncidentAnalysis from state.
+"""Собрать структурированный IncidentAnalysis из состояния.
 
-Two paths produce the same schema. Without a model, the report is rendered
-from evidence by plain code and every sentence is traceable by construction.
-With a model, the wording and the reasoning about which cause fits best are
-the model's — but the evidence list is not.
+Два пути дают одну схему. Без модели отчёт отрисовывается из доказательств
+простым кодом, и каждое предложение отслеживаемо по построению. С моделью она
+может улучшить формулировку наблюдаемых симптомов, но вердикт, уверенность,
+рекомендованные действия и доказательства остаются детерминированными.
 
-That distinction is the whole grounding strategy. The model is asked for
-:class:`AnalysisDraft`, which contains no evidence field at all; the evidence
-attached to the finished analysis is the evidence the tools actually returned.
-A model cannot cite a metric it was never shown, because it is not the thing
-writing the citations. What it *can* do — claim something the evidence does
-not support — is caught separately, by checking that the references it names
-exist before the draft is accepted.
+Это различие и есть вся стратегия привязки к доказательствам. У модели
+запрашивают AnalysisDraft, который вообще не содержит поля
+доказательств; доказательства, прикреплённые к готовому анализу, — это те
+доказательства, которые фактически вернули инструменты. Модель не может
+сослаться на метрику, которую ей никогда не показывали, потому что не она
+пишет ссылки. Ссылки в её черновике всё равно проверяются до того, как
+черновик будет использован, даже если итоговый вердикт приходит из
+детерминированной корреляции.
 """
 
 from __future__ import annotations
@@ -49,10 +50,10 @@ specific failure, not just timing.
 
 
 class AnalysisDraft(BaseModel):
-    """What the model is allowed to decide.
+    """То, что модели разрешено решать.
 
-    Deliberately missing an ``evidence`` field: citations are attached from
-    state, never generated. See the module docstring.
+    Намеренно без поля evidence: ссылки прикрепляются из состояния и
+    никогда не генерируются. См. docstring модуля.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -78,7 +79,7 @@ class AnalysisDraft(BaseModel):
 
 
 def make_build_analysis_node(model: BaseChatModel | None = None):
-    """Build the node. Without a model it renders the report deterministically."""
+    """Собрать узел. Без модели он отрисовывает отчёт детерминированно."""
 
     async def build_analysis_node(state: AgentState) -> AgentState:
         evidence = list(state.get("evidence", []))
@@ -140,16 +141,16 @@ def make_build_analysis_node(model: BaseChatModel | None = None):
 build_analysis_node = make_build_analysis_node(None)
 
 
-# ── Grounding ────────────────────────────────────────────────────────────────
+# ── Привязка к доказательствам ───────────────────────────────────────────────
 
 
 def _drop_ungrounded(draft: AnalysisDraft, references: set[str]) -> AnalysisDraft:
-    """Remove citations that do not correspond to collected evidence.
+    """Убрать ссылки, не соответствующие собранным доказательствам.
 
-    A hypothesis left with no supporting evidence keeps its statement but
-    loses its claim to confidence — it becomes a lead, not a finding. Silently
-    trusting an invented reference is exactly the failure this system exists
-    to avoid.
+    Гипотеза, оставшаяся без подтверждающих доказательств, сохраняет своё
+    утверждение, но теряет притязание на уверенность — она становится
+    зацепкой, а не находкой. Молчаливое доверие выдуманной ссылке — именно тот
+    сбой, ради предотвращения которого существует эта система.
     """
     cleaned: list[Hypothesis] = []
     for hypothesis in draft.suspected_causes:
@@ -181,18 +182,17 @@ def _drop_ungrounded(draft: AnalysisDraft, references: set[str]) -> AnalysisDraf
 
 
 def _from_draft(state: AgentState, draft: AnalysisDraft) -> IncidentAnalysis:
-    evidence = list(state.get("evidence", []))
-    return IncidentAnalysis(
-        service=state.get("target_service") or "unknown",
-        incident_start=_incident_start(state),
-        symptoms=draft.symptoms,
-        suspected_causes=sorted(draft.suspected_causes, key=lambda h: h.confidence, reverse=True),
-        evidence=evidence,
-        confidence=draft.confidence,
-        recommended_actions=draft.recommended_actions,
-        requires_human_review=True,
-        summary=draft.summary,
-    )
+    """Соединить формулировку модели с детерминированным вердиктом расследования.
+
+    Модель может сделать наблюдаемые симптомы легче для чтения, но не должна
+    превращать временную близость в причинность, повышать уверенность или
+    делать слабую зацепку действенной. Эти решения уже есть в
+    state.hypotheses и намеренно вычисляются простым кодом в узле
+    корреляции.
+    """
+    hypotheses = list(state.get("hypotheses", []))
+    deterministic = _deterministic(state, hypotheses)
+    return deterministic.model_copy(update={"symptoms": draft.symptoms or deterministic.symptoms})
 
 
 # ── Детерминированный сценарий ───────────────────────────────────────────────
@@ -254,14 +254,15 @@ def _summary(service: str, best, confidence: float) -> str:
     return f"{qualifier.capitalize()} cause for the {service} incident: {best.statement}."
 
 
-# ── Prompt ───────────────────────────────────────────────────────────────────
+# ── Промпт ───────────────────────────────────────────────────────────────────
 
 
 def render_findings(state: AgentState) -> str:
-    """The evidence the analysis must be built from, and nothing else.
+    """Доказательства, из которых должен строиться анализ, и ничего больше.
 
-    References are shown next to each item because the model is asked to cite
-    them; a citation it cannot spell is a citation that gets dropped.
+    Ссылки показаны рядом с каждым пунктом, потому что модель просят
+    ссылаться на них; ссылка, которую она не может воспроизвести, будет
+    отброшена.
     """
     lines = [
         f"Task: {state.get('task', '')}",

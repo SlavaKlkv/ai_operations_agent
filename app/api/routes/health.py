@@ -1,5 +1,5 @@
-"""Liveness endpoint. Intentionally dependency-free so it stays green while
-PostgreSQL or an MCP server is down — readiness is a separate concern."""
+"""Эндпоинт проверки живости. Намеренно без зависимостей, чтобы оставаться
+зелёным при недоступности PostgreSQL или MCP-сервера: готовность — отдельный вопрос."""
 
 from __future__ import annotations
 
@@ -23,4 +23,7 @@ async def health() -> HealthResponse:
         # чекпоинтера запуск в ожидании подтверждения теряется при перезапуске.
         durable_approvals=checkpointing.is_durable(),
         authentication=settings.auth_enabled,
+        storage_backend=settings.storage_backend,
+        cache_backend=settings.cache_backend,
+        checkpointer=settings.checkpointer,
     )

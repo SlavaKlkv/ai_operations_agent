@@ -1,15 +1,15 @@
-"""Turning a finished run into metrics and a readable trace.
+"""Превращение завершённого запуска в метрики и читаемую трассу.
 
-Kept apart from the graph on purpose. Nodes return state; this module reads
-that state and decides what is worth counting. The alternative — scattering
-``counter.inc()`` through the nodes — makes the workflow harder to read and
-ties the agent's logic to whichever metrics backend is in fashion.
+Намеренно отделён от графа. Узлы возвращают состояние; этот модуль читает это
+состояние и решает, что стоит считать. Альтернатива — разбросать counter.inc()
+по узлам — делает рабочий процесс менее читаемым и привязывает логику агента к
+тому бэкенду метрик, что сейчас в моде.
 
-The trace is the answer to "why did the agent conclude this". It records the
-observable decisions: which node ran, which tool was called with which
-arguments, what came back in summary, and where the workflow branched. It
-does not record model reasoning, because the system does not depend on it —
-what the agent *did* is auditable, what it "thought" is not evidence.
+Трасса — это ответ на вопрос «почему агент пришёл к такому выводу». Она фиксирует
+наблюдаемые решения: какой узел выполнился, какой инструмент был вызван с какими
+аргументами, что вернулось в сводке и куда рабочий процесс ветвился. Она не
+фиксирует рассуждения модели, потому что система от них не зависит — то, что
+агент сделал, проверяемо, а то, что он «думал», не является доказательством.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ WRITE_TOOLS = frozenset({"create_issue", "add_issue_comment"})
 
 
 def record_run(state: AgentState, *, duration_seconds: float) -> None:
-    """Count one finished or paused investigation."""
+    """Учесть одно завершённое или приостановленное расследование."""
     service = state.get("target_service") or "unknown"
     status = state.get("status", RunStatus.RUNNING)
 
@@ -71,11 +71,11 @@ def _record_model_usage(state: AgentState) -> None:
 
 
 def _record_write_safety(state: AgentState) -> None:
-    """The one counter that should never move.
+    """Единственный счётчик, который никогда не должен сдвинуться.
 
-    Checked from the recorded facts rather than trusted from a flag: if a
-    write appears in the call log and the run does not carry an approval, the
-    gate failed, and the metric has to say so loudly enough to page someone.
+    Проверяется по записанным фактам, а не берётся на веру из флага: если запись
+    появляется в журнале вызовов, а запуск не несёт подтверждения, шлюз отказал,
+    и метрика должна сказать об этом достаточно громко, чтобы кого-то разбудить.
     """
     if state.get("approval_state") is ApprovalState.APPROVED:
         return
@@ -98,12 +98,12 @@ def record_integration_health(statuses, *, durable_checkpointer: bool) -> None:
     metrics.checkpointer_durable.set(1 if durable_checkpointer else 0)
 
 
-# ── Trace ────────────────────────────────────────────────────────────────────
+# ── Трасса ───────────────────────────────────────────────────────────────────
 
 
 @dataclass(frozen=True, slots=True)
 class TraceEntry:
-    """One observable thing the workflow did."""
+    """Одно наблюдаемое действие рабочего процесса."""
 
     step: int
     node: str
@@ -111,12 +111,12 @@ class TraceEntry:
 
 
 def build_trace(state: AgentState) -> list[TraceEntry]:
-    """Reconstruct the run from its observations, in order.
+    """Восстановить запуск из его наблюдений, по порядку.
 
-    Observations are appended by every node as it runs, so replaying them is
-    the graph execution: nodes visited, tools called, branches taken. This is
-    what makes "why did the agent arrive here" answerable after the fact
-    without re-running anything.
+    Наблюдения добавляются каждым узлом по ходу работы, поэтому их воспроизведение
+    — это и есть исполнение графа: посещённые узлы, вызванные инструменты,
+    пройденные ветви. Именно это делает вопрос «почему агент пришёл сюда»
+    отвечаемым задним числом без повторного запуска.
     """
     return [
         TraceEntry(
@@ -129,7 +129,7 @@ def build_trace(state: AgentState) -> list[TraceEntry]:
 
 
 def render_trace(state: AgentState) -> str:
-    """The trace as text, for a terminal or an issue comment."""
+    """Трасса в виде текста, для терминала или комментария к issue."""
     lines = [f"run {state.get('run_id')} — {state.get('status')}"]
     for entry in build_trace(state):
         summary = ", ".join(f"{k}={_short(v)}" for k, v in entry.detail.items() if v is not None)

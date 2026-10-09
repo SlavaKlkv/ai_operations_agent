@@ -1,8 +1,9 @@
-"""Shared helpers for the MCP servers in this repository.
+"""Общие вспомогательные функции для MCP-серверов в этом репозитории.
 
-Kept small on purpose. These servers stand in for four different external
-systems, and sharing anything beyond timestamp handling and error shape would
-quietly couple systems that in reality know nothing about each other.
+Намеренно небольшие. Эти серверы замещают четыре разные внешние системы, и
+совместное использование чего-либо сверх работы с временными метками и формы
+ошибок тихо связало бы системы, которые в реальности ничего друг о друге не
+знают.
 """
 
 from __future__ import annotations
@@ -16,14 +17,14 @@ from app.adapters.mock.dataset import DEFAULT_SCENARIO, SCENARIOS, Scenario
 
 
 class ToolFailure(ToolError):
-    """A tool could not do what was asked, for a reason worth telling the caller.
+    """Инструмент не смог сделать то, о чём попросили, по причине, которую стоит сообщить.
 
-    Subclassing the SDK's :class:`~mcp.server.mcpserver.exceptions.ToolError`
-    is what makes the message survive the protocol boundary: an anticipated
-    failure comes back as ``is_error`` with the text intact, while anything
-    else is treated as a crash and the caller is told only the tool name. The
-    difference between "that service does not exist" and "the server fell
-    over" is exactly what the agent needs in order to route.
+    Наследование от ToolError из SDK —
+    это то, что позволяет сообщению пережить границу протокола: ожидаемый сбой
+    возвращается как is_error с целым текстом, а всё остальное трактуется как
+    крах, и вызывающему сообщается только имя инструмента. Разница между «такого
+    сервиса не существует» и «сервер упал» — ровно то, что нужно агенту для
+    маршрутизации.
     """
 
 
@@ -32,12 +33,12 @@ def iso(value: datetime) -> str:
 
 
 def parse_window(start: str, end: str) -> tuple[datetime, datetime]:
-    """Parse and sanity-check an ISO 8601 window.
+    """Разбирает и проверяет на разумность окно ISO 8601.
 
-    Servers validate their own inputs. The agent already validates arguments
-    before sending them, but an MCP server is a public interface — anything
-    that speaks the protocol can call it, so it cannot rely on a well-behaved
-    client.
+    Серверы валидируют свои входные данные. Агент уже проверяет аргументы перед
+    отправкой, но MCP-сервер — это публичный интерфейс: вызвать его может всё,
+    что говорит на протоколе, поэтому он не может полагаться на благонамеренный
+    клиент.
     """
     try:
         first, last = datetime.fromisoformat(start), datetime.fromisoformat(end)
@@ -55,11 +56,11 @@ def services_in(scenario: Scenario) -> list[str]:
 
 
 def scenario_from_env() -> Scenario:
-    """Which synthetic world this server process serves.
+    """Какой синтетический мир обслуживает этот процесс сервера.
 
-    A single environment variable is the whole configuration surface: these
-    servers exist to be swapped for real backends, so anything more elaborate
-    would be configuring something that is going to be deleted.
+    Вся поверхность конфигурации — одна переменная окружения: эти серверы
+    существуют, чтобы их заменили реальными бэкендами, так что всё более сложное
+    было бы настройкой того, что всё равно будет удалено.
     """
     name = os.environ.get("MCP_SCENARIO", "")
     return SCENARIOS.get(name, DEFAULT_SCENARIO)

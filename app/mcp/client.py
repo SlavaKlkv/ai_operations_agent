@@ -1,22 +1,24 @@
-"""The MCP client: one object that owns every connection to an external system.
+"""MCP-клиент: один объект, владеющий всеми соединениями с внешней системой.
 
-The agent never holds an MCP session. It asks this pool for a tool call and
-gets back a plain, validated dict — or a typed failure. Three things are
-concentrated here for that reason:
+Агент никогда не держит MCP-сессию. Он просит у этого пула вызвать инструмент
+и получает обратно обычный, провалидированный dict — либо типизированный
+отказ. Именно поэтому здесь сосредоточены три вещи:
 
-*Connections are pooled and lazily opened.* Launching four subprocesses per
-investigation would dominate the latency of a run that otherwise takes
-milliseconds.
+Соединения пулятся и открываются лениво. Запуск четырёх подпроцессов на
+каждое расследование занял бы основную часть задержки запуска, который иначе
+занимает миллисекунды.
 
-*A dead server is a degraded run, not a crashed one.* Each server is marked
-required or optional; an optional one that will not start is recorded and
-skipped, and a required one fails the call that needed it — not the process.
+Мёртвый сервер — это деградация запуска, а не крах. Каждый сервер помечен как
+обязательный или необязательный; необязательный, который не запускается,
+фиксируется и пропускается, а обязательный проваливает вызвавший его вызов —
+но не процесс.
 
-*Read and write are decided from the server's own annotations.* The pool reads
-``read_only_hint`` off each discovered tool and refuses to call a non-read-only
-tool unless the caller passes an explicit approval token. A server the agent
-has never seen before is still classified correctly, because the classification
-comes from the protocol rather than from a hardcoded list of names.
+Чтение и запись определяются по аннотациям самого сервера. Пул читает
+read_only_hint у каждого обнаруженного инструмента и отказывается вызывать
+инструмент не только для чтения, если вызывающая сторона не передала явный
+токен подтверждения. Сервер, которого агент никогда раньше не видел, всё равно
+классифицируется правильно, потому что классификация исходит из протокола, а не
+из жёстко зашитого списка имён.
 """
 
 from __future__ import annotations
@@ -36,28 +38,28 @@ log = structlog.get_logger(__name__)
 
 
 class MCPError(RuntimeError):
-    """Something went wrong at the integration layer."""
+    """На слое интеграции что-то пошло не так."""
 
 
 class ServerUnavailable(MCPError):
-    """The server could not be reached or would not start."""
+    """Сервер недоступен или не запустился."""
 
 
 class ToolCallFailed(MCPError):
-    """The server ran the tool and reported a failure."""
+    """Сервер выполнил инструмент и сообщил о сбое."""
 
 
 class WriteNotPermitted(MCPError):
-    """A write tool was called without an approval token."""
+    """Инструмент записи был вызван без токена подтверждения."""
 
 
 class UnknownTool(MCPError):
-    """No connected server offers a tool by that name."""
+    """Ни один подключённый сервер не предлагает инструмент с таким именем."""
 
 
 @dataclass(frozen=True, slots=True)
 class RemoteTool:
-    """A tool as the server describes it, plus where it came from."""
+    """Инструмент в том виде, как его описывает сервер, плюс источник."""
 
     server: str
     name: str
@@ -72,7 +74,7 @@ class RemoteTool:
 
 @dataclass(frozen=True, slots=True)
 class ServerStatus:
-    """What happened when we tried to use a server — for the health endpoint."""
+    """Что произошло при попытке использовать сервер — для эндпоинта здоровья."""
 
     name: str
     connected: bool
@@ -82,18 +84,18 @@ class ServerStatus:
 
 
 def _read_only(tool: Tool) -> bool:
-    """Absence of an annotation means "assume it writes".
+    """Отсутствие аннотации означает «считаем, что он пишет».
 
-    Defaulting an unannotated tool to read-only would make the safe path
-    depend on a server remembering to declare itself, which is exactly the
-    assumption a security boundary must not make.
+    Если бы инструмент без аннотации по умолчанию считался доступным только для
+    чтения, безопасный путь зависел бы от того, вспомнил ли сервер заявить о
+    себе, — а именно такого допущения граница безопасности делать не должна.
     """
     annotations = tool.annotations
     return bool(annotations and annotations.read_only_hint)
 
 
 class MCPToolPool:
-    """Connections to every configured server, opened on first use."""
+    """Соединения со всеми настроенными серверами, открываемые при первом использовании."""
 
     def __init__(self, specs: tuple[ServerSpec, ...] | None = None) -> None:
         self._specs = {spec.name: spec for spec in (specs or default_servers())}
@@ -113,19 +115,19 @@ class MCPToolPool:
     async def __aexit__(self, *exc_info: object) -> None:
         await self.aclose()
 
-    # ── Lifecycle ────────────────────────────────────────────────────────────
+    # ── Жизненный цикл ───────────────────────────────────────────────────────
 
     async def connect(self) -> tuple[ServerStatus, ...]:
-        """Open every configured server once, tolerating the ones that fail.
+        """Открывает каждый настроенный сервер один раз, терпимо относясь к тем, что падают.
 
-        The connections are opened and closed inside a single dedicated task
-        rather than inline. That is not a stylistic choice: the transports are
-        built on anyio cancel scopes, which must be exited by the same task
-        that entered them. Opening in one task and closing in another — which
-        is exactly what an ASGI lifespan, a test fixture teardown, or any
-        ``asyncio.gather`` will eventually do — raises "attempted to exit
-        cancel scope in a different task". Owning the scopes here makes the
-        pool safe to open and close from anywhere.
+        Соединения открываются и закрываются внутри одной выделенной задачи, а не
+        inline. Это не стилистический выбор: транспорты построены на cancel scope
+        из anyio, которые должна покинуть та же задача, что в них вошла. Открытие
+        в одной задаче и закрытие в другой — ровно то, что рано или поздно сделают
+        ASGI lifespan, разбор тестовой фикстуры или любой asyncio.gather, —
+        приводит к ошибке «попытка выйти из cancel scope в другой задаче».
+        Владение scope'ами здесь делает пул безопасным для открытия и закрытия
+        откуда угодно.
         """
         async with self._lock:
             if self._owner is not None:
@@ -141,7 +143,7 @@ class MCPToolPool:
         return self.status
 
     async def _own_connections(self) -> None:
-        """Hold every connection open until :meth:`aclose` says otherwise."""
+        """Держит каждое соединение открытым, пока aclose не скажет иначе."""
         try:
             async with AsyncExitStack() as stack:
                 for spec in self._specs.values():
@@ -212,7 +214,7 @@ class MCPToolPool:
         self._clients.clear()
         self._tools.clear()
 
-    # ── Introspection ────────────────────────────────────────────────────────
+    # ── Интроспекция ─────────────────────────────────────────────────────────
 
     @property
     def status(self) -> tuple[ServerStatus, ...]:
@@ -223,7 +225,7 @@ class MCPToolPool:
 
     @property
     def healthy(self) -> bool:
-        """False when a server the run cannot do without is missing."""
+        """Ложь, когда отсутствует сервер, без которого запуск не может обойтись."""
         return all(s.connected for s in self.status if s.required)
 
     def tools(self, *, read_only: bool | None = None) -> tuple[RemoteTool, ...]:
@@ -246,16 +248,17 @@ class MCPToolPool:
         result = await client.read_resource(uri)
         return "\n".join(getattr(c, "text", "") for c in result.contents)
 
-    # ── Calling ──────────────────────────────────────────────────────────────
+    # ── Вызовы ───────────────────────────────────────────────────────────────
 
     async def call(
         self, name: str, arguments: dict[str, Any], *, approved: bool = False
     ) -> dict[str, Any]:
-        """Call a tool by name and return its structured result.
+        """Вызывает инструмент по имени и возвращает его структурированный результат.
 
-        ``approved`` is the only thing that unlocks a write, and it is a
-        parameter rather than instance state so that permission is granted per
-        call. A pool that could be "put into write mode" would stay in it.
+        approved — единственное, что разблокирует запись, и это параметр,
+        а не состояние экземпляра, чтобы разрешение выдавалось на каждый вызов.
+        Пул, который можно было бы «перевести в режим записи», так в нём и
+        остался бы.
         """
         await self.connect()
         tool = self.get(name)
@@ -293,11 +296,11 @@ class MCPToolPool:
 
 
 def _flatten(exc: BaseException) -> BaseException:
-    """Unwrap the ExceptionGroup anyio task groups raise through.
+    """Разворачивает ExceptionGroup, через который пробрасывают ошибки группы задач anyio.
 
-    A configuration mistake should surface as the error that describes it,
-    not as an ``ExceptionGroup`` the caller has to dig through — the group is
-    an artefact of how the transports are supervised, not information.
+    Ошибка конфигурации должна всплывать как описывающая её ошибка, а не как
+    ExceptionGroup, в котором вызывающей стороне приходится копаться, — группа
+    это артефакт того, как надзирают за транспортами, а не информация.
     """
     while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1:
         exc = exc.exceptions[0]

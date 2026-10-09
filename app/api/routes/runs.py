@@ -1,18 +1,24 @@
-"""Agent run endpoints."""
+"""Эндпоинты запусков агента."""
 
 from __future__ import annotations
 
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 from functools import lru_cache
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from langgraph.types import Command
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.adapters.empty import NoLogProvider
+from app.adapters.github import GitHubCodeProvider, GitHubIssueProvider
+from app.adapters.runbooks import LocalRunbookProvider
 from app.agent.checkpointing import get_saver
 from app.agent.graph import build_graph, run_config
+from app.agent.llm import build_chat_model
 from app.agent.state import ApprovalState, RunStatus, initial_state
+from app.api.routes.github import SELECTED_KEY, _connector_for
 from app.api.schemas import (
     ApprovalDecision,
     PendingApproval,
@@ -26,29 +32,87 @@ from app.api.schemas import (
 from app.api.security import Principal, current_principal, require_approver
 from app.core.config import get_settings
 from app.db.base import get_session
-from app.db.models import AgentRun
+from app.db.models import AgentRun, AppSetting
 from app.domain.models import IncidentAnalysis
 from app.observability import recording
 from app.services import run_store
 from app.services.cache import build_cache
+from app.services.prometheus import PrometheusClient, PrometheusMonitoringProvider
+from app.services.settings_store import get_model_selection
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 
 
-@lru_cache(maxsize=1)
-def get_graph():
-    """Compile once per process.
+@lru_cache(maxsize=8)
+def get_graph(model_name: str | None = None):
+    """Компилируется один раз на процесс.
 
-    The graph holds no per-run state — nodes read and return state, and the
-    tool executor is rebuilt from state on every call — so one compiled graph
-    serves concurrent requests safely. Compiling per request would also mean
-    re-reading credentials and rebuilding the registry on every investigation.
+    Граф не хранит состояние конкретного запуска — узлы читают и возвращают
+    состояние, а исполнитель инструментов пересобирается из состояния при каждом
+    вызове — поэтому один скомпилированный граф безопасно обслуживает параллельные
+    запросы. Компиляция на каждый запрос означала бы также повторное чтение
+    учётных данных и пересборку реестра при каждом расследовании.
     """
     settings = get_settings()
+    runtime_settings = settings.model_copy(update={"llm_model": model_name or settings.llm_model})
     return build_graph(
+        model=build_chat_model(runtime_settings),
         checkpointer=get_saver(),
         cache=build_cache(settings),
+        use_llm=runtime_settings.llm_enabled,
     )
+
+
+async def _real_graph(
+    session: AsyncSession, model_name: str | None
+) -> tuple[object, Callable[[], Awaitable[None]]] | None:
+    """Собрать граф поверх реальных источников только для чтения, когда есть минимум.
+
+    Реальные источники остаются изолированными от demo-провайдеров. Отсутствующий
+    необязательный источник виден в трассе и не переключает расследование на
+    синтетические данные незаметно.
+    """
+    settings = get_settings()
+    selected = await session.get(AppSetting, SELECTED_KEY)
+    if selected is None or not settings.prometheus_url:
+        return None
+    value = selected.value
+    installation_id = value.get("installation_id")
+    repository_id = value.get("id")
+    repository = value.get("full_name")
+    if (
+        not isinstance(installation_id, int)
+        or not isinstance(repository_id, int)
+        or not isinstance(repository, str)
+    ):
+        return None
+    connector = _connector_for(settings)
+    allowed = await connector.repositories(installation_id)
+    if not any(item["id"] == repository_id and item["full_name"] == repository for item in allowed):
+        return None
+    prometheus = PrometheusClient(
+        settings.prometheus_url, service_label=settings.prometheus_service_label
+    )
+    runtime_settings = settings.model_copy(update={"llm_model": model_name or settings.llm_model})
+    graph = build_graph(
+        monitoring=PrometheusMonitoringProvider(prometheus),
+        code=GitHubCodeProvider(connector, repository),
+        logs=NoLogProvider(),
+        issues=GitHubIssueProvider(connector, repository),
+        knowledge=LocalRunbookProvider(settings.runbooks_dir),
+        model=build_chat_model(runtime_settings),
+        checkpointer=get_saver(),
+        cache=build_cache(settings),
+        use_llm=runtime_settings.llm_enabled,
+    )
+    return graph, prometheus.close
+
+
+async def _graph_for_run(
+    session: AsyncSession, model_name: str | None
+) -> tuple[object, Callable[[], Awaitable[None]] | None]:
+    real = await _real_graph(session, model_name)
+    return real if real is not None else (get_graph(model_name), None)
 
 
 def _to_detail(run: AgentRun) -> RunDetail:
@@ -77,11 +141,11 @@ def _to_detail(run: AgentRun) -> RunDetail:
 
 
 def _interrupt_payload(final: dict) -> dict | None:
-    """What the graph is waiting for, if it paused.
+    """Чего ждёт граф, если он приостановлен.
 
-    LangGraph reports a pause by putting the interrupt payload on the returned
-    state rather than by raising, so a caller that ignores this key silently
-    treats a half-finished run as a finished one.
+    LangGraph сообщает о паузе, кладя полезную нагрузку прерывания в возвращённое
+    состояние, а не выбрасывая исключение, поэтому вызывающий, игнорирующий этот
+    ключ, молча считает незавершённый запуск завершённым.
     """
     interrupts = final.get("__interrupt__") or ()
     return interrupts[0].value if interrupts else None
@@ -93,30 +157,37 @@ async def start_run(
     session: AsyncSession = Depends(get_session),
     principal: Principal = Depends(current_principal),
 ) -> RunDetail:
-    """Start an investigation and return its terminal state.
+    """Запустить расследование и вернуть его терминальное состояние.
 
-    The run executes inline: an investigation against mock or in-process
-    providers finishes in well under a second, and a synchronous answer keeps
-    the API honest about how long one actually takes.
+    Запуск выполняется синхронно: расследование против mock- или внутрипроцессных
+    провайдеров завершается заметно меньше чем за секунду, а синхронный ответ
+    честно показывает, сколько времени это на самом деле занимает.
 
-    "Terminal" includes *paused*. If the agent proposed a write, the graph
-    stops at the approval gate and this returns a run whose status is
-    ``awaiting_approval`` with the exact content awaiting review; the decision
-    arrives as a separate request to ``POST /runs/{id}/approval``.
+    «Терминальное» включает приостановленное. Если агент предложил запись, граф
+    останавливается на шлюзе подтверждения, и это возвращает запуск со статусом
+    awaiting_approval и точным содержимым, ожидающим проверки; решение
+    приходит отдельным запросом POST /runs/{id}/approval.
     """
+    model_selection = await get_model_selection(session, get_settings())
     run = await run_store.create_run(
         session,
         task=payload.task,
         target_service=payload.target_service,
+        model_name=model_selection.model_name,
         actor=principal.actor,
     )
     recording.record_run_started(payload.target_service)
 
     started = time.perf_counter()
-    final = await get_graph().ainvoke(
-        initial_state(str(run.id), payload.task, payload.target_service),
-        run_config(str(run.id)),
-    )
+    graph, close_graph = await _graph_for_run(session, run.model_name)
+    try:
+        final = await graph.ainvoke(
+            initial_state(str(run.id), payload.task, payload.target_service),
+            run_config(str(run.id)),
+        )
+    finally:
+        if close_graph is not None:
+            await close_graph()
     await run_store.persist_progress(session, run, final, pending=_interrupt_payload(final))
     recording.record_run(final, duration_seconds=time.perf_counter() - started)
     stored = await run_store.get_run(session, run.id)
@@ -131,12 +202,11 @@ async def decide_approval(
     session: AsyncSession = Depends(get_session),
     principal: Principal = Depends(require_approver),
 ) -> RunDetail:
-    """Approve or reject the write the run is waiting on, and resume it.
+    """Подтвердить или отклонить запись, которой ждёт запуск, и возобновить его.
 
-    The decision does not carry the action. What gets executed is what the
-    graph checkpointed when it paused, so an approval cannot be redirected
-    onto different content than the reviewer was shown — this request says
-    yes or no, and nothing more.
+    Решение не несёт само действие. Выполняется то, что граф сохранил в чекпоинт
+    при паузе, поэтому подтверждение нельзя перенаправить на другое содержимое,
+    нежели увидел проверяющий — этот запрос говорит «да» или «нет», и не более.
     """
     run = await run_store.get_run(session, run_id)
     if run is None:
@@ -156,16 +226,21 @@ async def decide_approval(
     recording.record_decision(approved=decision.approved)
 
     started = time.perf_counter()
-    final = await get_graph().ainvoke(
-        Command(
-            resume={
-                "approved": decision.approved,
-                "decided_by": principal.actor,
-                "note": decision.note,
-            }
-        ),
-        run_config(str(run.id)),
-    )
+    graph, close_graph = await _graph_for_run(session, run.model_name)
+    try:
+        final = await graph.ainvoke(
+            Command(
+                resume={
+                    "approved": decision.approved,
+                    "decided_by": principal.actor,
+                    "note": decision.note,
+                }
+            ),
+            run_config(str(run.id)),
+        )
+    finally:
+        if close_graph is not None:
+            await close_graph()
     await run_store.persist_progress(session, run, final, pending=_interrupt_payload(final))
     recording.record_run(final, duration_seconds=time.perf_counter() - started)
     stored = await run_store.get_run(session, run.id)
@@ -179,12 +254,12 @@ async def get_trace(
     session: AsyncSession = Depends(get_session),
     principal: Principal = Depends(current_principal),
 ) -> RunTrace:
-    """Why the agent arrived where it did.
+    """Почему агент пришёл к тому, к чему пришёл.
 
-    Reconstructed from the observations every node appended as it ran, so it
-    shows the nodes visited, the tools called and the branches taken —
-    without re-running anything. Model reasoning is deliberately absent: what
-    the agent did is auditable, what it "thought" is not evidence.
+    Восстанавливается из наблюдений, которые каждый узел добавлял по ходу работы,
+    поэтому показывает посещённые узлы, вызванные инструменты и пройденные ветви —
+    без повторного запуска. Рассуждения модели намеренно отсутствуют: то, что
+    агент сделал, проверяемо, а то, что он «думал», не является доказательством.
     """
     run = await run_store.get_run(session, run_id)
     if run is None:

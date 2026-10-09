@@ -1,12 +1,14 @@
-"""The limits an agent run cannot talk its way out of.
+"""Пределы, из которых запуск агента не может выговориться.
 
-Every restriction here is enforced in Python, before a tool runs, on arguments
-the model supplied. None of it is expressed as an instruction in a prompt: a
-prompt is a request, and the whole point of a guardrail is that it is not one.
+Каждое ограничение здесь обеспечивается в Python, до запуска инструмента, на
+аргументах, которые предоставила модель. Ничто из этого не выражается
+инструкцией в промпте: промпт — это просьба, и весь смысл защитного ограничения
+в том, что оно не просьба.
 
-The checks are ordered cheapest-first and each raises a distinct exception, so
-the graph can react differently to "you may not do that" (terminal) and "you
-have done that enough times" (stop looping, go and conclude).
+Проверки упорядочены от самых дешёвых, и каждая возбуждает отдельное
+исключение, поэтому граф может реагировать по-разному на «тебе нельзя этого
+делать» (терминально) и «ты делал это достаточно раз» (остановиться и
+подвести итог).
 """
 
 from __future__ import annotations
@@ -24,36 +26,37 @@ from app.agent.tools.base import (
 
 
 class GuardrailViolation(RuntimeError):
-    """A run attempted something its policy forbids."""
+    """Запуск попытался сделать то, что запрещает его политика."""
 
 
 class BudgetExhausted(GuardrailViolation):
-    """The run has spent its allowance of tool calls or workflow steps."""
+    """Запуск исчерпал свой лимит вызовов инструментов или шагов рабочего процесса."""
 
 
 class WriteNotApproved(GuardrailViolation):
-    """A write tool was reached without an approved human decision."""
+    """До инструмента записи дошли без одобренного решения человека."""
 
 
 class RepetitionLimitExceeded(GuardrailViolation):
-    """The same tool was called with the same arguments too many times.
+    """Один и тот же инструмент вызывался с теми же аргументами слишком много раз.
 
-    Loops that re-fetch identical data are the characteristic failure of a
-    tool-calling agent that has run out of ideas. Detecting it as a policy
-    violation converts an expensive infinite loop into a cheap terminal state.
+    Циклы, повторно забирающие одни и те же данные, — характерный сбой агента,
+    вызывающего инструменты, у которого кончились идеи. Обнаружение этого как
+    нарушения политики превращает дорогой бесконечный цикл в дешёвое конечное
+    состояние.
     """
 
 
 @dataclass(frozen=True, slots=True)
 class Guardrails:
-    """Per-run policy. Built from settings, never from model output."""
+    """Политика на запуск. Строится из настроек, никогда — из вывода модели."""
 
     max_tool_calls: int = 12
     max_workflow_steps: int = 30
     tool_timeout_seconds: float = 15.0
     #: Дополнительные попытки после первого неудачного вызова инструмента.
     tool_retries: int = 1
-    #: ``None`` означает все инструменты реестра; множество сужает список.
+    #: None означает все инструменты реестра; множество сужает список.
     allowlist: frozenset[str] | None = None
     #: Инструменты записи недоступны до появления разрешающей записи подтверждения.
     allow_write: bool = False
@@ -70,7 +73,7 @@ class Guardrails:
         return self.allow_write or not tool.is_write
 
     def available(self, registry: ToolRegistry) -> tuple[AgentTool[Any, Any], ...]:
-        """The tools the model is allowed to see. It is never shown more."""
+        """Инструменты, которые модели разрешено видеть. Больше ей никогда не показывают."""
         return tuple(t for t in registry if self.permits(t))
 
     def check_budget(self, *, tool_calls: int, steps: int) -> None:
@@ -97,7 +100,7 @@ class Guardrails:
             )
 
     def with_write_approved(self) -> Guardrails:
-        """Policy for the single step that executes an approved action."""
+        """Политика для единственного шага, исполняющего одобренное действие."""
         return Guardrails(**{**_as_dict(self), "allow_write": True})
 
     def narrowed_to(self, names: Iterable[str]) -> Guardrails:

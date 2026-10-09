@@ -1,10 +1,10 @@
-"""A deterministic synthetic environment used for development and evaluation.
+"""Детерминированное синтетическое окружение для разработки и оценки.
 
-The dataset encodes one realistic incident: ``billing-service`` v1.8.4 is
-deployed at 14:27 UTC and five minutes later the 5xx rate jumps from a ~0.4 %
-baseline to double digits. A decoy deployment of an unrelated service and a
-decoy commit exist so that a correct agent has to *correlate* rather than pick
-the most recent change.
+Набор данных описывает один реалистичный инцидент: billing-service v1.8.4
+развёрнут в 14:27 UTC, и пять минут спустя доля 5xx подскакивает с базовых
+~0,4 % до двузначных значений. Присутствуют ложный деплой не связанного сервиса
+и ложный коммит, так что корректный агент должен соотносить, а не выбирать
+самое последнее изменение.
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ def _at(hour: int, minute: int) -> datetime:
 
 @dataclass(frozen=True)
 class Scenario:
-    """Everything the synthetic world knows about one incident."""
+    """Всё, что синтетический мир знает об одном инциденте."""
 
     name: str
     deployments: list[Deployment]
@@ -59,7 +59,7 @@ def _series(
     step: timedelta = timedelta(minutes=1),
     window: tuple[datetime, datetime] = (_at(14, 0), _at(15, 0)),
 ) -> MetricSeries:
-    """Build a flat baseline that steps up to ``spike`` at ``spike_from``."""
+    """Строит ровную базовую линию, которая поднимается до spike в spike_from."""
     start, end = window
     points: list[MetricPoint] = []
     cursor = start
@@ -231,10 +231,10 @@ DEFAULT_SCENARIO = BILLING_5XX
 def aggregate_logs(
     logs: list[LogEvent], start: datetime, end: datetime, min_count: int = 1
 ) -> list[ErrorGroup]:
-    """Collapse raw log events into per-error-type groups.
+    """Сворачивает сырые события логов в группы по типу ошибки.
 
-    This is the preprocessing layer that keeps unbounded log volume away from
-    the model: the agent sees counts and one sample, never the full stream.
+    Это слой предобработки, который не подпускает неограниченный объём логов к
+    модели: агент видит счётчики и один образец, но никогда — весь поток.
     """
     buckets: dict[str, list[LogEvent]] = {}
     for event in logs:

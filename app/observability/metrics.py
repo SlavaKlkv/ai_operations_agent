@@ -1,15 +1,15 @@
-"""Prometheus metrics for the agent.
+"""Метрики Prometheus для агента.
 
-What is measured here is chosen from the questions an operator actually asks
-about an agent, which are not the questions they ask about a web service.
-Request rate and p99 matter, but so do: how many tool calls an investigation
-costs, how often the model is even reachable, how often a run ends in a
-conclusion versus a shrug, and — the one that would wake someone up — whether
-any write ever executed without an approval behind it.
+Измеряемое здесь выбрано из вопросов, которые оператор действительно задаёт про
+агента, а это не те вопросы, что задают про веб-сервис. Частота запросов и p99
+важны, но также важны: сколько вызовов инструментов стоит одно расследование,
+как часто модель вообще доступна, как часто запуск заканчивается выводом, а не
+пожатием плеч, и — то, что разбудило бы кого угодно — выполнялась ли хоть раз
+запись без подтверждения за ней.
 
-Counters are deliberately low-cardinality. ``service`` is a label because
-there are a handful of them; ``run_id`` is not, because there is one per run
-and a label like that turns a metrics store into a log store.
+Счётчики намеренно низкокардинальные. service — это метка, потому что их
+несколько; run_id — нет, потому что он один на запуск, а такая метка
+превращает хранилище метрик в хранилище логов.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Mock implementations of the provider protocols backed by a Scenario."""
+"""Mock-реализации протоколов провайдеров на основе Scenario."""
 
 from __future__ import annotations
 
@@ -19,18 +19,19 @@ from app.domain.models import (
 
 
 class UnknownMetricError(LookupError):
-    """Raised when a scenario has no series for the requested service/metric."""
+    """Возникает, когда в сценарии нет ряда для запрошенных сервиса и метрики."""
 
 
 class UnknownIssueError(LookupError):
-    """Raised when a comment targets an issue that does not exist."""
+    """Возникает, когда комментарий адресован несуществующему issue."""
 
 
 class DuplicateIssueError(ValueError):
-    """Raised when a new issue repeats the title of an open one.
+    """Возникает, когда новый issue повторяет заголовок открытого.
 
-    Filing a duplicate is the characteristic failure of an automated incident
-    reporter, so it is refused at the provider rather than left to the caller.
+    Создание дубликата — характерный сбой автоматизированного репортёра
+    инцидентов, поэтому оно отклоняется на провайдере, а не оставляется на
+    усмотрение вызывающей стороны.
     """
 
 
@@ -89,11 +90,11 @@ class MockLogProvider:
 
 
 class MockIssueProvider:
-    """An in-memory issue tracker for development, tests and evaluation.
+    """Трекер задач в памяти для разработки, тестов и оценки.
 
-    It records writes rather than pretending to be idempotent, so a test can
-    assert not just that the agent *said* it would create an issue but that
-    exactly one issue was created, with the content that was approved.
+    Он фиксирует записи, а не притворяется идемпотентным, так что тест может
+    проверить не только то, что агент сказал, будто создаст issue, но и то,
+    что был создан ровно один issue с одобренным содержимым.
     """
 
     def __init__(self, seed: list[Issue] | None = None) -> None:
@@ -150,7 +151,7 @@ class MockIssueProvider:
 
 
 def _seed_issues() -> list[Issue]:
-    """One pre-existing issue, so a duplicate check has something to find."""
+    """Один заранее существующий issue, чтобы у проверки на дубликаты было что найти."""
     return [
         Issue(
             key="OPS-1",

@@ -1,4 +1,4 @@
-"""Prometheus scrape endpoint."""
+"""Эндпоинт сбора метрик Prometheus."""
 
 from __future__ import annotations
 

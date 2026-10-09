@@ -1,8 +1,9 @@
-"""Which MCP servers this deployment talks to, and on what terms.
+"""С какими MCP-серверами взаимодействует это развёртывание и на каких условиях.
 
-Server configuration is code, not model input. A run cannot add a server, and
-cannot widen what an existing server is allowed to do — the only direction
-these settings move at runtime is narrower.
+Конфигурация серверов — это код, а не входные данные модели. Запуск не может
+добавить сервер и не может расширить то, что разрешено существующему серверу, —
+единственное направление, в котором эти настройки меняются во время выполнения,
+это сужение.
 """
 
 from __future__ import annotations
@@ -34,7 +35,7 @@ class Transport(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class ServerSpec:
-    """One MCP server this agent may connect to."""
+    """Один MCP-сервер, к которому может подключиться этот агент."""
 
     name: str
     transport: Transport
@@ -60,10 +61,10 @@ class ServerSpec:
 
 
 def _stdio(module: str, **kwargs) -> ServerSpec:
-    """A server launched from this repository, using the running interpreter.
+    """Сервер, запускаемый из этого репозитория, с использованием текущего интерпретатора.
 
-    ``sys.executable`` rather than a bare ``python`` so a virtualenv, a
-    container and a developer's shell all resolve to the same interpreter.
+    sys.executable, а не просто python, чтобы virtualenv, контейнер и
+    оболочка разработчика разрешались в один и тот же интерпретатор.
     """
     return ServerSpec(
         name=kwargs.pop("name"),
@@ -74,13 +75,12 @@ def _stdio(module: str, **kwargs) -> ServerSpec:
 
 
 def default_servers() -> tuple[ServerSpec, ...]:
-    """The four servers the agent ships with.
+    """Четыре сервера, поставляемые вместе с агентом.
 
-    They are separate processes because they stand in for four separate
-    systems. Merging them would make the deployment simpler and the
-    architecture a lie: in production, monitoring and the issue tracker are
-    not the same vendor, do not fail together, and do not deserve the same
-    permissions.
+    Это отдельные процессы, потому что они замещают четыре отдельные системы.
+    Объединение их упростило бы деплой и сделало бы архитектуру ложью: в проде
+    мониторинг и трекер задач — не один и тот же вендор, они не отказывают
+    вместе и не заслуживают одинаковых прав.
     """
     return (
         _stdio(

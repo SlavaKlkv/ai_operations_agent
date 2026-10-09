@@ -29,7 +29,7 @@ target_metadata = Base.metadata
 # ``config.attributes``, чтобы выполнять те же миграции в SQLite.
 config.set_main_option(
     "sqlalchemy.url",
-    config.attributes.get("sqlalchemy_url") or str(get_settings().postgres_dsn),
+    config.attributes.get("sqlalchemy_url") or get_settings().database_dsn,
 )
 
 # Другие значения конфигурации, необходимые env.py,
@@ -39,15 +39,15 @@ config.set_main_option(
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode.
+    """Запускает миграции в режиме 'offline'.
 
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
+    Здесь контекст настраивается только по URL,
+    а не по Engine, хотя Engine тоже допустим
+    в этом месте.  Пропуская создание Engine,
+    нам даже не нужен доступный DBAPI.
 
-    Calls to context.execute() here emit the given string to the
-    script output.
+    Вызовы context.execute() здесь выводят переданную строку
+    в вывод скрипта.
 
     """
     url = config.get_main_option("sqlalchemy.url")
@@ -70,8 +70,8 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
-    """In this scenario we need to create an Engine
-    and associate a connection with the context.
+    """В этом сценарии нужно создать Engine
+    и связать соединение с контекстом.
 
     """
 
@@ -88,7 +88,7 @@ async def run_async_migrations() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
+    """Запускает миграции в режиме 'online'."""
 
     asyncio.run(run_async_migrations())
 

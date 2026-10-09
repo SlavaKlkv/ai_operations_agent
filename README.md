@@ -5,7 +5,7 @@
 **Агент, который расследует инциденты в backend-сервисах: сам решает, куда посмотреть,
 собирает данные из четырёх систем, сопоставляет их — и не меняет ничего без человека.**
 
-[![CI](https://github.com/SlavaKlkv/ai-operations-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/SlavaKlkv/ai-operations-agent/actions/workflows/ci.yml)
+[![CI](https://github.com/SlavaKlkv/ai_operations_agent/actions/workflows/ci.yml/badge.svg)](https://github.com/SlavaKlkv/ai_operations_agent/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.13+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![LangGraph](https://img.shields.io/badge/orchestration-LangGraph-1C3C3C)](https://langchain-ai.github.io/langgraph/)
 [![MCP](https://img.shields.io/badge/integration-MCP-6E56CF)](https://modelcontextprotocol.io/)
@@ -96,11 +96,11 @@
 [Ollama](https://ollama.com/download).
 
 ```bash
-git clone https://github.com/SlavaKlkv/ai-operations-agent.git
-cd ai-operations-agent
+git clone https://github.com/SlavaKlkv/ai_operations_agent.git
+cd ai_operations_agent
 cp .env.example .env
 
-ollama pull qwen3.8:27b       # локальная модель, около 18 ГБ
+ollama pull qwen3:8b          # Standard-профиль, около 5,2 ГБ
 
 make install                  # venv и зависимости
 make up                       # PostgreSQL и Redis
@@ -114,6 +114,50 @@ make run                      # http://localhost:8000/docs
 ```bash
 make eval
 ```
+
+### Локальный мастер настройки (текущая сборка)
+
+Встроенный интерфейс на [http://localhost:8000/](http://localhost:8000/) проверяет
+Ollama, SQLite и источники.
+Профиль Light (`qwen3:4b`) или Standard (`qwen3:8b`) можно выбрать после установки;
+если модели нет, мастер загружает её через локальную Ollama с прогрессом и возможностью
+отмены. Произвольную уже установленную модель можно выбрать после smoke-test, но она
+остаётся помеченной как непроверенная. Выбранная модель применяется только к новым
+расследованиям.
+
+Подключение GitHub использует общую GitHub App и Device Flow, когда публичные
+`GITHUB_APP_CLIENT_ID` и `GITHUB_APP_SLUG` заданы в конфигурации. Пока нет регистрации App,
+GitHub недоступен. После подключения, настройки Prometheus и добавления хотя бы одного
+локального runbook новые расследования используют только реальные источники. Вводить PAT
+не требуется.
+Конфигурация разработчика и текущие ограничения описаны в
+[документации GitHub App](docs/github-app.md).
+
+Реальный Prometheus можно подключить как read-only источник через
+`PROMETHEUS_URL`; допустимые URL, метрики и ограничения описаны в
+[документации Prometheus](docs/prometheus.md). При готовом real-run граф
+использует его вместе с выбранным GitHub-репозиторием и локальными runbook;
+demo-данные в такой запуск не попадают. Issue создаётся только после показа
+точного текста и отдельного подтверждения.
+
+Пользовательские Markdown-runbook хранятся на постоянном volume; безопасный
+формат каталога и пример файла приведены в [документации runbook](docs/runbooks.md).
+Диагностика и частые проблемы — в
+[руководстве по устранению неполадок](docs/troubleshooting.md).
+
+Пользовательский [Compose-файл](compose.yaml) и стартовые скрипты
+([macOS/Linux](start.sh), [Windows](start.ps1)) уже подготовлены. Пока образ
+`ghcr.io/slavaklkv/ai-operations-agent:0.1.0` не опубликован, эти скрипты не являются
+рабочим способом установки. Для проверки сборки из исходников предусмотрен
+`compose.build.yaml`; такая проверка не заменяет запуск комплекта из GitHub Release на
+macOS, Windows и Linux. Пайплайн публикации описан в [документации релиза](docs/release.md).
+Текущий быстрый старт выше остаётся сценарием разработчика.
+
+После публикации Release скрипты [manage.sh](manage.sh) и
+[manage.ps1](manage.ps1) управляют готовой поставкой: запуск, остановка,
+обновление, диагностика и проверяемый SQLite backup/restore. Остановка и обновление
+сохраняют volume. Удаление данных требует отдельного явного аргумента
+`--delete-data` или `-DeleteData`.
 
 ## Демонстрация: от жалобы до issue
 
@@ -254,7 +298,7 @@ read-инструментов кладутся в Redis на минуту.
 
 ## Локальная модель и работа без неё
 
-По умолчанию агент использует локальную `qwen3.8:27b` через Ollama. Код и
+По умолчанию агент использует локальную `qwen3:8b` через Ollama. Код и
 операционные данные не отправляются облачному провайдеру. Чтобы запустить агент
 без модели, задайте `LLM_ENABLED=false`. Тогда:
 
@@ -328,17 +372,21 @@ make observability      # поднимает стек вместе с Prometheus
 
 | Переменная | По умолчанию | Смысл |
 |---|---|---|
-| `LLM_MODEL` | `qwen3.8:27b` | Локальная модель для планирования и разбора |
+| `STORAGE_BACKEND` | `sqlite` | `sqlite` для локального или `postgres` для серверного режима |
+| `SQLITE_PATH` | `data/ai_operations_agent.db` | Файл локальных данных и checkpointing |
+| `CACHE_BACKEND` | `memory` | Встроенный TTL-кэш; серверный профиль может выбрать `redis` |
+| `LLM_MODEL` | `qwen3:8b` | Локальная модель для планирования и разбора |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Адрес Ollama; Docker Compose подставляет адрес хоста |
+| `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_SLUG` | не заданы | Публичные идентификаторы общей GitHub App для Device Flow |
 | `LLM_ENABLED` | `true` | Принудительно выключить модель |
 | `MAX_TOOL_CALLS` | `12` | Бюджет вызовов на запуск |
 | `MAX_WORKFLOW_STEPS` | `30` | Бюджет шагов графа |
 | `TOOL_TIMEOUT_SECONDS` | `15` | Таймаут одного вызова |
 | `AUTH_ENABLED` | `true` | Выключить только для локальной разработки; видно в `/health` |
 | `MCP_ENABLED` | `true` | Выключить → in-process мок-провайдеры вместо MCP-серверов |
-| `CACHE_ENABLED` | `true` | Кэш результатов read-инструментов в Redis |
+| `CACHE_ENABLED` | `true` | Кэш результатов read-инструментов в выбранном backend |
 | `CACHE_TTL_SECONDS` | `60` | Коротко намеренно: окно, включающее «сейчас», ещё движется |
-| `CHECKPOINTER` | `postgres` | `memory` не переживает рестарт: пауза подтверждения потеряется |
+| `CHECKPOINTER` | `sqlite` | `sqlite` и `postgres` сохраняют паузу; `memory` — только для тестов |
 | `POSTGRES_*`, `REDIS_URL` | см. пример | Хранилища |
 
 ## Разработка
@@ -359,6 +407,18 @@ make format       # автоисправление
 
 Схемы в этом README генерируются: `python tools/diagrams/render.py`. Геометрия описана
 один раз, меняется только палитра — иначе светлая и тёмная версии неизбежно разъехались бы.
+
+## Релиз
+
+Пользовательский выпуск запускается тегом `v<версия>` или ручным запуском workflow
+[Release](.github/workflows/release.yml). Пайплайн публикует versioned multi-architecture
+образ в GHCR со встроенными SBOM и provenance, keyless-подписью и собирает скачиваемый
+комплект пользователя с контрольными суммами.
+
+Полный порядок выпуска, проверку артефактов и откат см. в
+[документации релиза](docs/release.md). Инварианты пользовательского комплекта
+(loopback-порт, один сервис, отсутствие PostgreSQL и Redis) зафиксированы в
+`tests/delivery/test_user_bundle.py`.
 
 ## Структура проекта
 

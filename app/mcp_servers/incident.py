@@ -1,19 +1,20 @@
-"""Incident MCP server: the issue tracker, including the write side.
+"""MCP-сервер инцидентов: трекер задач, включая сторону записи.
 
-This is the only server in the repository that can change anything, which
-makes it the one worth being careful about.
+Это единственный сервер в репозитории, который может что-то изменить, а значит
+именно к нему стоит относиться внимательно.
 
-Two independent mechanisms guard it, and neither is a prompt.
+Его защищают два независимых механизма, и ни один из них не промпт.
 
-*The server declares intent.* Every tool carries MCP tool annotations, so a
-client can tell a read from a write without recognising the tool by name. The
-agent's client refuses to expose a non-read-only tool unless the run carries
-an approval — a server it has never seen before is still classified correctly.
+Сервер заявляет о своём намерении. Каждый инструмент несёт аннотации MCP,
+так что клиент может отличить чтение от записи, не распознавая инструмент по
+имени. Клиент агента отказывается предоставлять инструмент не только для
+чтения, если у запуска нет подтверждения, — сервер, которого он никогда раньше
+не видел, всё равно классифицируется правильно.
 
-*The server enforces its own limits.* Title and body length, a per-process
-creation cap, and a duplicate check on title. A server that trusts its client
-to behave is a server with no security properties at all, and the client here
-is driven by a language model.
+Сервер обеспечивает свои собственные ограничения. Длина заголовка и тела,
+лимит создания на процесс и проверка заголовка на дубликаты. Сервер, который
+доверяет своему клиенту вести себя хорошо, — это сервер вообще без свойств
+безопасности, а здешним клиентом управляет языковая модель.
 """
 
 from __future__ import annotations
@@ -49,11 +50,11 @@ class IssueOut(BaseModel):
 
 
 class IssueStore:
-    """In-memory issue tracker.
+    """Трекер задач в памяти.
 
-    Separate from the server so tests can inspect what was written without
-    going through the protocol, and so a real tracker can replace it without
-    touching tool definitions.
+    Отделён от сервера, чтобы тесты могли проверить, что было записано, не
+    проходя через протокол, и чтобы реальный трекер мог заменить его, не трогая
+    определения инструментов.
     """
 
     def __init__(self, seed: list[IssueOut] | None = None) -> None:
@@ -121,10 +122,10 @@ class IssueStore:
 
 
 def seed_issues() -> list[IssueOut]:
-    """One pre-existing issue, so search has something true to find.
+    """Один заранее существующий issue, чтобы поиску было что найти.
 
-    It also gives the agent a way to notice that a problem is already being
-    tracked — a duplicate incident report is worse than none.
+    Он также даёт агенту способ заметить, что проблема уже отслеживается, —
+    дублирующий отчёт об инциденте хуже, чем никакой.
     """
     return [
         IssueOut(

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Сообщить об уязвимости
+    url: https://github.com/SlavaKlkv/ai_operations_agent/security/advisories/new
+    about: Приватный канал для уязвимостей — не создавайте для этого публичный issue.

@@ -1,4 +1,4 @@
-"""What the planner may decide, and what it may not."""
+"""Что планировщик может решать, а что нет."""
 
 from __future__ import annotations
 
@@ -70,7 +70,7 @@ async def test_heuristic_moves_on_once_a_gap_is_closed(monitoring, code, logs):
 
 
 async def test_heuristic_reads_code_only_once_errors_are_grounded(monitoring, code, logs):
-    """Fetching commits before there is a failure to explain is a wasted call."""
+    """Запрашивать коммиты до появления сбоя, который надо объяснить, — пустой вызов."""
     from app.domain.models import MetricSeries
 
     full = CollectedContext(
@@ -104,7 +104,7 @@ async def test_heuristic_stops_when_nothing_is_missing(monitoring, code, logs):
 
 
 async def test_heuristic_never_asks_for_a_tool_it_was_not_offered(monitoring, code, logs):
-    """The offered set is the guardrail's output; the planner must respect it."""
+    """Предложенный набор — вывод защитного ограничения; планировщик должен его уважать."""
     only_commits = [t for t in _tools(monitoring, code, logs) if t.name == "get_commits"]
     plan = await HeuristicPlanner().plan(_state(), only_commits)
     assert plan.is_done, "no gap that get_commits alone can close"
@@ -149,7 +149,7 @@ async def test_llm_planner_treats_a_text_reply_as_done(monitoring, code, logs):
 
 
 async def test_llm_planner_caps_how_much_one_turn_may_request(monitoring, code, logs):
-    """One confused turn must not be able to spend the whole budget."""
+    """Один запутавшийся ход не должен уметь потратить весь бюджет."""
     calls = [
         {"name": "get_recent_alerts", "args": {"service": "billing-service"}, "id": str(i)}
         for i in range(6)
@@ -173,7 +173,7 @@ async def test_llm_planner_is_offered_only_the_allowed_tools(monitoring, code, l
     assert [t["name"] for t in model.bound_tools] == ["get_commits"]
 
 
-# ── Briefing ─────────────────────────────────────────────────────────────────
+# ── Брифинг ──────────────────────────────────────────────────────────────────
 
 
 def test_briefing_lists_evidence_hypotheses_and_spent_calls(monitoring, code, logs):
@@ -207,8 +207,8 @@ def test_briefing_lists_evidence_hypotheses_and_spent_calls(monitoring, code, lo
 
 
 def test_briefing_is_built_from_state_not_a_message_transcript(monitoring, code, logs):
-    """Two identical states must produce identical briefings however they were
-    reached — that is what keeps the prompt bounded as the loop iterates."""
+    """Два одинаковых состояния должны давать одинаковые брифинги, как бы в них
+    ни попали — именно это держит промпт ограниченным при итерациях цикла."""
     tools = _tools(monitoring, code, logs)
     assert render_briefing(_state(), tools) == render_briefing(_state(), tools)
 

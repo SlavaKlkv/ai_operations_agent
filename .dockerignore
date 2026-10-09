@@ -35,4 +35,7 @@ AGENTS.md
 
 *.db
 *.sqlite3
+github-token.key
+github-token.enc
+.github-token-*
 .DS_Store

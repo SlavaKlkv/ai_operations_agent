@@ -1,21 +1,23 @@
-"""Knowledge MCP server: runbooks and operational documentation.
+"""MCP-сервер знаний: ранбуки и эксплуатационная документация.
 
-Retrieval is one tool among several here, not the centre of the system. The
-agent asks "is there a runbook for this" the same way it asks "what shipped" —
-so the retrieval lives behind the same protocol as everything else, and the
-ranking stays simple and inspectable rather than becoming a second project.
+Поиск здесь — один инструмент среди нескольких, а не центр системы. Агент
+спрашивает «есть ли для этого ранбук» так же, как «что выпустили», — поэтому
+поиск живёт за тем же протоколом, что и всё остальное, а ранжирование остаётся
+простым и обозримым, не превращаясь во второй проект.
 
-Scoring is BM25-flavoured lexical matching over a handful of documents: term
-frequency, a length penalty, and a bonus for a service named in the metadata.
-For a corpus of runbooks that is not a compromise — the vocabulary is small
-and technical, and an engineer can predict what a query will return, which is
-worth more here than a marginal gain in recall.
+Оценка — это лексическое сопоставление в духе BM25 по горстке документов:
+частота термина, штраф за длину и бонус за сервис, названный в метаданных. Для
+корпуса ранбуков это не компромисс — словарь мал и техничен, и инженер может
+предсказать, что вернёт запрос, а это здесь ценнее, чем маргинальный прирост
+полноты.
 """
 
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass
+from pathlib import Path
 
 from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
@@ -51,6 +53,31 @@ class DocumentOut(BaseModel):
     body: str
     services: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
+
+
+def search_documents(
+    corpus: tuple[Document, ...], query: str, service: str | None = None, limit: int = 3
+) -> list[SearchHit]:
+    """Ищет по провалидированному локальному каталогу, не раскрывая вызывающим пути к файлам."""
+    terms = _tokenise(query)
+    if not terms:
+        raise ToolFailure("query must contain at least one searchable word")
+    if not 1 <= limit <= 10:
+        raise ToolFailure("limit must be between 1 and 10")
+    average_length = sum(len(_tokenise(d.body)) for d in corpus) / max(len(corpus), 1)
+    scored = [(_score(document, terms, service, average_length), document) for document in corpus]
+    ranked = sorted(((s, d) for s, d in scored if s > 0), key=lambda pair: pair[0], reverse=True)
+    return [
+        SearchHit(
+            doc_id=d.doc_id,
+            title=d.title,
+            score=s,
+            services=list(d.services),
+            tags=list(d.tags),
+            excerpt=_excerpt(d, terms),
+        )
+        for s, d in ranked[:limit]
+    ]
 
 
 RUNBOOKS: tuple[Document, ...] = (
@@ -140,11 +167,11 @@ def _tokenise(text: str) -> list[str]:
 
 
 def _score(document: Document, terms: list[str], service: str | None, avg_len: float) -> float:
-    """BM25-style term weighting, with a bonus for the right service.
+    """Взвешивание терминов в стиле BM25 с бонусом за правильный сервис.
 
-    ``k1`` and ``b`` are the conventional defaults; there is no corpus here
-    large enough to justify tuning them, and pretending otherwise would be
-    false precision.
+    k1 и b — это обычные значения по умолчанию; здесь нет корпуса,
+    достаточно большого, чтобы оправдать их настройку, а притворяться иначе было
+    бы ложной точностью.
     """
     k1, b = 1.5, 0.75
     tokens = _tokenise(f"{document.title} {document.body} {' '.join(document.tags)}")
@@ -163,7 +190,7 @@ def _score(document: Document, terms: list[str], service: str | None, avg_len: f
 
 
 def _excerpt(document: Document, terms: list[str]) -> str:
-    """The passage around the first match, so a hit is judgeable without a read."""
+    """Фрагмент вокруг первого совпадения, чтобы попадание можно было оценить без чтения."""
     body = document.body
     lowered = body.casefold()
     position = min(
@@ -185,7 +212,6 @@ def build_server(corpus: tuple[Document, ...] = RUNBOOKS) -> MCPServer:
             "excerpt suggests the full text is needed."
         ),
     )
-    average_length = sum(len(_tokenise(d.body)) for d in corpus) / max(len(corpus), 1)
     by_id = {d.doc_id: d for d in corpus}
 
     @server.tool(
@@ -199,29 +225,7 @@ def build_server(corpus: tuple[Document, ...] = RUNBOOKS) -> MCPServer:
     async def search_runbooks(
         query: str, service: str | None = None, limit: int = 3
     ) -> list[SearchHit]:
-        terms = _tokenise(query)
-        if not terms:
-            raise ToolFailure("query must contain at least one searchable word")
-        if not 1 <= limit <= 10:
-            raise ToolFailure("limit must be between 1 and 10")
-
-        scored = [
-            (_score(document, terms, service, average_length), document) for document in corpus
-        ]
-        ranked = sorted(
-            ((s, d) for s, d in scored if s > 0), key=lambda pair: pair[0], reverse=True
-        )
-        return [
-            SearchHit(
-                doc_id=d.doc_id,
-                title=d.title,
-                score=s,
-                services=list(d.services),
-                tags=list(d.tags),
-                excerpt=_excerpt(d, terms),
-            )
-            for s, d in ranked[:limit]
-        ]
+        return search_documents(corpus, query, service, limit)
 
     @server.tool(
         description="Fetch one runbook in full by its document id.",
@@ -255,7 +259,13 @@ def build_server(corpus: tuple[Document, ...] = RUNBOOKS) -> MCPServer:
 
 
 def main() -> None:
-    build_server().run("stdio")
+    # Пустой каталог означает demo-режим. Когда пользователь добавил хотя бы
+    # один корректный Markdown-файл, встроенные примеры не подмешиваются.
+    from app.mcp_servers.runbooks import load_directory
+
+    configured = os.getenv("RUNBOOKS_DIR", "").strip()
+    corpus = load_directory(Path(configured)) if configured else ()
+    build_server(corpus or RUNBOOKS).run("stdio")
 
 
 if __name__ == "__main__":

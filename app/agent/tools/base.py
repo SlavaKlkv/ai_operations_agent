@@ -1,14 +1,14 @@
-"""The tool contract every capability of the agent is expressed through.
+"""Контракт инструмента, через который выражается каждая возможность агента.
 
-A tool is not just a callable. It is a name, a validated argument schema, a
-validated result schema, an access class (read or write) and a bounded textual
-rendering for the model. Bundling those together is what makes the guardrails
-possible: the registry can refuse an unknown tool, the executor can reject
-arguments the LLM invented, and a write tool cannot run down the same path a
-read tool does.
+Инструмент — это не просто вызываемый объект. Это имя, проверенная схема
+аргументов, проверенная схема результата, класс доступа (чтение или запись) и
+ограниченная текстовая отрисовка для модели. Связывание всего этого вместе и
+делает возможными защитные ограничения: реестр может отказать в неизвестном
+инструменте, исполнитель может отвергнуть придуманные LLM аргументы, а
+инструмент записи не может пойти тем же путём, что инструмент чтения.
 
-The LLM is shown *schemas*, never given execution. It answers with a tool name
-and arguments; the registry decides whether that is allowed and runs it.
+LLM показывают схемы, но никогда не дают исполнения. Она отвечает именем
+инструмента и аргументами; реестр решает, позволено ли это, и запускает.
 """
 
 from __future__ import annotations
@@ -22,30 +22,31 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 
 class ToolAccess(StrEnum):
-    """Read tools run automatically. Write tools require an approved decision."""
+    """Инструменты чтения выполняются автоматически. Инструменты записи требуют
+    одобренного решения."""
 
     READ = "read"
     WRITE = "write"
 
 
 class ToolError(RuntimeError):
-    """Base class for problems the executor must report rather than raise through."""
+    """Базовый класс для проблем, о которых исполнитель должен сообщать, а не пробрасывать их."""
 
 
 class UnknownToolError(ToolError):
-    """The model asked for a tool that is not in the registry."""
+    """Модель запросила инструмент, которого нет в реестре."""
 
 
 class ToolNotAllowedError(ToolError):
-    """The tool exists but is outside this run's allowlist or access class."""
+    """Инструмент существует, но вне allowlist этого запуска или его класса доступа."""
 
 
 class InvalidToolArgumentsError(ToolError):
-    """Arguments failed schema validation before the tool was ever called."""
+    """Аргументы не прошли валидацию по схеме до того, как инструмент вообще был вызван."""
 
 
 class InvalidToolResultError(ToolError):
-    """A provider returned something the tool's result schema rejects."""
+    """Провайдер вернул то, что отвергает схема результата инструмента."""
 
 
 #: Максимальный объём результата одного инструмента в промпте. Хранилища логов
@@ -56,12 +57,13 @@ MAX_DIGEST_CHARS = 1_200
 
 @dataclass(frozen=True, slots=True)
 class AgentTool[A: BaseModel, R: BaseModel]:
-    """One capability, fully described.
+    """Одна возможность, полностью описанная.
 
-    ``handler`` receives validated arguments and returns a validated result.
-    ``render`` turns that result into the bounded text the model is allowed to
-    see — deliberately separate from the result itself, because the graph keeps
-    the full typed object while the prompt gets a digest.
+    handler получает проверенные аргументы и возвращает проверенный
+    результат. render превращает этот результат в ограниченный текст,
+    который модели разрешено видеть, — намеренно отдельно от самого результата,
+    потому что граф хранит полный типизированный объект, а промпт получает
+    сводку.
     """
 
     name: str
@@ -97,17 +99,17 @@ class AgentTool[A: BaseModel, R: BaseModel]:
         return text[: MAX_DIGEST_CHARS - 1].rstrip() + "…"
 
     def json_schema(self) -> dict[str, Any]:
-        """Tool description in the shape every tool-calling LLM API expects."""
+        """Описание инструмента в форме, которую ожидает любой tool-calling API LLM."""
         schema = self.args_schema.model_json_schema()
         schema.pop("title", None)
         return {"name": self.name, "description": self.description, "input_schema": schema}
 
 
 def call_signature(name: str, arguments: dict[str, Any]) -> str:
-    """Stable identity of a call: same tool, same meaningful arguments.
+    """Стабильная идентичность вызова: тот же инструмент, те же значимые аргументы.
 
-    Omitted arguments and key order must not change it, otherwise repetition
-    detection would be defeated by the model reordering a dict.
+    Пропущенные аргументы и порядок ключей не должны её менять, иначе
+    обнаружение повторов обходилось бы переупорядочиванием словаря моделью.
     """
     rendered = ",".join(
         f"{k}={arguments[k]!r}" for k in sorted(arguments) if arguments[k] is not None
@@ -116,7 +118,7 @@ def call_signature(name: str, arguments: dict[str, Any]) -> str:
 
 
 def _compact(exc: ValidationError) -> str:
-    """One line per validation problem — model-readable, log-friendly."""
+    """Одна строка на проблему валидации — читаемо для модели, удобно для логов."""
     return "; ".join(
         f"{'.'.join(str(p) for p in err['loc']) or '<root>'}: {err['msg']}"
         for err in exc.errors()[:5]
@@ -124,11 +126,11 @@ def _compact(exc: ValidationError) -> str:
 
 
 class ToolRequest(BaseModel):
-    """What the planner decided to do, before anyone has checked whether it may.
+    """Что планировщик решил сделать, прежде чем кто-либо проверил, можно ли это.
 
-    A Pydantic model rather than a plain dataclass because pending requests
-    live in the graph state, and state has to survive serialisation into the
-    run snapshot that the audit trail is built from.
+    Модель Pydantic, а не простой датакласс, потому что отложенные запросы
+    живут в состоянии графа, а состояние должно переживать сериализацию в
+    снимок запуска, из которого строится журнал аудита.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -144,11 +146,11 @@ class ToolRequest(BaseModel):
 
 
 class ToolRegistry:
-    """The set of tools a run may use, and the only way to reach them.
+    """Набор инструментов, которые может использовать запуск, и единственный путь к ним.
 
-    A registry is immutable once built. Narrowing happens by deriving a new
-    registry (:meth:`allowlisted`, :meth:`read_only`) rather than by mutating
-    shared state, so one run cannot widen another run's permissions.
+    Реестр неизменяем после сборки. Сужение происходит выводом нового реестра
+    (allowlisted, read_only), а не мутацией общего состояния,
+    поэтому один запуск не может расширить разрешения другого.
     """
 
     def __init__(self, tools: Iterable[AgentTool[Any, Any]]) -> None:
@@ -179,7 +181,7 @@ class ToolRegistry:
             raise UnknownToolError(f"unknown tool {name!r}; available: {known}") from None
 
     def allowlisted(self, names: Iterable[str]) -> ToolRegistry:
-        """Derive a registry limited to ``names``, ignoring names we do not have."""
+        """Вывести реестр, ограниченный names, игнорируя имена, которых у нас нет."""
         wanted = set(names)
         return ToolRegistry(t for t in self._tools.values() if t.name in wanted)
 

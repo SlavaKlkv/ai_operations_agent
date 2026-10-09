@@ -1,16 +1,16 @@
-"""The select → execute → evaluate cycle.
+"""Цикл «выбор → выполнение → оценка».
 
-This is the part of the workflow that is not a pipeline. The planner proposes,
-the executor disposes, and evaluation decides whether to go round again. Each
-of the three is a separate node for a reason worth stating: a decision, its
-effect and the judgement about its effect are different things, and putting
-them in one node would make it impossible to see — in the audit trail or in a
-test — which of them went wrong.
+Это та часть рабочего процесса, которая не является конвейером. Планировщик
+предлагает, исполнитель распоряжается, а оценка решает, идти ли на новый круг.
+Каждый из трёх — отдельный узел по причине, которую стоит назвать: решение, его
+эффект и суждение об эффекте — разные вещи, и сведение их в один узел сделало
+бы невозможным увидеть — в журнале аудита или в тесте — какой из них пошёл не
+так.
 
-Termination is not left to the model. The loop ends when the planner asks for
-nothing, when the tool budget runs out, when the iteration cap is reached, or
-when a round produces no new evidence. Any one of those is enough; the model's
-opinion is only the first.
+Завершение не отдано модели. Цикл заканчивается, когда планировщик ничего не
+просит, когда бюджет инструментов исчерпан, когда достигнут предел итераций
+или когда раунд не дал новых доказательств. Достаточно любого из этого;
+мнение модели — лишь первое.
 """
 
 from __future__ import annotations
@@ -31,6 +31,7 @@ from app.agent.tools.schemas import (
     ErrorGroupsResult,
     MetricsResult,
     PullRequestResult,
+    RunbooksResult,
 )
 from app.domain.models import Evidence, EvidenceKind
 from app.services.cache import ToolCache
@@ -50,6 +51,7 @@ EVIDENCE_KINDS: dict[str, EvidenceKind] = {
     "get_commits": EvidenceKind.COMMIT,
     "get_pull_request": EvidenceKind.COMMIT,
     "get_error_groups": EvidenceKind.LOG,
+    "search_runbooks": EvidenceKind.DOCUMENT,
 }
 
 
@@ -57,7 +59,7 @@ EVIDENCE_KINDS: dict[str, EvidenceKind] = {
 
 
 def make_select_tool_node(planner: Planner, registry: ToolRegistry, guardrails: Guardrails):
-    """Ask the planner for the next step, inside the remaining budget."""
+    """Спросить у планировщика следующий шаг в пределах оставшегося бюджета."""
 
     async def select_tool_node(state: AgentState) -> AgentState:
         step = state.get("step_count", 0) + 1
@@ -120,7 +122,7 @@ def make_select_tool_node(planner: Planner, registry: ToolRegistry, guardrails: 
 
 
 def route_after_selection(state: AgentState) -> Literal["execute_tool", "generate_analysis"]:
-    """The planner asking for nothing is the normal way out of the loop."""
+    """Когда планировщик ничего не просит — это нормальный выход из цикла."""
     return "execute_tool" if state.get("pending_requests") else "generate_analysis"
 
 
@@ -134,7 +136,7 @@ def make_execute_tool_node(
     cache: ToolCache | None = None,
     cache_ttl: int = 60,
 ):
-    """Run what the planner asked for, under policy, and absorb the results."""
+    """Выполнить запрошенное планировщиком под политикой и вобрать результаты."""
 
     async def execute_tool_node(state: AgentState) -> AgentState:
         requests: list[ToolRequest] = list(state.get("pending_requests") or [])
@@ -202,7 +204,7 @@ def make_execute_tool_node(
 
 
 async def evaluate_observation_node(state: AgentState) -> AgentState:
-    """Decide whether the last round changed anything worth another round."""
+    """Решить, изменил ли последний раунд что-либо, стоящее ещё одного раунда."""
     iterations = state.get("loop_iterations", 0) + 1
     recent = state.get("observations", [])[-5:]
     produced_evidence = any(o.get("node") == "execute_tool" and o.get("ok") for o in recent)
@@ -221,7 +223,7 @@ async def evaluate_observation_node(state: AgentState) -> AgentState:
 
 
 def make_route_after_evaluation(guardrails: Guardrails):
-    """Routing is a pure function of state, so it is unit-testable alone."""
+    """Маршрутизация — чистая функция состояния, поэтому её можно тестировать отдельно."""
 
     def route_after_evaluation(state: AgentState) -> Literal["select_tool", "generate_analysis"]:
         if state.get("loop_iterations", 0) >= MAX_LOOP_ITERATIONS:
@@ -247,7 +249,7 @@ def make_route_after_evaluation(guardrails: Guardrails):
     return route_after_evaluation
 
 
-# ── helpers ──────────────────────────────────────────────────────────────────
+# ── Вспомогательные функции ──────────────────────────────────────────────────
 
 
 def _window_defaults(state: AgentState) -> dict[str, Any]:
@@ -255,16 +257,16 @@ def _window_defaults(state: AgentState) -> dict[str, Any]:
 
 
 def _reference(request: ToolRequest) -> str:
-    """A short, stable pointer back to what produced a piece of evidence."""
+    """Короткий, стабильный указатель обратно на то, что породило фрагмент доказательств."""
     interesting = {k: v for k, v in request.arguments.items() if k not in ("start", "end")}
     return "/".join(str(v) for _, v in sorted(interesting.items())) or request.tool
 
 
 def _absorb(context: CollectedContext, invocation: ToolInvocation) -> None:
-    """Merge a typed tool result into the machine-readable context.
+    """Вобрать типизированный результат инструмента в машиночитаемый контекст.
 
-    Results are merged rather than replaced so a second call for a different
-    metric or a wider window adds to what is known instead of erasing it.
+    Результаты объединяются, а не заменяются, поэтому второй вызов для другой
+    метрики или более широкого окна добавляет к известному, а не стирает его.
     """
     result = invocation.result
     match result:
@@ -286,6 +288,8 @@ def _absorb(context: CollectedContext, invocation: ToolInvocation) -> None:
             )
         case PullRequestResult():
             pass  # Pull request дополняют описание; корреляции по ним пока нет.
+        case RunbooksResult():
+            pass  # Ранбук — доказательство для оператора, а не выведенный факт.
 
 
 def _merge[T](existing: list[T], incoming: tuple[T, ...], *, key) -> list[T]:

@@ -1,4 +1,4 @@
-"""Graph-level tests: routing decisions and a full deterministic run."""
+"""Тесты уровня графа: решения маршрутизации и полный детерминированный запуск."""
 
 from __future__ import annotations
 
@@ -10,7 +10,23 @@ from app.agent.guardrails import Guardrails
 from app.agent.llm import ScriptedChatModel
 from app.agent.nodes.investigate import MAX_LOOP_ITERATIONS
 from app.agent.state import CollectedContext, RunStatus, initial_state
-from app.domain.models import MetricSeries
+from app.domain.models import MetricSeries, RunbookHit
+
+
+class StaticKnowledge:
+    async def search_runbooks(self, query, service=None, limit=3):
+        assert "billing-service" in query
+        assert service == "billing-service"
+        assert limit == 3
+        return [
+            RunbookHit(
+                doc_id="rb-rollback",
+                title="Rollback billing-service",
+                excerpt="Roll back the previous release and watch the error rate.",
+                score=1.0,
+                services=("billing-service",),
+            )
+        ]
 
 
 def test_routing_requires_metrics():
@@ -32,7 +48,7 @@ def test_routing_short_circuits_on_failure():
 
 
 async def test_full_run_identifies_the_release(monitoring, code, logs, fresh_state):
-    """A confident run does not finish on its own: it stops to ask."""
+    """Уверенный запуск не завершается сам: он останавливается, чтобы спросить."""
     graph = build_graph(monitoring=monitoring, code=code, logs=logs)
     final = await graph.ainvoke(fresh_state, run_config(fresh_state["run_id"]))
 
@@ -50,13 +66,28 @@ async def test_full_run_identifies_the_release(monitoring, code, logs, fresh_sta
 
 
 async def test_every_claim_is_backed_by_a_tool_call(monitoring, code, logs, fresh_state):
-    """Evidence grounding: no evidence item may cite a tool that never ran."""
+    """Привязка к доказательствам: элемент не может ссылаться на не запускавшийся инструмент."""
     graph = build_graph(monitoring=monitoring, code=code, logs=logs)
     final = await graph.ainvoke(fresh_state, run_config(fresh_state["run_id"]))
 
     executed = {r.tool for r in final["tool_calls"]} | {"detect_spike"}
     cited = {e.source_tool for e in final["analysis"].evidence}
     assert cited <= executed
+
+
+async def test_runbook_search_becomes_grounded_read_only_evidence(
+    monitoring, code, logs, fresh_state
+):
+    final = await build_graph(
+        monitoring=monitoring,
+        code=code,
+        logs=logs,
+        knowledge=StaticKnowledge(),
+        use_llm=False,
+    ).ainvoke(fresh_state, run_config(fresh_state["run_id"]))
+
+    assert "search_runbooks" in [call.tool for call in final["tool_calls"]]
+    assert any(item.source_tool == "search_runbooks" for item in final["analysis"].evidence)
 
 
 async def test_run_stays_within_its_budget(monitoring, code, logs, fresh_state):
@@ -106,7 +137,7 @@ def _draft_call(**overrides):
 
 
 async def test_the_model_can_add_a_tool_call_and_then_conclude(monitoring, code, logs, fresh_state):
-    """The full cycle: plan → execute → evaluate → plan again → analyse."""
+    """Полный цикл: план → выполнение → оценка → снова план → анализ."""
     model = ScriptedChatModel(
         responses=[
             AIMessage(
@@ -130,15 +161,15 @@ async def test_the_model_can_add_a_tool_call_and_then_conclude(monitoring, code,
     assert final["__interrupt__"]
     assert final["loop_iterations"] == 1
     assert "get_pull_request" in [c.tool for c in final["tool_calls"]]
-    assert final["analysis"].summary.startswith("billing-service v1.8.4")
+    assert "billing-service v1.8.4" in final["analysis"].summary
+    assert "9f2c41ab" in final["analysis"].summary
     assert final["llm_calls"] == 3
 
 
-async def test_a_model_that_cites_evidence_it_never_saw_loses_the_citation(
+async def test_a_model_cannot_replace_the_deterministic_verdict(
     monitoring, code, logs, fresh_state
 ):
-    """Grounding is enforced structurally: invented references are dropped and
-    the hypothesis is demoted rather than being taken at its word."""
+    """Выдуманные причины, уверенность и действия не становятся вердиктом запуска."""
     model = ScriptedChatModel(
         responses=[
             AIMessage(content="Enough."),
@@ -149,7 +180,9 @@ async def test_a_model_that_cites_evidence_it_never_saw_loses_the_citation(
                         "confidence": 0.95,
                         "supporting_evidence": ["migration-log-42"],
                     }
-                ]
+                ],
+                recommended_actions=["Drop the database."],
+                confidence=0.99,
             ),
         ]
     )
@@ -158,9 +191,12 @@ async def test_a_model_that_cites_evidence_it_never_saw_loses_the_citation(
     )
 
     cause = final["analysis"].suspected_causes[0]
-    assert cause.supporting_evidence == ()
-    assert cause.confidence <= 0.4
-    assert final["analysis"].confidence <= 0.4
+    assert "v1.8.4" in cause.statement
+    assert "database migration" not in cause.statement
+    assert "migration-log-42" not in cause.supporting_evidence
+    assert cause.confidence == 0.9
+    assert final["analysis"].confidence == 0.9
+    assert final["analysis"].recommended_actions != ["Drop the database."]
 
 
 async def test_the_evidence_list_is_never_authored_by_the_model(
@@ -178,7 +214,7 @@ async def test_the_evidence_list_is_never_authored_by_the_model(
 async def test_a_model_outage_degrades_the_run_instead_of_failing_it(
     monitoring, code, logs, fresh_state
 ):
-    """Both model calls fail. The run must still produce a grounded analysis."""
+    """Оба вызова модели падают. Запуск всё равно должен дать обоснованный анализ."""
     model = ScriptedChatModel(responses=[])
     final = await build_graph(monitoring=monitoring, code=code, logs=logs, model=model).ainvoke(
         fresh_state, run_config(fresh_state["run_id"])
@@ -192,7 +228,7 @@ async def test_a_model_outage_degrades_the_run_instead_of_failing_it(
 async def test_a_looping_model_is_stopped_by_the_iteration_ceiling(
     monitoring, code, logs, fresh_state
 ):
-    """A planner that always wants one more call must still terminate."""
+    """Планировщик, который всегда хочет ещё один вызов, всё равно должен завершиться."""
     keeps_asking = [
         AIMessage(
             content="",
@@ -222,7 +258,7 @@ async def test_a_looping_model_is_stopped_by_the_iteration_ceiling(
 
 
 async def test_use_llm_false_forces_the_deterministic_baseline(monitoring, code, logs, fresh_state):
-    """The evaluation harness needs a baseline that ignores configuration."""
+    """Стенду оценки нужен базовый вариант, игнорирующий конфигурацию."""
     final = await build_graph(monitoring=monitoring, code=code, logs=logs, use_llm=False).ainvoke(
         fresh_state, run_config(fresh_state["run_id"])
     )

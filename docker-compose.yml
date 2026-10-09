@@ -38,7 +38,10 @@ services:
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
+      STORAGE_BACKEND: postgres
       REDIS_URL: redis://redis:6379/0
+      CACHE_BACKEND: redis
+      CHECKPOINTER: postgres
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
     extra_hosts:
       - "host.docker.internal:host-gateway"

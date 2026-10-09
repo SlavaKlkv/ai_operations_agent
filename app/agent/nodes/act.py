@@ -1,20 +1,20 @@
-"""Proposing a write, pausing for a human, and executing what was approved.
+"""Предложение записи, пауза ради человека и исполнение одобренного.
 
-The three are separate nodes because they are separate events in the audit
-trail: what the agent wanted to do, what a person decided, and what actually
-happened. Collapsing them would make it impossible to answer the question this
-part of the system exists to answer — *who* authorised this change.
+Это три отдельных узла, потому что это три отдельных события в журнале аудита:
+что агент хотел сделать, что решил человек и что фактически произошло. Их
+слияние сделало бы невозможным ответ на вопрос, ради которого существует эта
+часть системы, — кто авторизовал это изменение.
 
-The pause is a real one. ``interrupt`` stops the graph and the checkpointer
-persists the state, so approval is not a variable held in memory while a
-coroutine waits: the process can restart between the proposal and the
-decision, and the run resumes from where it stopped.
+Пауза настоящая. interrupt останавливает граф, а чекпоинтер сохраняет
+состояние, поэтому подтверждение — это не переменная в памяти, пока корутина
+ждёт: процесс может перезапуститься между предложением и решением, и запуск
+возобновится с того места, где остановился.
 
-Two independent things must both be true before a write runs. A human must
-have approved, and the approved content must be the content that was shown —
-``execute_action`` re-reads the proposal from state rather than trusting
-anything that arrives with the resume, so an approval cannot be redirected
-onto a different action.
+Две независимые вещи должны быть истинны, прежде чем запись выполнится.
+Человек должен одобрить, и одобренное содержимое должно быть тем содержимым,
+которое показали — execute_action перечитывает предложение из состояния, а
+не доверяет тому, что приходит с возобновлением, поэтому подтверждение нельзя
+перенаправить на другое действие.
 """
 
 from __future__ import annotations
@@ -49,13 +49,13 @@ MAX_BODY_CHARS = 20_000
 
 
 async def propose_action_node(state: AgentState) -> AgentState:
-    """Turn the analysis into a concrete, reviewable write — or decline to.
+    """Превратить анализ в конкретную, проверяемую запись — или отказаться.
 
-    The issue body is rendered from the analysis by code, not written by the
-    model. The analysis itself may be model-authored, but by this point it is
-    a validated structure whose evidence came from tool calls, so rendering it
-    deterministically means the text a human approves cannot contain a claim
-    that is not in the state they can inspect.
+    Текст issue отрисовывается из анализа кодом, а не пишется моделью. Вердикт
+    и уверенность анализа вычисляются из детерминированных гипотез, а его
+    доказательства пришли из вызовов инструментов, поэтому отрисовка здесь
+    значит, что текст, одобряемый человеком, не может содержать утверждение,
+    которого нет в состоянии, доступном для проверки.
     """
     analysis = state.get("analysis")
     step = state.get("step_count", 0) + 1
@@ -68,11 +68,20 @@ async def propose_action_node(state: AgentState) -> AgentState:
             approval_state=ApprovalState.NOT_REQUIRED,
         )
 
-    if analysis.confidence < PROPOSAL_CONFIDENCE_FLOOR:
+    hypotheses = list(state.get("hypotheses", []))
+    strongest_hypothesis = max(
+        (hypothesis.confidence for hypothesis in hypotheses),
+        default=0.0,
+    )
+    if (
+        analysis.confidence < PROPOSAL_CONFIDENCE_FLOOR
+        or strongest_hypothesis < PROPOSAL_CONFIDENCE_FLOOR
+    ):
         log.info(
             "agent.no_proposal",
             run_id=state.get("run_id"),
             confidence=analysis.confidence,
+            strongest_hypothesis=strongest_hypothesis,
         )
         return AgentState(
             current_step="propose_action",
@@ -84,8 +93,9 @@ async def propose_action_node(state: AgentState) -> AgentState:
                     "node": "propose_action",
                     "proposed": None,
                     "reason": (
-                        f"confidence {analysis.confidence:.2f} is below the "
-                        f"{PROPOSAL_CONFIDENCE_FLOOR} floor for proposing a write"
+                        f"analysis confidence {analysis.confidence:.2f} and strongest "
+                        f"deterministic hypothesis {strongest_hypothesis:.2f} must both "
+                        f"reach the {PROPOSAL_CONFIDENCE_FLOOR} floor for proposing a write"
                     ),
                 }
             ],
@@ -118,7 +128,7 @@ async def propose_action_node(state: AgentState) -> AgentState:
 
 
 def route_after_proposal(state: AgentState) -> Literal["request_approval", "final_response"]:
-    """Only a write needs a human; a read-only investigation just reports."""
+    """Человек нужен только для записи; исследование только для чтения просто отчитывается."""
     actions = state.get("proposed_actions") or []
     if any(a.requires_approval for a in actions):
         return "request_approval"
@@ -129,12 +139,12 @@ def route_after_proposal(state: AgentState) -> Literal["request_approval", "fina
 
 
 async def request_approval_node(state: AgentState) -> AgentState:
-    """Stop the graph and wait for a person.
+    """Остановить граф и ждать человека.
 
-    ``interrupt`` raises out of the node; the checkpointer writes the state,
-    and the caller sees the payload below. Resuming with ``Command(resume=…)``
-    re-runs this node from the top, and the second time ``interrupt`` returns
-    the decision instead of pausing.
+    interrupt выбрасывает исключение из узла; чекпоинтер записывает
+    состояние, и вызывающий видит нагрузку ниже. Возобновление через
+    Command(resume=…) перезапускает этот узел с начала, и во второй раз
+    interrupt возвращает решение вместо паузы.
     """
     action = (state.get("proposed_actions") or [None])[0]
     if action is None:
@@ -182,7 +192,7 @@ async def request_approval_node(state: AgentState) -> AgentState:
 
 
 def route_after_approval(state: AgentState) -> Literal["execute_action", "final_response"]:
-    """A rejection is a normal ending, not a failure."""
+    """Отказ — это нормальное завершение, а не сбой."""
     if state.get("approval_state") is ApprovalState.APPROVED:
         return "execute_action"
     return "final_response"
@@ -192,7 +202,7 @@ def route_after_approval(state: AgentState) -> Literal["execute_action", "final_
 
 
 def make_execute_action_node(registry: ToolRegistry, guardrails: Guardrails):
-    """Run the approved write, once, under a policy widened only for this step."""
+    """Выполнить одобренную запись один раз под политикой, расширенной только для этого шага."""
 
     async def execute_action_node(state: AgentState) -> AgentState:
         step = state.get("step_count", 0) + 1
@@ -281,7 +291,7 @@ def make_execute_action_node(registry: ToolRegistry, guardrails: Guardrails):
     return execute_action_node
 
 
-# ── Rendering ────────────────────────────────────────────────────────────────
+# ── Отрисовка ────────────────────────────────────────────────────────────────
 
 
 def issue_title(analysis: IncidentAnalysis) -> str:
@@ -290,11 +300,11 @@ def issue_title(analysis: IncidentAnalysis) -> str:
 
 
 def issue_body(analysis: IncidentAnalysis, state: AgentState) -> str:
-    """The issue text, rendered from the analysis.
+    """Текст issue, отрисованный из анализа.
 
-    Written as the report an on-call engineer would want: what happened, what
-    the evidence is, what is suspected, and what to do — with every claim
-    traceable to the tool that produced it.
+    Написан как отчёт, который хотел бы получить дежурный инженер: что
+    произошло, каковы доказательства, что подозревается и что делать — с
+    каждым утверждением, отслеживаемым до породившего его инструмента.
     """
     lines = ["## Summary", analysis.summary or "No summary was produced.", ""]
 
@@ -339,10 +349,11 @@ def issue_body(analysis: IncidentAnalysis, state: AgentState) -> str:
 
 
 def _field(decision: Any, name: str, *, default: Any) -> Any:
-    """Read one field out of whatever the resume value happened to be.
+    """Прочитать одно поле из того, чем оказалось значение возобновления.
 
-    A resume can be a mapping, an object, or a bare ``True`` from a caller
-    that just wanted to say yes. Normalising here keeps the node from caring.
+    Возобновление может быть отображением, объектом или голым True от
+    вызывающего, который просто хотел сказать «да». Нормализация здесь
+    избавляет узел от заботы об этом.
     """
     if isinstance(decision, dict):
         return decision.get(name, default)

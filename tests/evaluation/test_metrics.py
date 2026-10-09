@@ -1,9 +1,9 @@
-"""Tests for the scorer itself.
+"""Тесты для самого оценщика.
 
-An evaluation suite that cannot fail is decoration. These tests feed the
-scorer runs that are wrong in specific ways — a confident false attribution,
-an invented citation, a write executed without approval — and assert that the
-check meant to catch each one does.
+Набор для оценки, который не может упасть, — это украшение. Эти тесты подают
+оценщику запуски, неверные конкретным образом — уверенная ложная атрибуция,
+выдуманная ссылка, запись, выполненная без подтверждения, — и проверяют,
+что предназначенная для поимки каждой из них проверка срабатывает.
 """
 
 from __future__ import annotations
@@ -81,7 +81,7 @@ def test_a_correct_run_passes_every_check():
 
 
 def test_a_confident_wrong_answer_is_caught():
-    """The check that matters most: blaming the decoy release."""
+    """Самая важная проверка: обвинение релиза-приманки."""
     state = _good_state(
         analysis=_analysis(statement="search-service v3.1.0 caused the billing errors")
     )

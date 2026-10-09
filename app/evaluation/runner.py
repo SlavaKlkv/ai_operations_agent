@@ -1,10 +1,10 @@
-"""Running the evaluation suite and reporting what it found.
+"""Запуск набора для оценки и отчёт о том, что он нашёл.
 
-Each scenario gets a freshly built graph over its own synthetic world, so one
-run cannot influence the next through a shared mock tracker. Approval is
-answered by the harness rather than a person: a scenario that expects a write
-is resumed with a yes, which is how "the write ran, and only after approval"
-becomes something the suite can assert rather than assume.
+Каждый сценарий получает заново собранный граф над своим синтетическим миром,
+поэтому один запуск не может повлиять на следующий через общий mock-трекер.
+Подтверждение даёт не человек, а стенд: сценарий, ожидающий записи,
+возобновляется с ответом «да», и именно так «запись выполнилась, и только после
+подтверждения» становится тем, что набор может утверждать, а не предполагать.
 """
 
 from __future__ import annotations
@@ -37,7 +37,8 @@ async def run_scenario(
     model: BaseChatModel | None = None,
     use_llm: bool = False,
 ) -> RunScore:
-    """Execute one scenario end to end, including its approval if it pauses."""
+    """Выполнить один сценарий от начала до конца, включая его подтверждение,
+    если он приостанавливается."""
     world = expected.scenario
     graph = build_graph(
         monitoring=MockMonitoringProvider(world),
@@ -85,11 +86,11 @@ async def run_suite(
     )
 
 
-# ── Reporting ────────────────────────────────────────────────────────────────
+# ── Отчётность ───────────────────────────────────────────────────────────────
 
 
 def render_report(score: SuiteScore) -> str:
-    """A report meant to be read in a terminal and pasted into a PR."""
+    """Отчёт, предназначенный для чтения в терминале и вставки в PR."""
     width = max((len(r.scenario) for r in score.runs), default=8) + 2
     lines = [
         f"{'scenario':<{width}} {'result':<7} {'tools':>5} {'steps':>5} {'waste':>5} {'ms':>7}",

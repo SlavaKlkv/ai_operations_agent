@@ -1,14 +1,15 @@
-"""What a correct investigation looks like, stated before it runs.
+"""Как выглядит корректное расследование, сформулированное до его запуска.
 
-An evaluation suite is only worth having if the expectations are specific
-enough to fail. "Finds the cause" is not; "names v1.8.4, reaches at least 0.8
-confidence, never calls get_pull_request, and proposes exactly one write" is.
+Набор для оценки стоит заводить, только если ожидания достаточно конкретны,
+чтобы проваливаться. «Находит причину» — недостаточно конкретно; «называет v1.8.4,
+достигает как минимум 0.8 уверенности, никогда не вызывает get_pull_request и
+предлагает ровно одну запись» — конкретно.
 
-The three scenarios are chosen to disagree with each other. One has a release
-that really did cause the incident; one has an incident with no release
-anywhere near it; one has nothing wrong at all. An agent that pattern-matches
-"errors, therefore blame the last deploy" passes the first and fails the other
-two, which is the whole reason the other two exist.
+Три сценария выбраны так, чтобы противоречить друг другу. В одном есть релиз,
+который действительно вызвал инцидент; в другом есть инцидент без релиза
+где-либо рядом; в третьем вообще нет ничего неисправного. Агент, который
+сопоставляет по шаблону «ошибки, значит виноват последний деплой», проходит первый
+и проваливает остальные два — в этом и весь смысл существования остальных двух.
 """
 
 from __future__ import annotations
@@ -20,7 +21,7 @@ from app.adapters.mock.dataset import BILLING_5XX, CHECKOUT_DEPENDENCY, SEARCH_H
 
 @dataclass(frozen=True, slots=True)
 class EvalScenario:
-    """One investigation and the answer it is supposed to reach."""
+    """Одно расследование и ответ, к которому оно должно прийти."""
 
     name: str
     scenario: Scenario

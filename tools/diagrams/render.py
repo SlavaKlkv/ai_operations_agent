@@ -1,12 +1,12 @@
-"""Render the README diagrams as SVG, once per colour scheme.
+"""Рендерит диаграммы README в SVG, по одному файлу на цветовую схему.
 
-Two files are needed because GitHub picks between them with ``<picture>`` and
-``prefers-color-scheme``; hand-maintaining both would guarantee they drift.
-So geometry and content are described once, and only the palette changes.
+Нужны два файла, потому что GitHub выбирает между ними через <picture> и
+prefers-color-scheme; ручная поддержка обоих гарантировала бы расхождение.
+Поэтому геометрия и содержимое описаны один раз, а меняется только палитра.
 
-The backgrounds are GitHub's own canvas colours, so a diagram sits on the page
-without a visible card edge around it — the drawing appears to float on the
-README rather than sit in a box that does not quite match.
+Фоны — это собственные цвета холста GitHub, поэтому диаграмма стоит на странице
+без заметного края карточки вокруг неё — рисунок словно парит на README, а не
+сидит в рамке, которая не совсем совпадает.
 """
 
 from __future__ import annotations
@@ -109,11 +109,11 @@ def text_width(text: str, size: float) -> float:
 
 
 def wrap(text: str, max_width: float, size: float) -> list[str]:
-    """Break a label into lines that fit. Explicit newlines are honoured.
+    """Разбивает подпись на строки, которые помещаются. Явные переносы сохраняются.
 
-    Written because translating the labels made several of them overflow their
-    boxes, and hand-tuning each one would only postpone the problem until the
-    next edit.
+    Написано потому, что после перевода подписей несколько из них вышли за
+    пределы блоков, а ручная подгонка каждой лишь отложила бы проблему до
+    следующей правки.
     """
     lines: list[str] = []
     for paragraph in text.split("\n"):
@@ -129,7 +129,7 @@ def wrap(text: str, max_width: float, size: float) -> list[str]:
     return lines
 
 
-# ── Primitives ───────────────────────────────────────────────────────────────
+# ── Примитивы ────────────────────────────────────────────────────────────────
 
 
 @dataclass(slots=True)

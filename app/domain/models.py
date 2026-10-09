@@ -1,9 +1,9 @@
-"""Domain models shared by tools, the agent graph and the HTTP API.
+"""Модели предметной области, общие для инструментов, графа агента и HTTP API.
 
-Everything the agent observes or produces is a Pydantic model: tool arguments,
-tool results and the final analysis. Free-form text is only allowed inside
-explicitly textual fields (summaries, descriptions), never as a carrier of
-structure.
+Всё, что агент наблюдает или производит, — это модель Pydantic: аргументы
+инструментов, результаты инструментов и итоговый анализ. Свободный текст
+допускается только внутри явно текстовых полей (сводки, описания) и никогда как
+носитель структуры.
 """
 
 from __future__ import annotations
@@ -22,11 +22,11 @@ class _Frozen(BaseModel):
 Confidence = Annotated[float, Field(ge=0.0, le=1.0)]
 
 
-# ── Code / deployments ───────────────────────────────────────────────────────
+# ── Код / деплои ─────────────────────────────────────────────────────────────
 
 
 class Deployment(_Frozen):
-    """A release of a service to an environment."""
+    """Выпуск сервиса в окружение."""
 
     service: str
     version: str
@@ -63,7 +63,7 @@ class PullRequest(_Frozen):
     url: str | None = None
 
 
-# ── Monitoring ───────────────────────────────────────────────────────────────
+# ── Мониторинг ───────────────────────────────────────────────────────────────
 
 
 class MetricPoint(_Frozen):
@@ -72,7 +72,7 @@ class MetricPoint(_Frozen):
 
 
 class MetricSeries(_Frozen):
-    """A single named time series for one service."""
+    """Один именованный временной ряд для одного сервиса."""
 
     service: str
     metric: str
@@ -101,7 +101,7 @@ class Alert(_Frozen):
     description: str = ""
 
 
-# ── Logs ─────────────────────────────────────────────────────────────────────
+# ── Логи ─────────────────────────────────────────────────────────────────────
 
 
 class LogLevel(StrEnum):
@@ -122,7 +122,7 @@ class LogEvent(_Frozen):
 
 
 class ErrorGroup(_Frozen):
-    """Aggregated log events. Raw logs never reach the model unaggregated."""
+    """Агрегированные события логов. Сырые логи никогда не доходят до модели неагрегированными."""
 
     error_type: str
     count: int
@@ -133,7 +133,7 @@ class ErrorGroup(_Frozen):
     services: tuple[str, ...] = ()
 
 
-# ── Analysis ─────────────────────────────────────────────────────────────────
+# ── Анализ ───────────────────────────────────────────────────────────────────
 
 
 class EvidenceKind(StrEnum):
@@ -146,10 +146,10 @@ class EvidenceKind(StrEnum):
 
 
 class Evidence(_Frozen):
-    """A single grounded fact the analysis is allowed to rely on.
+    """Отдельный факт, привязанный к доказательствам, на который анализу разрешено опираться.
 
-    ``source_tool`` and ``reference`` exist so that every claim in the final
-    report can be traced back to the tool call that produced it.
+    source_tool и reference существуют, чтобы каждое утверждение в итоговом
+    отчёте можно было проследить до вызвавшего его обращения к инструменту.
     """
 
     kind: EvidenceKind
@@ -157,6 +157,17 @@ class Evidence(_Frozen):
     source_tool: str
     reference: str
     observed_at: datetime | None = None
+
+
+class RunbookHit(_Frozen):
+    """Ограниченный, отслеживаемый результат из локального каталога ранбуков."""
+
+    doc_id: str
+    title: str
+    excerpt: str
+    score: float
+    services: tuple[str, ...] = ()
+    tags: tuple[str, ...] = ()
 
 
 class Hypothesis(_Frozen):
@@ -167,7 +178,7 @@ class Hypothesis(_Frozen):
 
 
 class IncidentAnalysis(BaseModel):
-    """Structured output of the agent — the artefact an issue is built from."""
+    """Структурированный вывод агента — артефакт, из которого строится issue."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -182,7 +193,7 @@ class IncidentAnalysis(BaseModel):
     summary: str = ""
 
 
-# ── Issues ───────────────────────────────────────────────────────────────────
+# ── Задачи ───────────────────────────────────────────────────────────────────
 
 
 class IssueState(StrEnum):
@@ -191,7 +202,7 @@ class IssueState(StrEnum):
 
 
 class Issue(_Frozen):
-    """An issue as the tracker reports it, after a read or a write."""
+    """Issue в том виде, как его возвращает трекер, после чтения или записи."""
 
     key: str
     title: str
@@ -206,11 +217,11 @@ class Issue(_Frozen):
 
 
 class IssueDraft(BaseModel):
-    """A proposed issue, before anyone has agreed to create it.
+    """Предлагаемый issue, до того как кто-либо согласился его создать.
 
-    Separate from :class:`Issue` on purpose: a draft has no key, no author and
-    no URL, because it does not exist yet. Sharing one model would make it
-    possible to pass an unsaved draft where a created issue is expected.
+    Намеренно отделён от Issue: у черновика нет key, автора и URL, потому
+    что он ещё не существует. Общая модель позволила бы передать несохранённый
+    черновик туда, где ожидается созданный issue.
     """
 
     model_config = ConfigDict(extra="forbid")

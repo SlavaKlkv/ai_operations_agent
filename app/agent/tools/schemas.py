@@ -1,15 +1,17 @@
-"""Argument and result schemas for every tool.
+"""Схемы аргументов и результатов для каждого инструмента.
 
-Two rules shape these models.
+Эти модели формируют два правила.
 
-*Arguments* are as small as they can be. The time window is optional on every
-query tool: if the model omits it, the executor injects the window the task
-analysis resolved. That is deliberate — a model that has to invent timestamps
-will invent them, and an investigation anchored to a hallucinated window is
-worse than one anchored to a slightly wrong default.
+Аргументы настолько малы, насколько могут быть. Временное окно опционально
+для каждого инструмента-запроса: если модель его опускает, исполнитель
+подставляет окно, которое определил анализ задачи. Это намеренно — модель,
+которой приходится придумывать метки времени, их придумает, и расследование,
+привязанное к выдуманному окну, хуже, чем привязанное к слегка неверному
+значению по умолчанию.
 
-*Results* are typed domain objects, not prose. The graph keeps them; the model
-sees only what the tool's ``render`` function produces.
+Результаты — типизированные объекты предметной области, а не проза. Граф
+хранит их; модель видит только то, что производит функция render
+инструмента.
 """
 
 from __future__ import annotations
@@ -27,6 +29,7 @@ from app.domain.models import (
     Issue,
     MetricSeries,
     PullRequest,
+    RunbookHit,
 )
 
 #: Метрики, которые гарантированно предоставляет слой мониторинга. Ограничение
@@ -44,7 +47,7 @@ class _Result(BaseModel):
 
 
 class WindowArgs(_Args):
-    """Shared optional window. Omit both to use the investigation's window."""
+    """Общее опциональное окно. Опустите оба, чтобы использовать окно расследования."""
 
     start: datetime | None = Field(
         default=None, description="Inclusive start (ISO 8601). Omit to use the incident window."
@@ -54,7 +57,7 @@ class WindowArgs(_Args):
     )
 
 
-# ── Monitoring ───────────────────────────────────────────────────────────────
+# ── Мониторинг ───────────────────────────────────────────────────────────────
 
 
 class GetServiceMetricsArgs(WindowArgs):
@@ -74,7 +77,7 @@ class AlertsResult(_Result):
     alerts: tuple[Alert, ...] = ()
 
 
-# ── Код и развёртывания ─────────────────────────────────────────────────────
+# ── Код и развёртывания ──────────────────────────────────────────────────────
 
 
 class GetRecentDeploymentsArgs(WindowArgs):
@@ -102,7 +105,7 @@ class PullRequestResult(_Result):
     pull_request: PullRequest | None = None
 
 
-# ── Logs ─────────────────────────────────────────────────────────────────────
+# ── Логи ─────────────────────────────────────────────────────────────────────
 
 
 class GetErrorGroupsArgs(WindowArgs):
@@ -116,7 +119,22 @@ class ErrorGroupsResult(_Result):
     groups: tuple[ErrorGroup, ...] = ()
 
 
-# ── Issues ───────────────────────────────────────────────────────────────────
+# ── Ранбуки ──────────────────────────────────────────────────────────────────
+
+
+class SearchRunbooksArgs(_Args):
+    query: str = Field(
+        min_length=1, max_length=400, description="Keywords describing the incident."
+    )
+    service: str | None = Field(default=None, description="Prefer runbooks for one service.")
+    limit: int = Field(default=3, ge=1, le=10, description="Maximum number of relevant runbooks.")
+
+
+class RunbooksResult(_Result):
+    hits: tuple[RunbookHit, ...] = ()
+
+
+# ── Задачи ───────────────────────────────────────────────────────────────────
 
 
 class SearchIssuesArgs(_Args):
@@ -134,12 +152,12 @@ class IssuesResult(_Result):
 
 
 class CreateIssueArgs(_Args):
-    """Arguments for the one tool that changes an external system.
+    """Аргументы для единственного инструмента, меняющего внешнюю систему.
 
-    The bounds are tighter than the tracker's own, and deliberately so: a
-    title short enough to be meaningless or a body long enough to be a log
-    dump are both signs the agent has lost the thread, and the right moment
-    to catch that is before a human is asked to approve it.
+    Границы жёстче, чем у самого трекера, и намеренно: заголовок, достаточно
+    короткий, чтобы быть бессмысленным, или тело, достаточно длинное, чтобы
+    быть свалкой логов, — оба признака того, что агент потерял нить, и
+    правильный момент это поймать — до того, как человека попросят одобрить.
     """
 
     title: str = Field(min_length=8, max_length=200, description="One line stating what is wrong.")

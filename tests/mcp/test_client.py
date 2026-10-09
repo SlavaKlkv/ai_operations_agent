@@ -1,8 +1,9 @@
-"""The client pool: discovery, classification, degradation and failure shape.
+"""Пул клиентов: обнаружение, классификация, деградация и форма отказов.
 
-These tests are about what happens to the *agent* when an external system
-misbehaves, so they use servers that misbehave on purpose: one that refuses to
-start, one that never answers, one that forgets to annotate itself.
+Эти тесты о том, что происходит с агентом, когда внешняя система ведёт себя
+неправильно, поэтому в них используются серверы, намеренно ведущие себя плохо:
+один отказывается запускаться, другой никогда не отвечает, третий забывает
+проставить себе аннотации.
 """
 
 from __future__ import annotations
@@ -33,11 +34,11 @@ WINDOW = {"start": "2026-03-17T14:00:00Z", "end": "2026-03-17T15:00:00Z"}
 
 
 class Out(BaseModel):
-    """Return type for the throwaway servers below.
+    """Тип возврата для одноразовых серверов ниже.
 
-    Declared at module level because ``from __future__ import annotations``
-    turns return annotations into strings, and MCP resolves them against the
-    module namespace when it derives the output schema.
+    Объявлен на уровне модуля, потому что from __future__ import annotations
+    превращает аннотации возврата в строки, а MCP разрешает их в пространстве имён
+    модуля, когда выводит схему вывода.
     """
 
     ok: bool = True
@@ -63,7 +64,7 @@ async def pool(specs):
         yield connected
 
 
-# ── Discovery ────────────────────────────────────────────────────────────────
+# ── Обнаружение ──────────────────────────────────────────────────────────────
 
 
 async def test_every_configured_server_is_connected_and_reported(pool):
@@ -78,7 +79,7 @@ async def test_every_configured_server_is_connected_and_reported(pool):
 
 
 async def test_read_and_write_are_split_by_the_servers_own_annotations(pool):
-    """Nothing here knows that create_issue is dangerous by its name."""
+    """Ничто здесь не знает, что create_issue опасен по своему имени."""
     assert {t.name for t in pool.tools(read_only=False)} == {
         "create_issue",
         "add_issue_comment",
@@ -87,8 +88,8 @@ async def test_read_and_write_are_split_by_the_servers_own_annotations(pool):
 
 
 async def test_an_unannotated_tool_is_assumed_to_write():
-    """The safe default must not depend on a server remembering to declare
-    itself — a new server gets no trust it has not asked for."""
+    """Безопасное поведение по умолчанию не должно зависеть от того, вспомнит ли
+    сервер объявить себя — новый сервер не получает доверия, о котором не просил."""
 
     silent = MCPServer(name="silent", version="1.0.0")
 
@@ -103,7 +104,7 @@ async def test_an_unannotated_tool_is_assumed_to_write():
 
 
 async def test_the_allowlist_hides_tools_the_deployment_did_not_accept(scenario):
-    """A server that grows a new tool must not silently gain reach."""
+    """Сервер, у которого появился новый инструмент, не должен молча расширять доступ."""
     narrowed = _spec(
         "monitoring",
         lambda: build_monitoring_server(scenario),
@@ -134,7 +135,7 @@ async def test_resources_can_be_read_through_the_pool(pool):
     assert "billing-service" in await pool.read_resource("monitoring", "monitoring://services")
 
 
-# ── Calling ──────────────────────────────────────────────────────────────────
+# ── Вызовы ───────────────────────────────────────────────────────────────────
 
 
 async def test_a_successful_call_returns_structured_content(pool):
@@ -157,13 +158,13 @@ async def test_approval_is_per_call_not_a_mode_the_pool_stays_in(pool):
 
 
 async def test_a_tool_failure_is_distinguishable_from_an_outage(pool):
-    """The agent routes differently on "that does not exist" and "the server
-    is gone", so the two must not arrive as the same exception."""
+    """Агент по-разному реагирует на «этого не существует» и «сервер
+    пропал», поэтому эти два случая не должны приходить как одно исключение."""
     with pytest.raises(ToolCallFailed, match="no error_rate series"):
         await pool.call("get_error_rate", {"service": "ghost-service", **WINDOW})
 
 
-# ── Degradation ──────────────────────────────────────────────────────────────
+# ── Деградация ───────────────────────────────────────────────────────────────
 
 
 def _broken_server() -> MCPServer:
@@ -196,8 +197,8 @@ async def test_a_required_server_that_will_not_start_marks_the_pool_unhealthy(sc
 
 
 async def test_a_failing_server_does_not_raise_out_of_connect(scenario):
-    """Startup failures are recorded, not propagated: one dead integration
-    must not prevent the process from coming up."""
+    """Отказы при запуске фиксируются, а не пробрасываются: одна мёртвая
+    интеграция не должна мешать процессу подняться."""
     async with MCPToolPool((_spec("broken", _broken_server),)) as connected:
         assert [s.connected for s in connected.status] == [False]
 
@@ -227,11 +228,11 @@ async def test_closing_the_pool_releases_every_connection(specs):
     assert connected.tools() == ()
 
 
-# ── HTTP-интерфейс ──────────────────────────────────────────────────────────
+# ── HTTP-интерфейс ───────────────────────────────────────────────────────────
 
 
 async def test_the_integrations_endpoint_reports_discovered_tools(specs):
-    """The tool list is discovered over the protocol at runtime, not declared."""
+    """Список инструментов обнаруживается по протоколу во время выполнения, а не объявляется."""
     from asgi_lifespan import LifespanManager
     from httpx import ASGITransport, AsyncClient
 
@@ -258,7 +259,7 @@ async def test_the_integrations_endpoint_reports_discovered_tools(specs):
 
 
 async def test_a_degraded_integration_layer_answers_503(scenario):
-    """Meant to be usable as a readiness probe, so it must be able to fail."""
+    """Задумана как проба готовности, поэтому должна уметь сообщать об отказе."""
     from asgi_lifespan import LifespanManager
     from httpx import ASGITransport, AsyncClient
 

@@ -1,9 +1,9 @@
-"""Persistent schema.
+"""Постоянная схема.
 
-What is stored is deliberately narrow: the decisions a run made, the tool calls
-it issued, the evidence it relied on, and every approval. Hidden model
-reasoning is not stored — the audit question this schema answers is "what did
-the agent do and on what basis", not "what did it think".
+Хранится намеренно немного: решения, принятые запуском, сделанные им вызовы
+инструментов, доказательства, на которые он опирался, и каждое подтверждение.
+Скрытые рассуждения модели не сохраняются — вопрос аудита, на который отвечает
+эта схема: «что агент сделал и на каком основании», а не «что он думал».
 """
 
 from __future__ import annotations
@@ -54,6 +54,15 @@ class User(Base, TimestampMixin):
     runs: Mapped[list[AgentRun]] = relationship(back_populates="user")
 
 
+class AppSetting(Base, TimestampMixin):
+    """Одна проверенная локальная настройка, хранимая независимо от контейнера."""
+
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    value: Mapped[dict[str, object]] = mapped_column(JSONType, nullable=False, default=dict)
+
+
 class AgentRun(Base, TimestampMixin):
     __tablename__ = "agent_runs"
     __table_args__ = (Index("ix_agent_runs_service_created", "target_service", "created_at"),)
@@ -63,6 +72,8 @@ class AgentRun(Base, TimestampMixin):
 
     task: Mapped[str] = mapped_column(Text, nullable=False)
     target_service: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    #: Зафиксировано при старте: смена профиля не меняет уже начатое расследование.
+    model_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     status: Mapped[RunStatus] = mapped_column(
         SAEnum(RunStatus, native_enum=False, length=32), nullable=False, default=RunStatus.RUNNING
     )
@@ -96,8 +107,9 @@ class AgentRun(Base, TimestampMixin):
 
 
 class ToolCall(Base):
-    """One tool invocation. Arguments are stored; results only as a summary,
-    because raw tool output can be large and is reproducible from the source."""
+    """Одно обращение к инструменту. Аргументы сохраняются; результаты — только
+    как сводка, потому что сырой вывод инструмента может быть большим и
+    воспроизводимым из источника."""
 
     __tablename__ = "tool_calls"
     __table_args__ = (Index("ix_tool_calls_run_started", "run_id", "started_at"),)
@@ -141,10 +153,10 @@ class IncidentAnalysisRecord(Base, TimestampMixin):
 
 
 class Approval(Base, TimestampMixin):
-    """A human decision on a proposed write action.
+    """Решение человека по предложенному действию записи.
 
-    The row is created *before* the action runs and is the only thing that
-    authorises it; the executor refuses to act without an approved row.
+    Строка создаётся до выполнения действия и является единственным, что его
+    санкционирует; исполнитель отказывается действовать без одобренной строки.
     """
 
     __tablename__ = "approvals"
@@ -171,7 +183,7 @@ class Approval(Base, TimestampMixin):
 
 
 class AuditEvent(Base):
-    """Append-only trail of everything security-relevant that happened."""
+    """Журнал только для добавления обо всём, что произошло и относится к безопасности."""
 
     __tablename__ = "audit_events"
     __table_args__ = (Index("ix_audit_events_run_at", "run_id", "at"),)
