@@ -60,10 +60,11 @@ function toast(message, error = false) {
 function navigate(name) {
   $$(".view").forEach((view) => view.classList.toggle("active", view.id === `view-${name}`));
   $$(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
-  const titles = { investigate: "Новое расследование", history: "История", sources: "Источники данных", settings: "Настройки" };
+  const titles = { investigate: "Новое расследование", history: "История", sources: "Источники данных", diagnostics: "Диагностика", settings: "Настройки" };
   $("#view-title").textContent = titles[name];
   if (name === "history") loadHistory();
   if (name === "sources") loadSources();
+  if (name === "diagnostics") loadDiagnostics();
   if (name === "settings") loadSetup(false);
 }
 
@@ -105,6 +106,7 @@ function renderRun(run) {
   } else {
     approval.classList.add("hidden");
   }
+  loadTrace(run.id);
 }
 
 async function startInvestigation(event) {
@@ -164,6 +166,47 @@ async function loadSources() {
     const items = Array.isArray(sources) ? sources : (sources.servers || []);
     target.innerHTML = items.map((source) => `<article class="source-card"><h3>${escapeHtml(source.name || "Источник")}</h3><p>${escapeHtml(source.error || `${source.tool_count || 0} инструментов доступно`)}</p><footer><span>${source.required ? "Обязательный" : "Дополнительный"}</span><span class="${source.connected ? "connected" : ""}">${source.connected ? "Подключён" : "Недоступен"}</span></footer></article>`).join("") || '<div class="empty-card">Источники ещё не настроены.</div>';
   } catch (error) { target.innerHTML = `<div class="empty-card">${escapeHtml(error.message)}</div>`; }
+}
+
+async function loadTrace(runId) {
+  const list = $("#trace-list");
+  if (!list) return;
+  list.innerHTML = '<li class="muted">Загружаем ход…</li>';
+  try {
+    const trace = await api(`/runs/${runId}/trace`);
+    const steps = trace.steps || [];
+    $("#trace-count").textContent = steps.length ? `${steps.length} шагов` : "";
+    list.innerHTML = steps.map((step) => `<li><span>${step.step}</span><code>${escapeHtml(step.node)}</code></li>`).join("") || '<li class="muted">Шаги не записаны.</li>';
+  } catch (error) {
+    list.innerHTML = `<li class="muted">${escapeHtml(error.message)}</li>`;
+  }
+}
+
+function diagnosticCard(title, value, note, ok) {
+  return `<article class="source-card"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(value)}</p><footer><span>${escapeHtml(note || "")}</span><span class="${ok ? "connected" : ""}">${ok ? "Ок" : "Проблема"}</span></footer></article>`;
+}
+
+async function loadDiagnostics() {
+  const target = $("#diagnostics-grid");
+  target.innerHTML = '<div class="empty-card">Собираем состояние…</div>';
+  try {
+    const health = await api("/health");
+    let servers = [];
+    try {
+      const response = await fetch("/mcp/servers", { headers: headers() });
+      const body = await response.json();
+      servers = Array.isArray(body) ? body : (body.servers || []);
+    } catch (_) { servers = []; }
+    target.innerHTML = [
+      diagnosticCard("Версия", health.version, `окружение: ${health.environment}`, true),
+      diagnosticCard("Хранилище", health.storage_backend, `checkpointer: ${health.checkpointer}`, true),
+      diagnosticCard("Кэш", health.cache_backend, health.durable_approvals ? "подтверждения долговечны" : "подтверждения не долговечны", health.durable_approvals),
+      diagnosticCard("Аутентификация", health.authentication ? "Включена" : "Выключена", "локальный режим", true),
+      ...servers.map((server) => diagnosticCard(server.name, server.connected ? `${server.tool_count} инструментов` : (server.error || "Недоступен"), server.required ? "обязательный" : "дополнительный", server.connected)),
+    ].join("");
+  } catch (error) {
+    target.innerHTML = `<div class="empty-card">${escapeHtml(error.message)}</div>`;
+  }
 }
 
 function setupCheck(title, check) {
@@ -409,6 +452,7 @@ $("#investigation-form").addEventListener("submit", startInvestigation);
 $("#approve").addEventListener("click", () => decide(true));
 $("#reject").addEventListener("click", () => decide(false));
 $("#refresh-history").addEventListener("click", loadHistory);
+$("#refresh-diagnostics").addEventListener("click", loadDiagnostics);
 $("#open-setup").addEventListener("click", () => { sessionStorage.removeItem("aoa-demo-continued"); loadSetup(true); });
 $("#continue-demo").addEventListener("click", () => { sessionStorage.setItem("aoa-demo-continued", "true"); setSetupOpen(false); });
 $("#finish-setup").addEventListener("click", () => { setSetupOpen(false); toast("Настройка завершена"); });
