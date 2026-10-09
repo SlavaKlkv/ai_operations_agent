@@ -292,3 +292,11 @@ async def test_a_runbook_can_be_fetched_in_full_after_search():
     assert "Rollback first, root-cause after" in document["body"]
     assert missing.is_error
     assert "known ids" in _error(missing)
+
+
+async def test_a_runbook_id_cannot_escape_the_catalogue():
+    """id ищется в словаре документов, а не разрешается как путь."""
+    async with Client(build_knowledge_server()) as client:
+        result = await client.call_tool("get_runbook", {"doc_id": "../../etc/passwd"})
+    assert result.is_error
+    assert "known ids" in _error(result)
