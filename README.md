@@ -27,7 +27,7 @@
 
 **demo**
 
-https://github.com/user-attachments/assets/597f8e8b-6196-4013-89d5-e295bbc9fc55
+https://github.com/user-attachments/assets/d1e09ee9-996a-44fa-9d57-a816557b19d3
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.svg">
