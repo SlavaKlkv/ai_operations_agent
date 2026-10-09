@@ -1,5 +1,6 @@
 """Резервное копирование и восстановление сохраняют локальные данные продукта восстанавливаемыми."""
 
+import contextlib
 import sqlite3
 
 import pytest
@@ -8,14 +9,21 @@ from app.db.backup import create_backup, restore_backup
 from app.db.sqlite import DatabaseIntegrityError
 
 
+def _connect(path):
+    # `with sqlite3.connect(...)` только фиксирует транзакцию и не закрывает
+    # соединение; на Windows это оставляет файл заблокированным для замены.
+    return contextlib.closing(sqlite3.connect(path))
+
+
 def _database(path, value: str) -> None:
-    with sqlite3.connect(path) as connection:
+    with _connect(path) as connection:
         connection.execute("CREATE TABLE data (value TEXT)")
         connection.execute("INSERT INTO data VALUES (?)", (value,))
+        connection.commit()
 
 
 def _value(path) -> str:
-    with sqlite3.connect(path) as connection:
+    with _connect(path) as connection:
         return connection.execute("SELECT value FROM data").fetchone()[0]
 
 
@@ -25,8 +33,9 @@ def test_backup_and_restore_preserve_the_displaced_database(tmp_path):
     _database(database, "before")
     create_backup(database, backup)
 
-    with sqlite3.connect(database) as connection:
+    with _connect(database) as connection:
         connection.execute("UPDATE data SET value = 'after'")
+        connection.commit()
 
     displaced = restore_backup(backup, database)
 

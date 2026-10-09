@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 import time
 
 import httpx
@@ -64,10 +65,12 @@ async def test_device_flow_obeys_poll_interval_and_never_exposes_token(tmp_path)
         connector.grants[grant["flow_id"]].next_poll_at = time.monotonic() - 1
         connected = await connector.poll(grant["flow_id"])
         assert connected == {"state": "connected", "login": "octocat"}
-        assert "ghu_sensitive" not in connector.store.token_path.read_text()
+        assert "ghu_sensitive" not in connector.store.token_path.read_text(encoding="utf-8")
         assert connector.store.read()["access_token"] == "ghu_sensitive"
-        assert connector.store.key_path.stat().st_mode & 0o077 == 0
-        assert connector.store.token_path.stat().st_mode & 0o077 == 0
+        if sys.platform != "win32":
+            # На Windows у файлов нет POSIX-бита 0600 — там права задаёт ACL.
+            assert connector.store.key_path.stat().st_mode & 0o077 == 0
+            assert connector.store.token_path.stat().st_mode & 0o077 == 0
     finally:
         await connector.close()
 

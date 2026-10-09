@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import sqlite3
 import tempfile
@@ -12,14 +13,17 @@ from app.db.sqlite import verify_integrity
 
 
 def create_backup(source: Path, destination: Path) -> Path:
-    """Создать согласованный снимок, даже пока источник использует WAL."""
+    """Create a consistent snapshot even while the source uses WAL."""
     verify_integrity(source)
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = _temporary_path(destination)
     try:
+        # `with sqlite3.connect(...)` только фиксирует транзакцию и НЕ закрывает
+        # соединение. На Windows открытый файл нельзя заменить, поэтому закрываем
+        # соединения явно, иначе перенос копии падает с PermissionError.
         with (
-            sqlite3.connect(source) as source_connection,
-            sqlite3.connect(temporary) as destination_connection,
+            contextlib.closing(sqlite3.connect(source)) as source_connection,
+            contextlib.closing(sqlite3.connect(temporary)) as destination_connection,
         ):
             source_connection.backup(destination_connection)
         verify_integrity(temporary)
@@ -37,8 +41,8 @@ def restore_backup(backup: Path, destination: Path) -> Path | None:
     displaced = destination.with_suffix(f"{destination.suffix}.before-restore")
     try:
         with (
-            sqlite3.connect(backup) as source_connection,
-            sqlite3.connect(restored) as destination_connection,
+            contextlib.closing(sqlite3.connect(backup)) as source_connection,
+            contextlib.closing(sqlite3.connect(restored)) as destination_connection,
         ):
             source_connection.backup(destination_connection)
         verify_integrity(restored)
