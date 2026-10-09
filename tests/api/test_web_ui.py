@@ -11,6 +11,7 @@ async def test_root_serves_the_local_application_shell(http_client):
     assert 'id="approval"' in response.text
     assert 'id="history-list"' in response.text
     assert 'id="source-grid"' in response.text
+    assert "<h3>Отчёт</h3>" in response.text
     assert 'id="view-settings"' in response.text
     assert 'id="settings-sources"' in response.text
     assert 'id="profile-grid"' in response.text
