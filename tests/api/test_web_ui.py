@@ -11,7 +11,8 @@ async def test_root_serves_the_local_application_shell(http_client):
     assert 'id="approval"' in response.text
     assert 'id="history-list"' in response.text
     assert 'id="source-grid"' in response.text
-    assert 'id="setup-overlay"' in response.text
+    assert 'id="view-settings"' in response.text
+    assert 'id="settings-sources"' in response.text
     assert 'id="profile-grid"' in response.text
     assert 'id="token"' not in response.text
 
@@ -55,10 +56,11 @@ def test_interface_exposes_run_detail_and_diagnostics():
     assert "/trace" in script
 
 
-def test_sidebar_uses_an_internal_settings_arrow():
+def test_sidebar_settings_is_a_regular_navigation_item():
+    """«Настройки» — обычный пункт навигации, как остальные разделы."""
     from app.web.routes import STATIC_DIR
 
     html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
 
-    assert 'data-view="settings">Настройки <span aria-hidden="true">→</span>' in html
-    assert "Настройки <span>↗</span>" not in html
+    assert 'class="nav-item" data-view="settings"' in html
+    assert "settings-link" not in html
