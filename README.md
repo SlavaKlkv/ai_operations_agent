@@ -26,6 +26,11 @@
 его добыл, — а issue создаёт только после того, как человек прочитал текст и согласился.
 
 <picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/ui-investigate-dark.png">
+  <img alt="Интерфейс AI Operations Agent: поле для описания инцидента, ход расследования и состояние локальных источников" src="docs/assets/ui-investigate-light.png">
+</picture>
+
+<picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.svg">
   <img alt="Архитектура: FastAPI, LangGraph-воркфлоу, MCP-клиент и четыре MCP-сервера, PostgreSQL и Prometheus" src="docs/assets/architecture-light.svg">
 </picture>
