@@ -25,14 +25,13 @@
 возвращает разбор, в котором каждое утверждение привязано к вызову инструмента, который
 его добыл, — а issue создаёт только после того, как человек прочитал текст и согласился.
 
-<video src="https://github.com/user-attachments/assets/597f8e8b-6196-4013-89d5-e295bbc9fc55" controls></video>
+**Тёмная тема**
 
-<details>
-<summary>Светлая тема</summary>
+https://github.com/user-attachments/assets/597f8e8b-6196-4013-89d5-e295bbc9fc55
 
-<video src="https://github.com/user-attachments/assets/5463807a-fe21-41a4-91fb-bd405f3aac7a" controls></video>
+**Светлая тема**
 
-</details>
+https://github.com/user-attachments/assets/5463807a-fe21-41a4-91fb-bd405f3aac7a
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.svg">
