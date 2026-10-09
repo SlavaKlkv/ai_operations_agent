@@ -105,7 +105,7 @@ async def test_unknown_service_ends_in_a_stated_failure(monitoring, code, logs):
 
     assert final["status"] is RunStatus.FAILED
     assert final["current_step"] == "insufficient_context"
-    assert "stopped before analysis" in final["final_result"]
+    assert "остановилось до анализа" in final["final_result"]
     assert final["analysis"] is None
 
 

@@ -138,12 +138,12 @@ def test_routing_treats_a_rejection_as_a_normal_ending():
 def test_the_issue_body_carries_the_evidence_and_its_provenance():
     body = issue_body(_analysis(), _state())
 
-    assert "## Summary" in body
-    assert "## Evidence" in body
+    assert "## Итог" in body
+    assert "## Доказательства" in body
     assert "`get_service_metrics`" in body, "each claim names the tool that produced it"
-    assert "## Recommended actions" in body
-    assert "run `run-1`" in body
-    assert "approved by a human" in body
+    assert "## Рекомендуемые действия" in body
+    assert "запуску `run-1`" in body
+    assert "одобрено человеком" in body
 
 
 def test_the_body_admits_what_could_not_be_collected():
@@ -151,7 +151,7 @@ def test_the_body_admits_what_could_not_be_collected():
 
     failure = RunError(node="execute_tool", kind="tool_failed", message="get_commits: timeout")
     body = issue_body(_analysis(), _state(errors=[failure]))
-    assert "could not be collected" in body
+    assert "не удалось собрать" in body
     assert "get_commits: timeout" in body
 
 

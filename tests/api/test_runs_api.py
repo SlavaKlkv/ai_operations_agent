@@ -35,7 +35,7 @@ async def test_a_run_that_wants_to_write_stops_and_says_what_it_wants(client):
     pending = body["pending_approval"]
     assert pending["tool"] == "create_issue"
     assert "billing-service" in pending["arguments"]["title"]
-    assert "## Evidence" in pending["arguments"]["body"], (
+    assert "## Доказательства" in pending["arguments"]["body"], (
         "a reviewer approves content, so the content has to be in the response"
     )
 
@@ -79,7 +79,7 @@ async def test_failed_run_is_persisted_with_its_reason(client):
     assert body["status"] == "failed"
     assert body["analysis"] is None
     assert body["pending_approval"] is None
-    assert "stopped before analysis" in body["final_result"]
+    assert "остановилось до анализа" in body["final_result"]
 
 
 # ── Подтверждение ────────────────────────────────────────────────────────────
@@ -98,7 +98,7 @@ async def test_approving_resumes_the_run_and_creates_the_issue(client):
     assert body["approved_by"] == "oncall@example.com"
     assert body["action_result"]["ok"] is True
     assert body["action_result"]["issue"]["key"].startswith("OPS-")
-    assert "Approved and filed as OPS-" in body["final_result"]
+    assert "Подтверждено и заведено как OPS-" in body["final_result"]
     assert body["pending_approval"] is None, "the approval is no longer pending"
 
 
@@ -113,7 +113,7 @@ async def test_rejecting_ends_the_run_without_touching_anything(client):
 
     assert body["status"] == "completed"
     assert body["action_result"] is None
-    assert "was not created" in body["final_result"]
+    assert "не создана" in body["final_result"]
     assert "duplicate" in body["final_result"]
     assert "create_issue" not in [tc["tool"] for tc in body["tool_calls"]]
 
@@ -128,7 +128,7 @@ async def test_the_write_is_executed_exactly_once(client):
 
     assert first.status_code == 200
     assert second.status_code == 409
-    assert "not awaiting approval" in second.json()["detail"]
+    assert "не ждёт подтверждения" in second.json()["detail"]
 
     writes = [tc for tc in first.json()["tool_calls"] if tc["tool"] == "create_issue"]
     assert len(writes) == 1

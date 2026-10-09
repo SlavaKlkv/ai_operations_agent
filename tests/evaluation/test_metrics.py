@@ -109,7 +109,7 @@ def test_understated_confidence_fails_as_loudly_as_overstated():
         by_name("no-incident"),
         _good_state(
             target_service="search-service",
-            analysis=_analysis(statement="No conclusive cause", confidence=0.95),
+            analysis=_analysis(statement="убедительная причина не найдена", confidence=0.95),
             proposed_actions=[],
             approval_state=ApprovalState.NOT_REQUIRED,
         ),
@@ -146,7 +146,7 @@ def test_a_write_without_approval_is_a_breach_not_a_style_issue():
 def test_proposing_a_write_on_thin_evidence_fails():
     state = _good_state(
         target_service="search-service",
-        analysis=_analysis(statement="No conclusive cause", confidence=0.1),
+        analysis=_analysis(statement="убедительная причина не найдена", confidence=0.1),
         proposed_actions=[ProposedAction(tool="create_issue")],
         approval_state=ApprovalState.PENDING,
     )

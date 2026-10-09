@@ -91,7 +91,7 @@ function renderRun(run) {
   $("#run-panel").classList.add("hidden");
   $("#result").classList.remove("hidden");
   $("#result-summary").textContent = run.analysis?.summary || run.final_result || "Расследование завершено без вывода.";
-  $("#confidence").textContent = run.analysis ? `${Math.round(run.analysis.confidence * 100)}% confidence` : statusLabel(run.status);
+  $("#confidence").textContent = run.analysis ? `уверенность ${Math.round(run.analysis.confidence * 100)}%` : statusLabel(run.status);
   $("#symptoms").innerHTML = (run.analysis?.symptoms || ["Подтверждённые симптомы не найдены."]).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
   $("#actions").innerHTML = (run.analysis?.recommended_actions || ["Уточните описание и повторите расследование."]).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
   const evidence = run.analysis?.evidence || [];
@@ -116,7 +116,7 @@ async function startInvestigation(event) {
   button.disabled = true;
   $("#result").classList.add("hidden");
   panel.classList.remove("hidden");
-  $("#run-id").textContent = "new run";
+  $("#run-id").textContent = "новый запуск";
   try {
     const payload = { task: $("#task").value.trim() };
     const service = $("#service").value.trim();
