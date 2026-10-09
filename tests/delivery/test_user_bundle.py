@@ -118,4 +118,7 @@ def test_release_bundle_step_ships_every_user_file():
     )
     for name in BUNDLE_FILES:
         assert name in assemble["run"], f"release bundle omits {name}"
+    # README ссылается на docs/ относительно себя, поэтому каталог тоже в комплекте.
+    assert "docs" in assemble["run"], "release bundle omits the documentation the README links to"
+    assert (REPO_ROOT / "docs").is_dir()
     assert "SHA256SUMS.txt" in assemble["run"]
