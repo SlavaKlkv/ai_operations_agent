@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -241,6 +241,24 @@ async def get_run(session: AsyncSession, run_id: uuid.UUID) -> AgentRun | None:
 async def list_runs(session: AsyncSession, *, limit: int = 50) -> list[AgentRun]:
     stmt = select(AgentRun).order_by(AgentRun.created_at.desc()).limit(limit)
     return list((await session.execute(stmt)).scalars())
+
+
+async def delete_run(session: AsyncSession, run: AgentRun) -> None:
+    """Удалить расследование из истории.
+
+    Дочерние строки — вызовы инструментов, анализы и подтверждения — удаляются
+    вместе с запуском по каскаду связи. Журнал аудита удаление переживает: запись
+    о том, кто и что решил, должна оставаться доступной и после того, как само
+    расследование убрано, поэтому ссылку на запуск обнуляем явным запросом, а не
+    полагаемся на ondelete=SET NULL: не всякая локальная база выполняется с
+    включённой проверкой внешних ключей.
+
+    Запуск передаётся уже загруженным с коллекциями (см. get_run): каскад по
+    связи требует, чтобы дочерние строки были известны сессии.
+    """
+    await session.execute(update(AuditEvent).where(AuditEvent.run_id == run.id).values(run_id=None))
+    await session.delete(run)
+    await session.commit()
 
 
 def serialise_state(state: AgentState) -> dict[str, Any]:
