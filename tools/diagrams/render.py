@@ -561,7 +561,7 @@ def workflow(p: Palette) -> Canvas:
     c.add(
         arrow(
             p,
-            [(right, 479), (right - 40, 479), (right - 40, 190), (right + 4, 190)],
+            [(right, 479), (right - 40, 479), (right - 40, 219), (right, 219)],
             "",
             tone="muted",
         )
@@ -574,7 +574,7 @@ def workflow(p: Palette) -> Canvas:
     c.add(
         arrow(
             p,
-            [(right + w, 399), (right + w + 40, 399), (right + w + 40, 190), (right + w - 4, 190)],
+            [(right + w, 399), (right + w + 40, 399), (right + w + 40, 219), (right + w, 219)],
             "",
         )
     )
