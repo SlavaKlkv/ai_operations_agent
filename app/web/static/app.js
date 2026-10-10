@@ -374,38 +374,37 @@ function escapeHtml(value) {
 
 const themeQuery = window.matchMedia("(prefers-color-scheme: light)");
 
-function currentTheme() {
-  return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+// Три режима темы: тёмная, светлая и системная. В шапке они показаны рядом,
+// а системный режим следует за настройкой ОС.
+const THEME_MODES = ["dark", "light", "system"];
+
+function systemTheme() {
+  return themeQuery.matches ? "light" : "dark";
 }
 
-function savedTheme() {
-  try { return localStorage.getItem("aoa-theme"); } catch (error) { return null; }
+function currentMode() {
+  const mode = document.documentElement.dataset.themeMode;
+  return THEME_MODES.includes(mode) ? mode : "system";
 }
 
-function applyTheme(theme) {
+function applyTheme(mode) {
+  const theme = mode === "system" ? systemTheme() : mode;
+  document.documentElement.dataset.themeMode = mode;
   document.documentElement.dataset.theme = theme;
   const meta = document.querySelector('meta[name="color-scheme"]');
-  if (meta) meta.setAttribute("content", theme);
-  const toggle = $("#theme-toggle");
-  if (toggle) {
-    const target = theme === "light" ? "тёмную" : "светлую";
-    toggle.setAttribute("aria-pressed", String(theme === "light"));
-    toggle.setAttribute("aria-label", `Включить ${target} тему`);
-    toggle.title = `Включить ${target} тему`;
-  }
+  if (meta) meta.setAttribute("content", mode === "system" ? "dark light" : theme);
+  $$(".theme-option").forEach((option) => {
+    option.setAttribute("aria-pressed", String(option.dataset.themeMode === mode));
+  });
 }
 
-function selectTheme(theme) {
-  applyTheme(theme);
-  try { localStorage.setItem("aoa-theme", theme); } catch (error) { /* хранилище недоступно */ }
+function selectTheme(mode) {
+  applyTheme(mode);
+  try { localStorage.setItem("aoa-theme", mode); } catch (error) { /* хранилище недоступно */ }
 }
 
-function toggleTheme() {
-  selectTheme(currentTheme() === "light" ? "dark" : "light");
-}
-
-themeQuery.addEventListener("change", (event) => {
-  if (!savedTheme()) applyTheme(event.matches ? "light" : "dark");
+themeQuery.addEventListener("change", () => {
+  if (currentMode() === "system") applyTheme("system");
 });
 
 $$("[data-view]").forEach((item) => item.addEventListener("click", () => navigate(item.dataset.view)));
@@ -417,7 +416,7 @@ $("#refresh-diagnostics").addEventListener("click", loadDiagnostics);
 $("#refresh-setup").addEventListener("click", loadSetup);
 $("#finish-setup").addEventListener("click", () => { navigate("investigate"); toast("Настройка завершена"); });
 $("#custom-model-form").addEventListener("submit", (event) => { event.preventDefault(); selectModel({ profile: "custom", model_name: $("#custom-model-name").value.trim() }); });
-$("#theme-toggle").addEventListener("click", toggleTheme);
-applyTheme(currentTheme());
+$$(".theme-option").forEach((option) => option.addEventListener("click", () => selectTheme(option.dataset.themeMode)));
+applyTheme(currentMode());
 checkHealth();
 loadSetup().then(() => { if (state.setup && !state.setup.ready) showView("settings"); });

@@ -8,13 +8,18 @@
   <title>AI Operations Agent</title>
   <script>
     (function () {
+      // Тема выбирается в одном из трёх режимов: тёмная, светлая или системная.
+      // Режим запоминается, а итоговая тема выводится из него до первой отрисовки.
+      var modes = ["dark", "light", "system"];
+      var mode = "system";
       try {
         var saved = localStorage.getItem("aoa-theme");
-        var theme = saved || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-        document.documentElement.dataset.theme = theme;
-      } catch (error) {
-        document.documentElement.dataset.theme = "dark";
-      }
+        if (modes.indexOf(saved) !== -1) mode = saved;
+      } catch (error) { /* хранилище недоступно — берём системную тему */ }
+      var prefersLight = false;
+      try { prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches; } catch (error) { /* нет matchMedia */ }
+      document.documentElement.dataset.themeMode = mode;
+      document.documentElement.dataset.theme = mode === "system" ? (prefersLight ? "light" : "dark") : mode;
     })();
   </script>
   <link rel="stylesheet" href="/static/styles.css">
@@ -44,10 +49,11 @@
       <header class="topbar">
         <div><span class="eyebrow">Рабочее пространство</span><h1 id="view-title">Новое расследование</h1></div>
         <div class="topbar-actions">
-          <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Переключить тему" title="Переключить тему" aria-pressed="false">
-            <span class="theme-icon" aria-hidden="true"></span>
-            <span class="theme-label">Тема</span>
-          </button>
+          <div class="theme-switch" role="group" aria-label="Тема оформления">
+            <button class="theme-option" type="button" data-theme-mode="dark" aria-label="Тёмная тема" title="Тёмная тема" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="theme-solid" d="M18.75 15.75A8.25 8.25 0 0 1 8.25 5.25a8.25 8.25 0 1 0 10.5 10.5Z"></path></svg></button>
+            <button class="theme-option" type="button" data-theme-mode="light" aria-label="Светлая тема" title="Светлая тема" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"></circle><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"></path></svg></button>
+            <button class="theme-option" type="button" data-theme-mode="system" aria-label="Системная тема" title="Системная тема" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path class="theme-solid" d="M12 3.5a8.5 8.5 0 0 1 0 17z"></path></svg></button>
+          </div>
           <div class="health-pill" id="health-pill"><span></span><b>Проверка</b></div>
         </div>
       </header>
