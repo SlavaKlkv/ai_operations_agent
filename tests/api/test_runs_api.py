@@ -225,3 +225,47 @@ async def test_trace_explains_the_run_without_rerunning_it(client):
 
 async def test_trace_of_an_unknown_run_is_404(client):
     assert (await client.get(f"/runs/{uuid.uuid4()}/trace")).status_code == 404
+
+
+# ── Удаление из истории ───────────────────────────────────────────────────────
+
+
+async def test_a_run_can_be_deleted_from_history(client):
+    created = (await client.post("/runs", json={"task": TASK})).json()
+
+    response = await client.delete(f"/runs/{created['id']}")
+    assert response.status_code == 204
+
+    assert (await client.get(f"/runs/{created['id']}")).status_code == 404
+    assert created["id"] not in [r["id"] for r in (await client.get("/runs")).json()]
+
+
+async def test_deleting_an_unknown_run_is_404(client):
+    assert (await client.delete(f"/runs/{uuid.uuid4()}")).status_code == 404
+
+
+async def test_deleting_requires_approval_permission(reader_client):
+    """Удаление необратимо, поэтому доступно тому, кто вправе подтверждать записи,
+    а не любому действующему токену."""
+    created = (await reader_client.post("/runs", json={"task": TASK})).json()
+    assert (await reader_client.delete(f"/runs/{created['id']}")).status_code == 403
+
+
+async def test_deleting_keeps_the_audit_trail_but_removes_child_records(client, db_session):
+    from sqlalchemy import select
+
+    from app.db.models import Approval, AuditEvent, ToolCall
+
+    created = (await client.post("/runs", json={"task": TASK})).json()
+    run_id = uuid.UUID(created["id"])
+
+    assert (await client.delete(f"/runs/{run_id}")).status_code == 204
+
+    events = (await db_session.execute(select(AuditEvent))).scalars().all()
+    assert any(e.action == "run.created" for e in events), "audit must outlive the run"
+    assert all(e.run_id is None for e in events), "the dangling reference is cleared"
+
+    tools = (await db_session.execute(select(ToolCall))).scalars().all()
+    approvals = (await db_session.execute(select(Approval))).scalars().all()
+    assert tools == []
+    assert approvals == []
