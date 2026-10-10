@@ -239,8 +239,9 @@ def region(
     return (
         f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="12" fill="none" '
         f'stroke="{stroke}" stroke-width="1.25"{dash}/>\n'
-        f'<text x="{x + 14}" y="{y + 20}" font-size="{SMALL_SIZE}" font-weight="600" '
-        f'letter-spacing="0.6" fill="{p.muted}">{escape(label.upper())}</text>'
+        f'<text x="{x + w / 2}" y="{y + 20}" text-anchor="middle" '
+        f'font-size="{SMALL_SIZE}" font-weight="600" letter-spacing="0.6" '
+        f'fill="{p.muted}">{escape(label.upper())}</text>'
     )
 
 
@@ -450,9 +451,19 @@ def architecture(p: Palette) -> Canvas:
 
     # Хранилище и наблюдаемость
     c.add(region(p, 486, 510, 482, 126, "состояние и телеметрия"))
-    c.add(box(p, 504, 540, 140, 76, "SQLite", "запуски · подтверждения\nаудит · чекпоинты"))
-    c.add(box(p, 656, 540, 140, 76, "Prometheus", "стоимость запуска\nбезопасность записи"))
-    c.add(box(p, 808, 540, 142, 76, "Grafana", "дашборд\nи алерты"))
+    c.add(
+        box(
+            p,
+            504,
+            540,
+            154,
+            76,
+            "SQLite / PostgreSQL",
+            "запуски · подтверждения\nаудит · чекпоинты",
+        )
+    )
+    c.add(box(p, 670, 540, 140, 76, "Prometheus", "стоимость запуска\nбезопасность записи"))
+    c.add(box(p, 822, 540, 128, 76, "Grafana", "дашборд\nи алерты"))
     c.add(arrow(p, [(422, 254), (486, 254)], "", tone="muted"))
     c.add(arrow(p, [(422, 548), (486, 570)]))
 
@@ -801,7 +812,7 @@ DIAGRAMS = {
         architecture,
         "Архитектура AI Operations Agent",
         "Агент живёт за FastAPI-сервисом и дотягивается до четырёх внешних систем "
-        "через MCP-серверы; состояние в SQLite, телеметрия в Prometheus.",
+        "через MCP-серверы; состояние в SQLite или PostgreSQL, телеметрия в Prometheus.",
     ),
     "workflow": (
         workflow,

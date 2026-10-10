@@ -16,9 +16,9 @@
 <text x="32" y="34" font-size="13.5" font-weight="700" letter-spacing="0.7" fill="#59636e">ХРАНЕНИЕ ДАННЫХ</text>
 <text x="32" y="54" text-anchor="start" font-size="12.5" fill="#59636e">Один файл SQLite, две независимые группы таблиц с разными владельцами схемы.</text>
 <rect x="32" y="84" width="936" height="332" rx="12" fill="none" stroke="#d1d9e0" stroke-width="1.25" stroke-dasharray="6 5"/>
-<text x="46" y="104" font-size="12" font-weight="600" letter-spacing="0.6" fill="#59636e">AI_OPERATIONS_AGENT.DB · ОДИН ФАЙЛ (WAL)</text>
+<text x="500.0" y="104" text-anchor="middle" font-size="12" font-weight="600" letter-spacing="0.6" fill="#59636e">AI_OPERATIONS_AGENT.DB · ОДИН ФАЙЛ (WAL)</text>
 <rect x="52" y="120" width="588" height="276" rx="12" fill="none" stroke="#d1d9e0" stroke-width="1.25" stroke-dasharray="6 5"/>
-<text x="66" y="140" font-size="12" font-weight="600" letter-spacing="0.6" fill="#59636e">СХЕМА ПРИЛОЖЕНИЯ — ВЛАДЕЛЕЦ: ALEMBIC</text>
+<text x="346.0" y="140" text-anchor="middle" font-size="12" font-weight="600" letter-spacing="0.6" fill="#59636e">СХЕМА ПРИЛОЖЕНИЯ — ВЛАДЕЛЕЦ: ALEMBIC</text>
 <rect x="68" y="164" width="172" height="44" rx="8" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.5"/>
 <text x="154.0" y="191.04" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">users</text>
 <rect x="256" y="164" width="172" height="44" rx="8" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.5"/>
@@ -36,7 +36,7 @@
 <rect x="256" y="276" width="172" height="44" rx="8" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.5"/>
 <text x="342.0" y="303.04" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">audit_events</text>
 <rect x="664" y="120" width="288" height="276" rx="12" fill="none" stroke="#d1d9e0" stroke-width="1.25" stroke-dasharray="6 5"/>
-<text x="678" y="140" font-size="12" font-weight="600" letter-spacing="0.6" fill="#59636e">ЧЕКПОИНТЕР · LANGGRAPH</text>
+<text x="808.0" y="140" text-anchor="middle" font-size="12" font-weight="600" letter-spacing="0.6" fill="#59636e">ЧЕКПОИНТЕР · LANGGRAPH</text>
 <rect x="680" y="164" width="256" height="56" rx="8" fill="#ddf4ff" stroke="#0969da" stroke-width="1.5"/>
 <text x="808.0" y="180.48" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">checkpoints</text>
 <text x="808.0" y="197.98" text-anchor="middle" font-size="12.5" fill="#59636e">thread_id · checkpoint_id</text>

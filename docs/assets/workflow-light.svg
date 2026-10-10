@@ -38,7 +38,7 @@
 <text x="412.0" y="322.23" text-anchor="middle" font-size="12.5" fill="#59636e">всплеск ↔ деплой ↔ коммит</text>
 <path d="M 412.0 338 L 412.0 382" fill="none" stroke="#59636e" stroke-width="1.6" marker-end="url(#arrow)"/>
 <rect x="184" y="352" width="372" height="264" rx="12" fill="none" stroke="#d1d9e0" stroke-width="1.25" stroke-dasharray="6 5"/>
-<text x="198" y="372" font-size="12" font-weight="600" letter-spacing="0.6" fill="#59636e">АГЕНТНЫЙ ЦИКЛ — ОГРАНИЧЕННЫЙ</text>
+<text x="370.0" y="372" text-anchor="middle" font-size="12" font-weight="600" letter-spacing="0.6" fill="#59636e">АГЕНТНЫЙ ЦИКЛ — ОГРАНИЧЕННЫЙ</text>
 <rect x="300" y="382" width="224" height="58" rx="8" fill="#ddf4ff" stroke="#0969da" stroke-width="1.5"/>
 <text x="412.0" y="399.48" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">select_tool</text>
 <text x="412.0" y="416.98" text-anchor="middle" font-size="12.5" fill="#59636e">единственный реальный выбор</text>
