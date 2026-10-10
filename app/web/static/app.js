@@ -14,6 +14,7 @@ async function api(path, options = {}) {
     try { message = (await response.json()).detail || message; } catch (_) { /* response is not JSON */ }
     throw new Error(message);
   }
+  if (response.status === 204) return null;
   return response.json();
 }
 
@@ -25,20 +26,57 @@ function toast(message, error = false) {
   toast.timer = setTimeout(() => { element.className = "toast"; }, 4200);
 }
 
+function confirmDialog({ title, message, confirmLabel = "Подтвердить", cancelLabel = "Отмена", danger = false }) {
+  const dialog = $("#confirm-dialog");
+  if (!dialog || typeof dialog.showModal !== "function") {
+    return Promise.resolve(window.confirm(`${title}\n\n${message}`));
+  }
+  $("#confirm-title").textContent = title;
+  $("#confirm-text").textContent = message;
+  const confirm = $("#confirm-ok");
+  confirm.textContent = confirmLabel;
+  confirm.classList.toggle("danger", danger);
+  $("#confirm-cancel").textContent = cancelLabel;
+  dialog.returnValue = "";
+  return new Promise((resolve) => {
+    const onClose = () => {
+      dialog.removeEventListener("close", onClose);
+      resolve(dialog.returnValue === "confirm");
+    };
+    dialog.addEventListener("close", onClose);
+    dialog.showModal();
+  });
+}
+
+const VIEWS = ["investigate", "history", "diagnostics", "settings"];
+
+// Текущий экран живёт в адресе (#history, #settings, …): перезагрузка — в том
+// числе с очисткой кеша — возвращает пользователя туда же, откуда он пришёл, а
+// не на стартовый экран. Якорь переживает перезагрузку, обычный кэш и очистку
+// кэша, потому что это часть адреса, а не сохранённое состояние.
+function viewFromHash() {
+  const name = decodeURIComponent(location.hash.replace(/^#\/?/, ""));
+  return VIEWS.includes(name) ? name : "investigate";
+}
+
 function showView(name) {
   $$(".view").forEach((view) => view.classList.toggle("active", view.id === `view-${name}`));
   $$(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
-  const titles = { investigate: "Новое расследование", history: "История", sources: "Источники данных", diagnostics: "Диагностика", settings: "Настройки" };
+  const titles = { investigate: "Новое расследование", history: "История", diagnostics: "Диагностика", settings: "Настройки" };
   $("#view-title").textContent = titles[name];
 }
 
 function navigate(name) {
   showView(name);
+  // Главный экран остаётся без якоря — так адрес совпадает со ссылкой логотипа.
+  history.replaceState(null, "", name === "investigate" ? location.pathname : `#${name}`);
   if (name === "history") loadHistory();
-  if (name === "sources") loadSources();
   if (name === "diagnostics") loadDiagnostics();
   if (name === "settings") loadSetup();
 }
+
+// Адрес можно править руками и переходить по кнопкам «назад/вперёд».
+window.addEventListener("hashchange", () => navigate(viewFromHash()));
 
 function statusLabel(status) {
   return ({ awaiting_approval: "Ожидает решения", completed: "Завершено", failed: "Ошибка", running: "Выполняется" })[status] || status;
@@ -123,22 +161,36 @@ async function loadHistory() {
   target.innerHTML = '<div class="empty-card">Загружаем историю…</div>';
   try {
     const runs = await api("/runs");
-    target.innerHTML = runs.map((run) => `<article class="history-card" data-run="${run.id}"><div><h3>${escapeHtml(run.task)}</h3><p>${new Date(run.created_at).toLocaleString("ru-RU")} · ${run.tool_call_count} вызовов</p></div><span class="state-tag">${statusLabel(run.status)}</span></article>`).join("") || '<div class="empty-card">Расследований пока нет.</div>';
+    target.innerHTML = runs.map((run) => `<article class="history-card" data-run="${run.id}"><div><h3>${escapeHtml(run.task)}</h3><p>${new Date(run.created_at).toLocaleString("ru-RU")} · ${run.tool_call_count} вызовов</p></div><div class="history-side"><span class="state-tag">${statusLabel(run.status)}</span><button class="history-delete" type="button" data-delete="${run.id}" title="Удалить из истории" aria-label="Удалить из истории">✕</button></div></article>`).join("") || '<div class="empty-card">Расследований пока нет.</div>';
     target.querySelectorAll("[data-run]").forEach((card) => card.addEventListener("click", async () => {
       try { renderRun(await api(`/runs/${card.dataset.run}`)); navigate("investigate"); } catch (error) { toast(error.message, true); }
+    }));
+    target.querySelectorAll("[data-delete]").forEach((button) => button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      deleteHistoryItem(button.dataset.delete, button);
     }));
   } catch (error) { target.innerHTML = `<div class="empty-card">${escapeHtml(error.message)}</div>`; }
 }
 
-async function loadSources() {
-  const target = $("#source-grid");
+async function deleteHistoryItem(runId, button) {
+  const confirmed = await confirmDialog({
+    title: "Удалить расследование?",
+    message: "Расследование исчезнет из истории вместе с собранными доказательствами и ходом проверки. Отменить это действие нельзя.",
+    confirmLabel: "Удалить",
+    danger: true,
+  });
+  if (!confirmed) return;
+  button.disabled = true;
   try {
-    const response = await fetch("/mcp/servers", { headers: headers() });
-    const sources = await response.json();
-    const items = Array.isArray(sources) ? sources : (sources.servers || []);
-    target.innerHTML = items.map((source) => `<article class="source-card"><h3>${escapeHtml(source.name || "Источник")}</h3><p>${escapeHtml(source.error || `${source.tool_count || 0} инструментов доступно`)}</p><footer><span>${source.required ? "Обязательный" : "Дополнительный"}</span><span class="${source.connected ? "connected" : ""}">${source.connected ? "Подключён" : "Недоступен"}</span></footer></article>`).join("") || '<div class="empty-card">Источники ещё не настроены.</div>';
-  } catch (error) { target.innerHTML = `<div class="empty-card">${escapeHtml(error.message)}</div>`; }
+    await api(`/runs/${runId}`, { method: "DELETE" });
+    toast("Расследование удалено");
+    await loadHistory();
+  } catch (error) {
+    button.disabled = false;
+    toast(error.message, true);
+  }
 }
+
 
 async function loadTrace(runId) {
   const list = $("#trace-list");
@@ -184,7 +236,7 @@ async function loadDiagnostics() {
 function renderSetup(data) {
   state.setup = data;
 
-  $("#settings-sources").innerHTML = data.sources.map((source) => `<article class="source-card"><h3>${escapeHtml(source.name)}</h3><p>${escapeHtml(source.detail)}</p><footer><span>${source.required ? "Обязательный" : "Дополнительный"}</span><span class="${source.ready ? "connected" : "failed"}">${source.ready ? "Готов" : "Недоступен"}</span></footer></article>`).join("") || '<div class="empty-card">Источники не обнаружены.</div>';
+  $("#settings-sources").innerHTML = data.sources.map((source) => `<article class="source-card"><h3>${escapeHtml(source.name)}</h3><p>${escapeHtml(source.error || (source.tool_count ? `${source.tool_count} инструментов доступно` : source.detail))}</p><footer><span>${source.required ? "Обязательный" : "Дополнительный"}</span><span class="${source.ready ? "connected" : "failed"}">${source.ready ? "Готов" : "Недоступен"}</span></footer></article>`).join("") || '<div class="empty-card">Источники не обнаружены.</div>';
   $("#settings-storage").innerHTML = `<article class="source-card"><h3>Локальное хранилище</h3><p>${escapeHtml(data.storage.status)}</p><footer><span>${escapeHtml(data.storage.action || "Расследования, подтверждения и настройки")}</span><span class="${data.storage.ready ? "connected" : "failed"}">${data.storage.ready ? "OK" : "FAIL"}</span></footer></article>`;
 
   const installed = new Set(data.model.installed_models);
@@ -419,4 +471,18 @@ $("#custom-model-form").addEventListener("submit", (event) => { event.preventDef
 $$(".theme-option").forEach((option) => option.addEventListener("click", () => selectTheme(option.dataset.themeMode)));
 applyTheme(currentMode());
 checkHealth();
-loadSetup().then(() => { if (state.setup && !state.setup.ready) showView("settings"); });
+// Восстанавливаем экран из адреса: перезагрузка не должна уводить пользователя
+// в другое место. Обращаемся к showView напрямую: адрес уже задаёт вид, и не
+// переписываем его (иначе ссылка логотипа теряла бы якорь главного экрана).
+const initialView = viewFromHash();
+showView(initialView);
+if (initialView === "history") loadHistory();
+if (initialView === "diagnostics") loadDiagnostics();
+loadSetup().then(() => {
+  // Мастер настройки переводит на «Настройки» только тех, кто ещё не выбрал
+  // экран сам. Явно выбранный экран (якорь в адресе) не перебивается.
+  if (state.setup && !state.setup.ready && initialView === "investigate") {
+    showView("settings");
+    history.replaceState(null, "", "#settings");
+  }
+});

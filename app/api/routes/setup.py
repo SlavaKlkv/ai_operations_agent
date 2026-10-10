@@ -57,6 +57,8 @@ class SourceView(BaseModel):
     ready: bool
     required: bool
     detail: str
+    tool_count: int = 0
+    error: str | None = None
 
 
 class SetupView(BaseModel):
@@ -95,6 +97,8 @@ async def _sources(settings: Settings, pool: MCPToolPool) -> list[SourceView]:
                 if item.connected
                 else item.error or "Источник недоступен"
             ),
+            tool_count=item.tool_count,
+            error=item.error,
         )
         for item in pool.status
     ]
