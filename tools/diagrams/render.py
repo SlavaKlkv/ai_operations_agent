@@ -657,10 +657,7 @@ def guardrails(p: Palette) -> Canvas:
         cursor_y = 155
         for text in points:
             wrapped = wrap(text, 246, 12.5)
-            c.add(
-                f'<circle cx="{x + 18}" cy="{cursor_y - 4}" r="3" '
-                f'fill="{TONES[tone](p)[1]}"/>'
-            )
+            c.add(f'<circle cx="{x + 18}" cy="{cursor_y - 4}" r="3" fill="{TONES[tone](p)[1]}"/>')
             for line_index, part in enumerate(wrapped):
                 c.add(caption(p, x + 32, cursor_y + line_index * 16, part, muted=False))
             cursor_y += len(wrapped) * 16 + 14
