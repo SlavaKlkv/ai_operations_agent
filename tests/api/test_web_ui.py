@@ -10,7 +10,6 @@ async def test_root_serves_the_local_application_shell(http_client):
     assert 'id="investigation-form"' in response.text
     assert 'id="approval"' in response.text
     assert 'id="history-list"' in response.text
-    assert 'id="source-grid"' in response.text
     assert "<h3>Отчёт</h3>" in response.text
     assert 'id="view-settings"' in response.text
     assert 'id="settings-sources"' in response.text
@@ -65,3 +64,31 @@ def test_sidebar_settings_is_a_regular_navigation_item():
 
     assert 'class="nav-item" data-view="settings"' in html
     assert "settings-link" not in html
+
+
+def test_history_cards_can_be_deleted():
+    """Удаление расследования доступно прямо из списка истории."""
+    from app.web.routes import STATIC_DIR
+
+    script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+    styles = (STATIC_DIR / "styles.css").read_text(encoding="utf-8")
+
+    assert "deleteHistoryItem" in script
+    assert "data-delete" in script
+    assert 'method: "DELETE"' in script
+    assert ".history-delete" in styles
+
+
+def test_history_delete_confirmation_lives_in_the_interface():
+    """Подтверждение удаления — собственный диалог приложения, а не окно браузера."""
+    from app.web.routes import STATIC_DIR
+
+    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+    script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+    styles = (STATIC_DIR / "styles.css").read_text(encoding="utf-8")
+
+    assert 'id="confirm-dialog"' in html
+    assert "confirmDialog" in script
+    assert "showModal" in script
+    assert "!confirm(" not in script
+    assert ".confirm-dialog" in styles

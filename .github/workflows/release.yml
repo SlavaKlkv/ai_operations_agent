@@ -145,13 +145,21 @@ jobs:
         run: |
           set -eu
           bundle="ai-operations-agent-${VERSION}"
-          # При ручном запуске тег ещё не существует: привязываем его к собранному commit.
-          target=""
-          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
-            target="--target ${GITHUB_SHA}"
+          # Тег могли перепушить или workflow перезапустить для уже выпущенной
+          # версии. Тогда не падаем, а обновляем ассеты существующего релиза:
+          # повторный прогон остаётся идемпотентным.
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            gh release upload "v${VERSION}" \
+              "${bundle}.tar.gz" "${bundle}.zip" SHA256SUMS.txt --clobber
+          else
+            # При ручном запуске тег ещё не существует: привязываем его к собранному commit.
+            target=""
+            if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+              target="--target ${GITHUB_SHA}"
+            fi
+            gh release create "v${VERSION}" \
+              --title "AI Operations Agent ${VERSION}" \
+              --generate-notes \
+              $target \
+              "${bundle}.tar.gz" "${bundle}.zip" SHA256SUMS.txt
           fi
-          gh release create "v${VERSION}" \
-            --title "AI Operations Agent ${VERSION}" \
-            --generate-notes \
-            $target \
-            "${bundle}.tar.gz" "${bundle}.zip" SHA256SUMS.txt

@@ -319,3 +319,21 @@ async def get_run(
     if run is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Запуск не найден.")
     return _to_detail(run)
+
+
+@router.delete("/{run_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_run(
+    run_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+    principal: Principal = Depends(require_approver),
+) -> None:
+    """Убрать расследование из истории.
+
+    Удаление необратимо и касается записи, которая могла санкционировать действие
+    во внешней системе, поэтому требует того же разрешения, что и подтверждение
+    записи: действующего токена самого по себе недостаточно.
+    """
+    run = await run_store.get_run(session, run_id)
+    if run is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Запуск не найден.")
+    await run_store.delete_run(session, run)
