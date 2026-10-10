@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 430" width="1000" height="430" role="img" aria-labelledby="title desc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 510" width="1000" height="510" role="img" aria-labelledby="title desc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif">
   <title id="title">Чего агент не может</title>
   <desc id="desc">Три слоя контроля: модель предлагает, реестр проверяет и отказывает, человек санкционирует каждую запись.</desc>
   <defs>
@@ -12,43 +12,48 @@
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#f85149"/>
     </marker>
   </defs>
-  <rect width="1000" height="430" fill="#0d1117"/>
-<text x="32" y="34" font-size="12" font-weight="700" letter-spacing="0.7" fill="#9198a1">ЧЕГО АГЕНТ НЕ МОЖЕТ</text>
-<text x="32" y="54" text-anchor="start" font-size="11.5" fill="#9198a1">Каждое ограничение ниже вшито в код и проверяется до запуска инструмента. Ничего из этого не является инструкцией в промпте.</text>
-<rect x="32" y="84" width="292" height="40" rx="8" fill="#121d2f" stroke="#4493f8" stroke-width="1.5"/>
-<text x="178.0" y="109.0" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">Модель предлагает</text>
-<circle cx="50" cy="144" r="3" fill="#4493f8"/>
-<text x="64" y="148" text-anchor="start" font-size="12" fill="#e6edf3">видит только разрешённые политикой инструменты</text>
-<circle cx="50" cy="174" r="3" fill="#4493f8"/>
-<text x="64" y="178" text-anchor="start" font-size="12" fill="#e6edf3">отвечает именем и аргументами</text>
-<circle cx="50" cy="204" r="3" fill="#4493f8"/>
-<text x="64" y="208" text-anchor="start" font-size="12" fill="#e6edf3">не может добавить инструмент или расширить доступ</text>
-<rect x="345" y="84" width="292" height="40" rx="8" fill="#151b23" stroke="#3d444d" stroke-width="1.5"/>
-<text x="491.0" y="109.0" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">Реестр решает</text>
-<circle cx="363" cy="144" r="3" fill="#3d444d"/>
-<text x="377" y="148" text-anchor="start" font-size="12" fill="#e6edf3">неизвестное имя → отказ, вызов записан</text>
-<circle cx="363" cy="174" r="3" fill="#3d444d"/>
-<text x="377" y="178" text-anchor="start" font-size="12" fill="#e6edf3">аргументы проверяются схемой</text>
-<circle cx="363" cy="204" r="3" fill="#3d444d"/>
-<text x="377" y="208" text-anchor="start" font-size="12" fill="#e6edf3">повтор идентичного вызова → отказ</text>
-<circle cx="363" cy="234" r="3" fill="#3d444d"/>
-<text x="377" y="238" text-anchor="start" font-size="12" fill="#e6edf3">таймаут и ретрай — свойство рантайма</text>
-<rect x="658" y="84" width="292" height="40" rx="8" fill="#2b2412" stroke="#d29922" stroke-width="1.5"/>
-<text x="804.0" y="109.0" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">Человек санкционирует</text>
-<circle cx="676" cy="144" r="3" fill="#d29922"/>
-<text x="690" y="148" text-anchor="start" font-size="12" fill="#e6edf3">write-инструменты не видны планировщику</text>
-<circle cx="676" cy="174" r="3" fill="#d29922"/>
-<text x="690" y="178" text-anchor="start" font-size="12" fill="#e6edf3">граф встаёт на паузу, состояние сохраняется</text>
-<circle cx="676" cy="204" r="3" fill="#d29922"/>
-<text x="690" y="208" text-anchor="start" font-size="12" fill="#e6edf3">решение не несёт собственного действия</text>
-<circle cx="676" cy="234" r="3" fill="#d29922"/>
-<text x="690" y="238" text-anchor="start" font-size="12" fill="#e6edf3">право выдаётся на один шаг</text>
-<path d="M 324 104 L 345 104" fill="none" stroke="#4493f8" stroke-width="1.6" marker-end="url(#arrow-accent)"/>
-<path d="M 637 104 L 658 104" fill="none" stroke="#4493f8" stroke-width="1.6" marker-end="url(#arrow-accent)"/>
-<rect x="32" y="296" width="936" height="56" rx="10" fill="#2b1618" stroke="#f85149" stroke-width="1.5"/>
-<text x="500.0" y="329.0" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3"></text>
-<text x="52" y="320" text-anchor="start" font-size="12.5" fill="#e6edf3" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">agent_unapproved_writes_total обязан стоять на нуле.</text>
-<text x="52" y="339" text-anchor="start" font-size="11.5" fill="#9198a1">Он выводится из записанных вызовов, а не из флага, и поднимает тревогу сразу, как только сдвинется.</text>
-<text x="32" y="384" text-anchor="start" font-size="12" fill="#9198a1">Бюджеты: 12 вызовов · 30 шагов графа · 4 итерации цикла · 15 с на инструмент · 2 идентичных вызова.</text>
-<text x="32" y="404" text-anchor="start" font-size="12" fill="#9198a1">Никакого shell, исполнения произвольного кода и инструментов вне реестра.</text>
+  <rect width="1000" height="510" fill="#0d1117"/>
+<text x="32" y="34" font-size="13.5" font-weight="700" letter-spacing="0.7" fill="#9198a1">ЧЕГО АГЕНТ НЕ МОЖЕТ</text>
+<text x="32" y="54" text-anchor="start" font-size="12.5" fill="#9198a1">Каждое ограничение ниже вшито в код и проверяется до запуска инструмента. Ничего из этого не является инструкцией в промпте.</text>
+<rect x="32" y="84" width="292" height="44" rx="8" fill="#121d2f" stroke="#4493f8" stroke-width="1.5"/>
+<text x="178.0" y="111.04" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">Модель предлагает</text>
+<circle cx="50" cy="151" r="3" fill="#4493f8"/>
+<text x="64" y="155" text-anchor="start" font-size="12.5" fill="#e6edf3">видит только разрешённые политикой</text>
+<text x="64" y="171" text-anchor="start" font-size="12.5" fill="#e6edf3">инструменты</text>
+<circle cx="50" cy="197" r="3" fill="#4493f8"/>
+<text x="64" y="201" text-anchor="start" font-size="12.5" fill="#e6edf3">отвечает именем и аргументами</text>
+<circle cx="50" cy="227" r="3" fill="#4493f8"/>
+<text x="64" y="231" text-anchor="start" font-size="12.5" fill="#e6edf3">не может добавить инструмент или</text>
+<text x="64" y="247" text-anchor="start" font-size="12.5" fill="#e6edf3">расширить доступ</text>
+<rect x="345" y="84" width="292" height="44" rx="8" fill="#151b23" stroke="#3d444d" stroke-width="1.5"/>
+<text x="491.0" y="111.04" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">Реестр решает</text>
+<circle cx="363" cy="151" r="3" fill="#3d444d"/>
+<text x="377" y="155" text-anchor="start" font-size="12.5" fill="#e6edf3">неизвестное имя → отказ, вызов записан</text>
+<circle cx="363" cy="181" r="3" fill="#3d444d"/>
+<text x="377" y="185" text-anchor="start" font-size="12.5" fill="#e6edf3">аргументы проверяются схемой</text>
+<circle cx="363" cy="211" r="3" fill="#3d444d"/>
+<text x="377" y="215" text-anchor="start" font-size="12.5" fill="#e6edf3">повтор идентичного вызова → отказ</text>
+<circle cx="363" cy="241" r="3" fill="#3d444d"/>
+<text x="377" y="245" text-anchor="start" font-size="12.5" fill="#e6edf3">таймаут и ретрай — свойство рантайма</text>
+<rect x="658" y="84" width="292" height="44" rx="8" fill="#2b2412" stroke="#d29922" stroke-width="1.5"/>
+<text x="804.0" y="111.04" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3">Человек санкционирует</text>
+<circle cx="676" cy="151" r="3" fill="#d29922"/>
+<text x="690" y="155" text-anchor="start" font-size="12.5" fill="#e6edf3">write-инструменты не видны</text>
+<text x="690" y="171" text-anchor="start" font-size="12.5" fill="#e6edf3">планировщику</text>
+<circle cx="676" cy="197" r="3" fill="#d29922"/>
+<text x="690" y="201" text-anchor="start" font-size="12.5" fill="#e6edf3">граф встаёт на паузу, состояние</text>
+<text x="690" y="217" text-anchor="start" font-size="12.5" fill="#e6edf3">сохраняется</text>
+<circle cx="676" cy="243" r="3" fill="#d29922"/>
+<text x="690" y="247" text-anchor="start" font-size="12.5" fill="#e6edf3">решение не несёт собственного</text>
+<text x="690" y="263" text-anchor="start" font-size="12.5" fill="#e6edf3">действия</text>
+<circle cx="676" cy="289" r="3" fill="#d29922"/>
+<text x="690" y="293" text-anchor="start" font-size="12.5" fill="#e6edf3">право выдаётся на один шаг</text>
+<path d="M 324 106 L 345 106" fill="none" stroke="#4493f8" stroke-width="1.6" marker-end="url(#arrow-accent)"/>
+<path d="M 637 106 L 658 106" fill="none" stroke="#4493f8" stroke-width="1.6" marker-end="url(#arrow-accent)"/>
+<rect x="32" y="350" width="936" height="72" rx="10" fill="#2b1618" stroke="#f85149" stroke-width="1.5"/>
+<text x="500.0" y="391.04" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3"></text>
+<text x="52" y="379" text-anchor="start" font-size="13" fill="#e6edf3" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">agent_unapproved_writes_total обязан стоять на нуле.</text>
+<text x="52" y="404" text-anchor="start" font-size="12.5" fill="#9198a1">Он выводится из записанных вызовов, а не из флага, и поднимает тревогу сразу, как только сдвинется.</text>
+<text x="32" y="458" text-anchor="start" font-size="12.5" fill="#9198a1">Бюджеты: 12 вызовов · 30 шагов графа · 4 итерации цикла · 15 с на инструмент · 2 идентичных вызова.</text>
+<text x="32" y="482" text-anchor="start" font-size="12.5" fill="#9198a1">Никакого shell, исполнения произвольного кода и инструментов вне реестра.</text>
 </svg>

@@ -92,6 +92,9 @@ TONES = {
 #: один коэффициент подходит обоим и слегка завышает ширину для надёжности.
 CHAR_WIDTH = 0.55
 WIDE_CHARS = set("MWmwФШЩЫЮЖ")
+BODY_SIZE = 12.5
+TITLE_SIZE = 14
+SMALL_SIZE = 12
 
 
 def text_width(text: str, size: float) -> float:
@@ -181,6 +184,8 @@ def box(
     dashed: bool = False,
     mono: bool = False,
     radius: int = 8,
+    title_size: float = TITLE_SIZE,
+    subtitle_size: float = BODY_SIZE,
 ) -> str:
     fill, stroke, text = TONES[tone](p)
     dash = ' stroke-dasharray="5 4"' if dashed else ""
@@ -190,24 +195,27 @@ def box(
     ]
     cx = x + w / 2
     if subtitle:
-        wrapped = wrap(subtitle, w - 20, 11.5)
-        # Заголовок и подзаголовок центрируются единым блоком, чтобы подпись
-        # из трёх строк оставалась внутри блока и не выходила за нижнюю границу.
-        top = y + h / 2 - (len(wrapped) * 14) / 2
+        wrapped = wrap(subtitle, w - 24, subtitle_size)
+        line_height = subtitle_size + 2
+        content_height = title_size + 3 + len(wrapped) * line_height
+        content_top = y + (h - content_height) / 2
+        title_y = content_top + title_size * 0.82
         lines.append(
-            f'<text x="{cx}" y="{top}" text-anchor="middle" font-size="14" '
+            f'<text x="{cx}" y="{title_y}" text-anchor="middle" font-size="{title_size}" '
             f'font-weight="600" fill="{text}"'
             + (f' font-family="{MONO}"' if mono else "")
             + f">{escape(title)}</text>"
         )
         for index, part in enumerate(wrapped):
             lines.append(
-                f'<text x="{cx}" y="{top + 17 + index * 14}" text-anchor="middle" '
-                f'font-size="11.5" fill="{p.muted}">{escape(part)}</text>'
+                f'<text x="{cx}" y="{title_y + 3 + line_height * (index + 1)}" '
+                f'text-anchor="middle" font-size="{subtitle_size}" '
+                f'fill="{p.muted}">{escape(part)}</text>'
             )
     else:
         lines.append(
-            f'<text x="{cx}" y="{y + h / 2 + 5}" text-anchor="middle" font-size="14" '
+            f'<text x="{cx}" y="{y + h / 2 + title_size * 0.36}" text-anchor="middle" '
+            f'font-size="{title_size}" '
             f'font-weight="600" fill="{text}"'
             + (f' font-family="{MONO}"' if mono else "")
             + f">{escape(title)}</text>"
@@ -231,7 +239,7 @@ def region(
     return (
         f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="12" fill="none" '
         f'stroke="{stroke}" stroke-width="1.25"{dash}/>\n'
-        f'<text x="{x + 14}" y="{y + 19}" font-size="11" font-weight="600" '
+        f'<text x="{x + 14}" y="{y + 20}" font-size="{SMALL_SIZE}" font-weight="600" '
         f'letter-spacing="0.6" fill="{p.muted}">{escape(label.upper())}</text>'
     )
 
@@ -262,7 +270,7 @@ def arrow(
         mx, my = (mid[0] + start[0]) / 2, (mid[1] + start[1]) / 2
         markup += (
             f'\n<text x="{mx + label_dx}" y="{my + label_dy}" text-anchor="middle" '
-            f'font-size="11" fill="{p.muted}">{escape(label)}</text>'
+            f'font-size="{SMALL_SIZE}" fill="{p.muted}">{escape(label)}</text>'
         )
     return markup
 
@@ -274,7 +282,7 @@ def caption(
     text: str,
     *,
     anchor: str = "start",
-    size: float = 11.5,
+    size: float = BODY_SIZE,
     muted: bool = True,
     mono: bool = False,
 ) -> str:
@@ -287,7 +295,7 @@ def caption(
 
 def heading(p: Palette, x: float, y: float, text: str) -> str:
     return (
-        f'<text x="{x}" y="{y}" font-size="12" font-weight="700" letter-spacing="0.7" '
+        f'<text x="{x}" y="{y}" font-size="13.5" font-weight="700" letter-spacing="0.7" '
         f'fill="{p.muted}">{escape(text.upper())}</text>'
     )
 
@@ -296,7 +304,7 @@ def heading(p: Palette, x: float, y: float, text: str) -> str:
 
 
 def architecture(p: Palette) -> Canvas:
-    c = Canvas(1000, 620)
+    c = Canvas(1000, 660)
 
     c.add(heading(p, 32, 34, "AI Operations Agent — архитектура системы"))
     c.add(
@@ -305,27 +313,52 @@ def architecture(p: Palette) -> Canvas:
         )
     )
 
-    c.add(box(p, 32, 78, 190, 54, "Инженер", "задача на естественном языке", tone="accent"))
-    c.add(arrow(p, [(127, 132), (127, 168)]))
+    c.add(box(p, 32, 78, 190, 62, "Инженер", "задача на естественном языке", tone="accent"))
+    c.add(arrow(p, [(127, 140), (127, 168)]))
 
     # Слой API
     c.add(region(p, 32, 168, 390, 120, "FastAPI"))
-    c.add(box(p, 48, 196, 172, 34, "POST /runs", mono=True, radius=6))
-    c.add(box(p, 48, 238, 172, 34, "POST /approval", mono=True, radius=6, tone="attention"))
-    c.add(box(p, 234, 196, 172, 34, "GET /runs/{id}/trace", mono=True, radius=6))
-    c.add(box(p, 234, 238, 172, 34, "GET /metrics", mono=True, radius=6))
-
-    # Ядро агента
-    c.add(region(p, 32, 308, 390, 168, "воркфлоу LangGraph"))
-    c.add(box(p, 48, 336, 172, 46, "Состояние", "типизированное, в чекпоинте", tone="neutral"))
-    c.add(box(p, 234, 336, 172, 46, "Ограничения", "бюджеты · allowlist · чтение/запись"))
+    c.add(box(p, 48, 196, 172, 34, "POST /runs", mono=True, radius=6, title_size=13.5))
     c.add(
         box(
             p,
             48,
-            396,
+            238,
             172,
-            60,
+            34,
+            "POST /approval",
+            mono=True,
+            radius=6,
+            tone="attention",
+            title_size=13.5,
+        )
+    )
+    c.add(
+        box(
+            p,
+            234,
+            196,
+            172,
+            34,
+            "GET /runs/{id}/trace",
+            mono=True,
+            radius=6,
+            title_size=13.5,
+        )
+    )
+    c.add(box(p, 234, 238, 172, 34, "GET /metrics", mono=True, radius=6, title_size=13.5))
+
+    # Ядро агента
+    c.add(region(p, 32, 308, 390, 184, "воркфлоу LangGraph"))
+    c.add(box(p, 48, 338, 172, 62, "Состояние", "типизированное, в чекпоинте", tone="neutral"))
+    c.add(box(p, 234, 338, 172, 62, "Ограничения", "бюджеты · allowlist · чтение/запись"))
+    c.add(
+        box(
+            p,
+            48,
+            412,
+            172,
+            76,
             "Планировщик",
             "выбирает следующий инструмент\nиз разрешённых",
             tone="accent",
@@ -335,9 +368,9 @@ def architecture(p: Palette) -> Canvas:
         box(
             p,
             234,
-            396,
+            412,
             172,
-            60,
+            76,
             "Подтверждение",
             "пауза перед любой\nзаписью человеком",
             tone="attention",
@@ -349,29 +382,29 @@ def architecture(p: Palette) -> Canvas:
         box(
             p,
             32,
-            502,
+            516,
             390,
-            56,
+            64,
             "LLM  ·  LangChain",
             "необязателен: без него агент идёт детерминированным путём",
             tone="ghost",
             dashed=True,
         )
     )
-    c.add(arrow(p, [(227, 476), (227, 502)], dashed=True))
+    c.add(arrow(p, [(227, 492), (227, 516)], dashed=True))
 
     c.add(arrow(p, [(227, 288), (227, 308)], tone="accent"))
 
     # Граница MCP
     c.add(arrow(p, [(422, 392), (486, 392)], "MCP", tone="accent"))
-    c.add(region(p, 486, 168, 482, 308, "слой интеграции MCP"))
+    c.add(region(p, 486, 168, 482, 322, "слой интеграции MCP"))
     c.add(
         box(
             p,
             504,
             196,
             446,
-            60,
+            66,
             "Пул MCP-клиентов",
             "находит инструменты · чтение/запись по аннотациям · деградирует по серверам",
             tone="accent",
@@ -380,34 +413,48 @@ def architecture(p: Palette) -> Canvas:
 
     servers = [
         ("monitoring", "метрики · алерты\nагрегированные ошибки", "success"),
-        ("code", "деплои\nкоммиты · PR", "success"),
+        ("code", "деплои\nкоммиты · PR", "danger"),
         ("incident", "задачи\nсоздание · комментарии", "danger"),
         ("knowledge", "рунбуки\nпоиск", "success"),
     ]
     for index, (name, detail, tone) in enumerate(servers):
         x = 504 + index * 113
-        c.add(box(p, x, 268, 103, 84, name, detail, tone=tone, mono=True))
-        c.add(arrow(p, [(x + 51, 256), (x + 51, 268)]))
-        c.add(box(p, x, 372, 103, 44, "внешняя", "система", tone="ghost", dashed=True))
-        c.add(arrow(p, [(x + 51, 352), (x + 51, 372)], dashed=True))
+        c.add(
+            box(
+                p,
+                x,
+                280,
+                108,
+                94,
+                name,
+                detail,
+                tone=tone,
+                mono=True,
+                title_size=12.5,
+                subtitle_size=12,
+            )
+        )
+        c.add(arrow(p, [(x + 51, 262), (x + 51, 280)]))
+        c.add(box(p, x, 398, 103, 50, "внешняя", "система", tone="ghost", dashed=True))
+        c.add(arrow(p, [(x + 51, 374), (x + 51, 398)], dashed=True))
 
     c.add(
         caption(
             p,
             727,
-            444,
+            474,
             "каждый сервер — отдельный процесс, говорит по MCP через stdio",
             anchor="middle",
         )
     )
 
     # Хранилище и наблюдаемость
-    c.add(region(p, 486, 496, 482, 96, "состояние и телеметрия"))
-    c.add(box(p, 504, 524, 140, 50, "SQLite", "запуски · подтверждения\nаудит · чекпоинты"))
-    c.add(box(p, 656, 524, 140, 50, "Prometheus", "стоимость запуска\nбезопасность записи"))
-    c.add(box(p, 808, 524, 142, 50, "Grafana", "дашборд\nи алерты"))
+    c.add(region(p, 486, 510, 482, 126, "состояние и телеметрия"))
+    c.add(box(p, 504, 540, 140, 76, "SQLite", "запуски · подтверждения\nаудит · чекпоинты"))
+    c.add(box(p, 656, 540, 140, 76, "Prometheus", "стоимость запуска\nбезопасность записи"))
+    c.add(box(p, 808, 540, 142, 76, "Grafana", "дашборд\nи алерты"))
     c.add(arrow(p, [(422, 254), (486, 254)], "", tone="muted"))
-    c.add(arrow(p, [(422, 520), (486, 540)]))
+    c.add(arrow(p, [(422, 548), (486, 570)]))
 
     return c
 
@@ -416,7 +463,7 @@ def architecture(p: Palette) -> Canvas:
 
 
 def workflow(p: Palette) -> Canvas:
-    c = Canvas(1000, 700)
+    c = Canvas(1000, 738)
 
     c.add(heading(p, 32, 34, "Граф расследования"))
     c.add(
@@ -428,7 +475,7 @@ def workflow(p: Palette) -> Canvas:
         )
     )
 
-    w, h = 224, 50
+    w, h = 224, 58
     main = 300  # левая колонка: расследование
     right = 676  # правая колонка: вывод и действие
     mid_l, mid_r = main + w / 2, right + w / 2
@@ -441,41 +488,41 @@ def workflow(p: Palette) -> Canvas:
     c.add(arrow(p, [(mid_l, 110), (mid_l, 132)]))
 
     node(main, 132, "analyze_task", "сервис и временное окно")
-    c.add(arrow(p, [(mid_l, 182), (mid_l, 206)]))
+    c.add(arrow(p, [(mid_l, 190), (mid_l, 206)]))
 
     node(main, 206, "collect_initial_context", "метрики · деплои · ошибки · алерты")
-    c.add(arrow(p, [(main - 4, 231), (main - 76, 231)], tone="danger"))
-    c.add(caption(p, main - 40, 222, "нет сигнала", anchor="middle", size=10.5))
+    c.add(arrow(p, [(main - 4, 235), (main - 76, 235)], tone="danger"))
+    c.add(caption(p, main - 40, 222, "нет сигнала", anchor="middle", size=SMALL_SIZE))
     c.add(
         box(
             p,
             24,
             206,
             200,
-            50,
+            58,
             "insufficient_context",
             "останавливается и объясняет",
             tone="danger",
             mono=True,
         )
     )
-    c.add(arrow(p, [(mid_l, 256), (mid_l, 280)]))
+    c.add(arrow(p, [(mid_l, 264), (mid_l, 280)]))
 
     node(main, 280, "correlate", "всплеск ↔ деплой ↔ коммит", tone="success")
-    c.add(arrow(p, [(mid_l, 330), (mid_l, 362)]))
+    c.add(arrow(p, [(mid_l, 338), (mid_l, 382)]))
 
     # ── Цикл ────────────────────────────────────────────────────────────────
     c.add(region(p, main - 116, 352, w + 148, 264, "агентный цикл — ограниченный"))
     node(main, 382, "select_tool", "единственный реальный выбор модели", tone="accent")
-    c.add(arrow(p, [(mid_l, 432), (mid_l, 458)]))
+    c.add(arrow(p, [(mid_l, 440), (mid_l, 458)]))
     node(main, 458, "execute_tool", "проверен · по таймауту · записан")
-    c.add(arrow(p, [(mid_l, 508), (mid_l, 534)]))
+    c.add(arrow(p, [(mid_l, 516), (mid_l, 534)]))
     node(main, 534, "evaluate_observation", "это что-то изменило?")
 
     c.add(
         arrow(
             p,
-            [(main, 559), (main - 92, 559), (main - 92, 407), (main, 407)],
+            [(main, 563), (main - 92, 563), (main - 92, 411), (main, 411)],
             "есть что узнать",
             tone="accent",
             label_dx=-52,
@@ -487,19 +534,19 @@ def workflow(p: Palette) -> Canvas:
             p,
             main - 104,
             604,
-            "выходы: ничего не запрошено · бюджет исчерпан · нет прогресса · 4 итерации",
-            size=10.5,
+            "выход: без запроса · бюджет · нет прогресса · 4 итерации",
+            size=SMALL_SIZE,
         )
     )
 
     # ── Правая колонка, читается снизу вверх ────────────────────────────────
-    c.add(arrow(p, [(main + w, 559), (right + 14, 559)], "достаточно", label_dy=-9))
+    c.add(arrow(p, [(main + w, 563), (right + 14, 563)], "достаточно", label_dy=-9))
     node(right, 534, "generate_analysis", "структурирован · заземлён", tone="success")
-    c.add(arrow(p, [(mid_r, 534), (mid_r, 504)]))
+    c.add(arrow(p, [(mid_r, 534), (mid_r, 512)]))
 
     node(right, 454, "propose_action", "уверенность ≥ 0.6, иначе ничего")
-    c.add(arrow(p, [(mid_r, 454), (mid_r, 424)], tone="danger"))
-    c.add(caption(p, mid_r + 10, 443, "предложена запись", size=10.5))
+    c.add(arrow(p, [(mid_r, 454), (mid_r, 432)], tone="danger"))
+    c.add(caption(p, mid_r + 10, 443, "предложена запись", size=SMALL_SIZE))
     c.add(
         arrow(
             p,
@@ -508,11 +555,11 @@ def workflow(p: Palette) -> Canvas:
             tone="muted",
         )
     )
-    c.add(caption(p, right - 50, 300, "писать нечего", anchor="end", size=10.5))
+    c.add(caption(p, right - 50, 300, "писать нечего", anchor="end", size=SMALL_SIZE))
 
     node(right, 374, "request_approval", "пауза · состояние в чекпоинте", tone="attention")
-    c.add(arrow(p, [(mid_r, 374), (mid_r, 344)], tone="danger"))
-    c.add(caption(p, mid_r + 10, 363, "подтверждено", size=10.5))
+    c.add(arrow(p, [(mid_r, 374), (mid_r, 352)], tone="danger"))
+    c.add(caption(p, mid_r + 10, 363, "подтверждено", size=SMALL_SIZE))
     c.add(
         arrow(
             p,
@@ -520,36 +567,36 @@ def workflow(p: Palette) -> Canvas:
             "",
         )
     )
-    c.add(caption(p, right + w + 34, 300, "отклонено", anchor="end", size=10.5))
+    c.add(caption(p, right + w + 34, 300, "отклонено", anchor="end", size=SMALL_SIZE))
 
     node(right, 294, "execute_action", "один инструмент · один шаг", tone="danger")
-    c.add(arrow(p, [(mid_r, 294), (mid_r, 240)]))
+    c.add(arrow(p, [(mid_r, 294), (mid_r, 248)]))
 
     node(right, 190, "final_response", "что сделал и чего не сделал")
     c.add(arrow(p, [(mid_r, 190), (mid_r, 164)]))
     c.add(box(p, mid_r - 32, 136, 64, 28, "END", tone="ghost", radius=14))
 
     # ── Подробное описание барьера ─────────────────────────────────────────
-    c.add(box(p, 32, 634, 936, 48, "", "", tone="attention", radius=10))
+    c.add(box(p, 32, 634, 936, 72, "", "", tone="attention", radius=10))
     c.add(
         caption(
             p,
             52,
-            656,
+            660,
             "Пауза долговечная: состояние лежит в чекпоинте, поэтому решение приходит "
             "отдельным HTTP-запросом от отдельного человека —",
             muted=False,
-            size=12,
+            size=12.5,
         )
     )
     c.add(
         caption(
             p,
             52,
-            673,
+            683,
             "а выполняется то действие, которое сохранил граф, а не то, что несёт "
             "подтверждающий запрос.",
-            size=11.5,
+            size=12.5,
         )
     )
     return c
@@ -559,7 +606,7 @@ def workflow(p: Palette) -> Canvas:
 
 
 def guardrails(p: Palette) -> Canvas:
-    c = Canvas(1000, 430)
+    c = Canvas(1000, 510)
 
     c.add(heading(p, 32, 34, "Чего агент не может"))
     c.add(
@@ -606,24 +653,30 @@ def guardrails(p: Palette) -> Canvas:
 
     for index, (title, tone, points) in enumerate(lanes):
         x = 32 + index * 313
-        c.add(box(p, x, 84, 292, 40, title, tone=tone))
-        for line, text in enumerate(points):
-            y = 148 + line * 30
-            c.add(f'<circle cx="{x + 18}" cy="{y - 4}" r="3" fill="{TONES[tone](p)[1]}"/>')
-            c.add(caption(p, x + 32, y, text, muted=False, size=12))
+        c.add(box(p, x, 84, 292, 44, title, tone=tone))
+        cursor_y = 155
+        for text in points:
+            wrapped = wrap(text, 246, 12.5)
+            c.add(
+                f'<circle cx="{x + 18}" cy="{cursor_y - 4}" r="3" '
+                f'fill="{TONES[tone](p)[1]}"/>'
+            )
+            for line_index, part in enumerate(wrapped):
+                c.add(caption(p, x + 32, cursor_y + line_index * 16, part, muted=False))
+            cursor_y += len(wrapped) * 16 + 14
 
-    c.add(arrow(p, [(324, 104), (345, 104)], tone="accent"))
-    c.add(arrow(p, [(637, 104), (658, 104)], tone="accent"))
+    c.add(arrow(p, [(324, 106), (345, 106)], tone="accent"))
+    c.add(arrow(p, [(637, 106), (658, 106)], tone="accent"))
 
-    c.add(box(p, 32, 296, 936, 56, "", "", tone="danger", radius=10))
+    c.add(box(p, 32, 350, 936, 72, "", "", tone="danger", radius=10))
     c.add(
         caption(
             p,
             52,
-            320,
+            379,
             "agent_unapproved_writes_total обязан стоять на нуле.",
             muted=False,
-            size=12.5,
+            size=13,
             mono=True,
         )
     )
@@ -631,29 +684,29 @@ def guardrails(p: Palette) -> Canvas:
         caption(
             p,
             52,
-            339,
+            404,
             "Он выводится из записанных вызовов, а не из флага, и поднимает тревогу "
             "сразу, как только сдвинется.",
-            size=11.5,
+            size=12.5,
         )
     )
     c.add(
         caption(
             p,
             32,
-            384,
+            458,
             "Бюджеты: 12 вызовов · 30 шагов графа · 4 итерации цикла · 15 с на инструмент · "
             "2 идентичных вызова.",
-            size=12,
+            size=12.5,
         )
     )
     c.add(
         caption(
             p,
             32,
-            404,
+            482,
             "Никакого shell, исполнения произвольного кода и инструментов вне реестра.",
-            size=12,
+            size=12.5,
         )
     )
     return c
@@ -663,7 +716,7 @@ def guardrails(p: Palette) -> Canvas:
 
 
 def data_schema(p: Palette) -> Canvas:
-    c = Canvas(1000, 470)
+    c = Canvas(1000, 520)
 
     c.add(heading(p, 32, 34, "Хранение данных"))
     c.add(
@@ -675,13 +728,13 @@ def data_schema(p: Palette) -> Canvas:
         )
     )
 
-    c.add(region(p, 32, 84, 936, 300, "ai_operations_agent.db · один файл (WAL)"))
+    c.add(region(p, 32, 84, 936, 332, "ai_operations_agent.db · один файл (WAL)"))
 
     # Цвет — функция, а не украшение: тот же язык, что и в остальных схемах
     # (accent — состояние агента, success — проверенные данные, attention — человек,
     # neutral — идентичность и журнал, ghost — служебное).
     # Схема приложения: то, что отвечает на вопрос аудита «что агент сделал и на основании чего».
-    c.add(region(p, 52, 120, 588, 244, "схема приложения — владелец: Alembic"))
+    c.add(region(p, 52, 120, 588, 276, "схема приложения — владелец: Alembic"))
     app_tables = (
         ("users", "neutral"),
         ("app_settings", "neutral"),
@@ -697,7 +750,7 @@ def data_schema(p: Palette) -> Canvas:
         c.add(box(p, 68 + column * 188, 164 + row * 56, 172, 44, name, tone=tone, mono=True))
 
     # Чекпоинтер: таблицы создаёт сам LangGraph, а не миграции.
-    c.add(region(p, 664, 120, 288, 244, "чекпоинтер — владелец: LangGraph"))
+    c.add(region(p, 664, 120, 288, 276, "чекпоинтер · LangGraph"))
     c.add(
         box(
             p,
@@ -712,14 +765,14 @@ def data_schema(p: Palette) -> Canvas:
         )
     )
     c.add(box(p, 680, 236, 256, 56, "writes", "task_id · channel\nvalue", tone="accent", mono=True))
-    c.add(caption(p, 680, 316, "BLOB = сериализованный AgentState", size=10.5))
-    c.add(caption(p, 680, 332, "(allowlist типов, app/agent/serde.py)", size=10.5))
+    c.add(caption(p, 680, 326, "BLOB = сериализованный AgentState", size=SMALL_SIZE))
+    c.add(caption(p, 680, 346, "allowlist типов · app/agent/serde.py", size=SMALL_SIZE))
 
     c.add(
         caption(
             p,
             52,
-            376,
+            408,
             "API-движок (SQLAlchemy) и чекпоинтер открывают этот файл под WAL — это "
             "осознанный выбор.",
         )
@@ -729,7 +782,7 @@ def data_schema(p: Palette) -> Canvas:
         caption(
             p,
             32,
-            412,
+            456,
             "Группы нельзя бэкапить по отдельности: backup и restore (manage.sh) снимают файл "
             "целиком и покрывают обе.",
         )
@@ -738,7 +791,7 @@ def data_schema(p: Palette) -> Canvas:
         caption(
             p,
             32,
-            432,
+            482,
             "В серверном профиле те же две роли играют PostgreSQL: STORAGE_BACKEND=postgres и "
             "CHECKPOINTER=postgres.",
         )
