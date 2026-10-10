@@ -127,12 +127,13 @@ main { min-width: 0; }
 .topbar { min-height: 90px; border-bottom: 1px solid var(--line); padding: 18px clamp(24px, 5vw, 68px); display: flex; justify-content: space-between; align-items: center; gap: 18px; }
 .topbar > div:first-child { min-width: 0; }
 .topbar-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 10px; }
-.theme-toggle { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); border-radius: 999px; padding: 8px 12px; cursor: pointer; font-size: 13px; }
-.theme-toggle:hover { color: var(--text); border-color: var(--line-hover); }
-.theme-toggle:focus-visible { outline: 2px solid var(--focus-line); outline-offset: 2px; }
-.theme-icon { font-size: 14px; line-height: 1; }
-.theme-icon::before { content: "☾"; }
-:root[data-theme="light"] .theme-icon::before { content: "☀"; }
+.theme-switch { display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--line); background: var(--panel-2); border-radius: 999px; padding: 3px; }
+.theme-option { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 999px; background: none; color: var(--muted); cursor: pointer; }
+.theme-option:hover { color: var(--text); }
+.theme-option:focus-visible { outline: 2px solid var(--focus-line); outline-offset: 2px; }
+.theme-option[aria-pressed="true"] { background: var(--panel); color: var(--text); box-shadow: 0 0 0 1px var(--line); }
+.theme-option svg { width: 16px; height: 16px; display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.theme-option svg .theme-solid { fill: currentColor; stroke: none; }
 .eyebrow { display: block; color: var(--muted); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 5px; }
 .topbar h1 { font-size: 17px; margin: 0; font-weight: 600; overflow-wrap: anywhere; }
 .health-pill { border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; }
@@ -280,7 +281,6 @@ pre { white-space: pre-wrap; max-height: 280px; overflow: auto; background: var(
   .brand small, .sidebar-footer { display: none; }
   nav { display: flex; flex: 0 0 auto; }
   .nav-item { width: auto; font-size: 0; padding: 9px; }
-  .theme-label { display: none; }
   .topbar { min-height: 70px; padding: 12px 16px; }
   .view { width: calc(100% - 28px); padding: 38px 0 56px; }
   .form-row, .result-head { align-items: stretch; flex-direction: column; }
@@ -306,7 +306,8 @@ pre { white-space: pre-wrap; max-height: 280px; overflow: auto; background: var(
   .topbar .eyebrow { display: none; }
   .topbar h1 { font-size: 15px; padding-top: 8px; }
   .topbar-actions { gap: 6px; }
-  .theme-toggle, .health-pill { padding: 8px 10px; }
+  .health-pill { padding: 8px 10px; }
+  .theme-option { width: 28px; height: 28px; }
   .health-pill b { max-width: 82px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .view { width: calc(100% - 24px); padding-top: 30px; }
   .intro h2, .section-head h2 { font-size: clamp(28px, 10vw, 38px); }
