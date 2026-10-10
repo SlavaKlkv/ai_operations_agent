@@ -434,13 +434,6 @@ def scenario(page: Page, url: str, t0: float) -> tuple[dict[str, float], list[tu
     rec.scroll_to("#history-list .history-card", align=0.3)
     rec.pause(SCREEN_HOLD)
 
-    step("sources")
-    rec.click(".nav-item[data-view='sources']", settle=0.25)
-    rec.scroll_top()
-    page.wait_for_selector("#source-grid .source-card", timeout=20_000)
-    rec.scroll_to("#source-grid", align=0.3)
-    rec.pause(SCREEN_HOLD)
-
     step("diagnostics")
     rec.click(".nav-item[data-view='diagnostics']", settle=0.25)
     rec.scroll_top()
