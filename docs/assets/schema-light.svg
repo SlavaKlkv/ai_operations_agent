@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 470" width="1000" height="470" role="img" aria-labelledby="title desc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" width="1000" height="520" role="img" aria-labelledby="title desc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif">
   <title id="title">Схема данных AI Operations Agent</title>
   <desc id="desc">Один файл SQLite содержит две группы таблиц: схему приложения под Alembic и таблицы чекпоинтера LangGraph; бэкап охватывает обе.</desc>
   <defs>
@@ -12,42 +12,42 @@
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#cf222e"/>
     </marker>
   </defs>
-  <rect width="1000" height="470" fill="#ffffff"/>
-<text x="32" y="34" font-size="12" font-weight="700" letter-spacing="0.7" fill="#59636e">ХРАНЕНИЕ ДАННЫХ</text>
-<text x="32" y="54" text-anchor="start" font-size="11.5" fill="#59636e">Один файл SQLite, две независимые группы таблиц с разными владельцами схемы.</text>
-<rect x="32" y="84" width="936" height="300" rx="12" fill="none" stroke="#d1d9e0" stroke-width="1.25" stroke-dasharray="6 5"/>
-<text x="46" y="103" font-size="11" font-weight="600" letter-spacing="0.6" fill="#59636e">AI_OPERATIONS_AGENT.DB · ОДИН ФАЙЛ (WAL)</text>
-<rect x="52" y="120" width="588" height="244" rx="12" fill="none" stroke="#d1d9e0" stroke-width="1.25" stroke-dasharray="6 5"/>
-<text x="66" y="139" font-size="11" font-weight="600" letter-spacing="0.6" fill="#59636e">СХЕМА ПРИЛОЖЕНИЯ — ВЛАДЕЛЕЦ: ALEMBIC</text>
+  <rect width="1000" height="520" fill="#ffffff"/>
+<text x="32" y="34" font-size="13.5" font-weight="700" letter-spacing="0.7" fill="#59636e">ХРАНЕНИЕ ДАННЫХ</text>
+<text x="32" y="54" text-anchor="start" font-size="12.5" fill="#59636e">Один файл SQLite, две независимые группы таблиц с разными владельцами схемы.</text>
+<rect x="32" y="84" width="936" height="332" rx="12" fill="none" stroke="#d1d9e0" stroke-width="1.25" stroke-dasharray="6 5"/>
+<text x="46" y="104" font-size="12" font-weight="600" letter-spacing="0.6" fill="#59636e">AI_OPERATIONS_AGENT.DB · ОДИН ФАЙЛ (WAL)</text>
+<rect x="52" y="120" width="588" height="276" rx="12" fill="none" stroke="#d1d9e0" stroke-width="1.25" stroke-dasharray="6 5"/>
+<text x="66" y="140" font-size="12" font-weight="600" letter-spacing="0.6" fill="#59636e">СХЕМА ПРИЛОЖЕНИЯ — ВЛАДЕЛЕЦ: ALEMBIC</text>
 <rect x="68" y="164" width="172" height="44" rx="8" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.5"/>
-<text x="154.0" y="191.0" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">users</text>
+<text x="154.0" y="191.04" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">users</text>
 <rect x="256" y="164" width="172" height="44" rx="8" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.5"/>
-<text x="342.0" y="191.0" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">app_settings</text>
+<text x="342.0" y="191.04" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">app_settings</text>
 <rect x="444" y="164" width="172" height="44" rx="8" fill="#ffffff" stroke="#d1d9e0" stroke-width="1.5"/>
-<text x="530.0" y="191.0" text-anchor="middle" font-size="14" font-weight="600" fill="#59636e" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">alembic_version</text>
+<text x="530.0" y="191.04" text-anchor="middle" font-size="14" font-weight="600" fill="#59636e" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">alembic_version</text>
 <rect x="68" y="220" width="172" height="44" rx="8" fill="#ddf4ff" stroke="#0969da" stroke-width="1.5"/>
-<text x="154.0" y="247.0" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">agent_runs</text>
+<text x="154.0" y="247.04" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">agent_runs</text>
 <rect x="256" y="220" width="172" height="44" rx="8" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.5"/>
-<text x="342.0" y="247.0" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">tool_calls</text>
+<text x="342.0" y="247.04" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">tool_calls</text>
 <rect x="444" y="220" width="172" height="44" rx="8" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.5"/>
-<text x="530.0" y="247.0" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">incident_analyses</text>
+<text x="530.0" y="247.04" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">incident_analyses</text>
 <rect x="68" y="276" width="172" height="44" rx="8" fill="#fff8c5" stroke="#9a6700" stroke-width="1.5"/>
-<text x="154.0" y="303.0" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">approvals</text>
+<text x="154.0" y="303.04" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">approvals</text>
 <rect x="256" y="276" width="172" height="44" rx="8" fill="#f6f8fa" stroke="#d1d9e0" stroke-width="1.5"/>
-<text x="342.0" y="303.0" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">audit_events</text>
-<rect x="664" y="120" width="288" height="244" rx="12" fill="none" stroke="#d1d9e0" stroke-width="1.25" stroke-dasharray="6 5"/>
-<text x="678" y="139" font-size="11" font-weight="600" letter-spacing="0.6" fill="#59636e">ЧЕКПОИНТЕР — ВЛАДЕЛЕЦ: LANGGRAPH</text>
+<text x="342.0" y="303.04" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">audit_events</text>
+<rect x="664" y="120" width="288" height="276" rx="12" fill="none" stroke="#d1d9e0" stroke-width="1.25" stroke-dasharray="6 5"/>
+<text x="678" y="140" font-size="12" font-weight="600" letter-spacing="0.6" fill="#59636e">ЧЕКПОИНТЕР · LANGGRAPH</text>
 <rect x="680" y="164" width="256" height="56" rx="8" fill="#ddf4ff" stroke="#0969da" stroke-width="1.5"/>
-<text x="808.0" y="178.0" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">checkpoints</text>
-<text x="808.0" y="195.0" text-anchor="middle" font-size="11.5" fill="#59636e">thread_id · checkpoint_id</text>
-<text x="808.0" y="209.0" text-anchor="middle" font-size="11.5" fill="#59636e">parent — цепочка версий</text>
+<text x="808.0" y="180.48" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">checkpoints</text>
+<text x="808.0" y="197.98" text-anchor="middle" font-size="12.5" fill="#59636e">thread_id · checkpoint_id</text>
+<text x="808.0" y="212.48" text-anchor="middle" font-size="12.5" fill="#59636e">parent — цепочка версий</text>
 <rect x="680" y="236" width="256" height="56" rx="8" fill="#ddf4ff" stroke="#0969da" stroke-width="1.5"/>
-<text x="808.0" y="250.0" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">writes</text>
-<text x="808.0" y="267.0" text-anchor="middle" font-size="11.5" fill="#59636e">task_id · channel</text>
-<text x="808.0" y="281.0" text-anchor="middle" font-size="11.5" fill="#59636e">value</text>
-<text x="680" y="316" text-anchor="start" font-size="10.5" fill="#59636e">BLOB = сериализованный AgentState</text>
-<text x="680" y="332" text-anchor="start" font-size="10.5" fill="#59636e">(allowlist типов, app/agent/serde.py)</text>
-<text x="52" y="376" text-anchor="start" font-size="11.5" fill="#59636e">API-движок (SQLAlchemy) и чекпоинтер открывают этот файл под WAL — это осознанный выбор.</text>
-<text x="32" y="412" text-anchor="start" font-size="11.5" fill="#59636e">Группы нельзя бэкапить по отдельности: backup и restore (manage.sh) снимают файл целиком и покрывают обе.</text>
-<text x="32" y="432" text-anchor="start" font-size="11.5" fill="#59636e">В серверном профиле те же две роли играют PostgreSQL: STORAGE_BACKEND=postgres и CHECKPOINTER=postgres.</text>
+<text x="808.0" y="252.48" text-anchor="middle" font-size="14" font-weight="600" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">writes</text>
+<text x="808.0" y="269.98" text-anchor="middle" font-size="12.5" fill="#59636e">task_id · channel</text>
+<text x="808.0" y="284.48" text-anchor="middle" font-size="12.5" fill="#59636e">value</text>
+<text x="680" y="326" text-anchor="start" font-size="12" fill="#59636e">BLOB = сериализованный AgentState</text>
+<text x="680" y="346" text-anchor="start" font-size="12" fill="#59636e">allowlist типов · app/agent/serde.py</text>
+<text x="52" y="408" text-anchor="start" font-size="12.5" fill="#59636e">API-движок (SQLAlchemy) и чекпоинтер открывают этот файл под WAL — это осознанный выбор.</text>
+<text x="32" y="456" text-anchor="start" font-size="12.5" fill="#59636e">Группы нельзя бэкапить по отдельности: backup и restore (manage.sh) снимают файл целиком и покрывают обе.</text>
+<text x="32" y="482" text-anchor="start" font-size="12.5" fill="#59636e">В серверном профиле те же две роли играют PostgreSQL: STORAGE_BACKEND=postgres и CHECKPOINTER=postgres.</text>
 </svg>
