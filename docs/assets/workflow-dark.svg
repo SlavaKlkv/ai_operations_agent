@@ -66,14 +66,14 @@
 <text x="788.0" y="496.23" text-anchor="middle" font-size="12.5" fill="#9198a1">уверенность ≥ 0.6, иначе ничего</text>
 <path d="M 788.0 454 L 788.0 432" fill="none" stroke="#f85149" stroke-width="1.6" marker-end="url(#arrow-danger)"/>
 <text x="798.0" y="443" text-anchor="start" font-size="12" fill="#9198a1">предложена запись</text>
-<path d="M 676 479 L 636 479 L 636 190 L 680 190" fill="none" stroke="#9198a1" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M 676 479 L 636 479 L 636 219 L 676 219" fill="none" stroke="#9198a1" stroke-width="1.6" marker-end="url(#arrow)"/>
 <text x="626" y="300" text-anchor="end" font-size="12" fill="#9198a1">писать нечего</text>
 <rect x="676" y="374" width="224" height="58" rx="8" fill="#2b2412" stroke="#d29922" stroke-width="1.5"/>
 <text x="788.0" y="398.73" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">request_approval</text>
 <text x="788.0" y="416.23" text-anchor="middle" font-size="12.5" fill="#9198a1">пауза · состояние в чекпоинте</text>
 <path d="M 788.0 374 L 788.0 352" fill="none" stroke="#f85149" stroke-width="1.6" marker-end="url(#arrow-danger)"/>
 <text x="798.0" y="363" text-anchor="start" font-size="12" fill="#9198a1">подтверждено</text>
-<path d="M 900 399 L 940 399 L 940 190 L 896 190" fill="none" stroke="#9198a1" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M 900 399 L 940 399 L 940 219 L 900 219" fill="none" stroke="#9198a1" stroke-width="1.6" marker-end="url(#arrow)"/>
 <text x="934" y="300" text-anchor="end" font-size="12" fill="#9198a1">отклонено</text>
 <rect x="676" y="294" width="224" height="58" rx="8" fill="#2b1618" stroke="#f85149" stroke-width="1.5"/>
 <text x="788.0" y="318.73" text-anchor="middle" font-size="14" font-weight="600" fill="#e6edf3" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">execute_action</text>
